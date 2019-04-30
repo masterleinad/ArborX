@@ -38,7 +38,10 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(empty_tree, DeviceType, ARBORX_DEVICE_TYPES)
     BOOST_TEST(empty_bvh.empty());
     BOOST_TEST(empty_bvh.size() == 0);
     // BVH::bounds() returns an invalid box when the tree is empty.
-    BOOST_TEST(ArborX::Details::equals(empty_bvh.bounds(), {}));
+    auto bounds = empty_bvh.getBounds();
+    auto bounds_host = Kokkos::create_mirror_view(bounds);
+    Kokkos::deep_copy(bounds_host, bounds);
+    BOOST_TEST(ArborX::Details::equals(bounds_host(), {}));
 
     // Passing a view with no query does seem a bit silly but we still need
     // to support it. And since the tag dispatching yields different tree
@@ -98,8 +101,11 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(single_leaf_tree, DeviceType, ARBORX_DEVICE_TYPES)
 
   BOOST_TEST(!bvh.empty());
   BOOST_TEST(bvh.size() == 1);
+  auto bounds = bvh.getBounds();
+  auto bounds_host = Kokkos::create_mirror_view(bounds);
+  Kokkos::deep_copy(bounds_host, bounds);
   BOOST_TEST(
-      ArborX::Details::equals(bvh.bounds(), {{{0., 0., 0.}}, {{1., 1., 1.}}}));
+      ArborX::Details::equals(bounds_host(), {{{0., 0., 0.}}, {{1., 1., 1.}}}));
 
   checkResults(bvh, makeOverlapQueries<DeviceType>({}), {}, {0});
 
@@ -151,8 +157,11 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(couple_leaves_tree, DeviceType,
 
   BOOST_TEST(!bvh.empty());
   BOOST_TEST(bvh.size() == 2);
+  auto bounds = bvh.getBounds();
+  auto bounds_host = Kokkos::create_mirror_view(bounds);
+  Kokkos::deep_copy(bounds_host, bounds);
   BOOST_TEST(
-      ArborX::Details::equals(bvh.bounds(), {{{0., 0., 0.}}, {{1., 1., 1.}}}));
+      ArborX::Details::equals(bounds_host(), {{{0., 0., 0.}}, {{1., 1., 1.}}}));
 
   // single query overlap with nothing
   checkResults(bvh,
