@@ -23,8 +23,6 @@
 #include <utility>
 #include <vector>
 
-#include <mpi.h>
-
 struct HelpPrinted
 {
 };

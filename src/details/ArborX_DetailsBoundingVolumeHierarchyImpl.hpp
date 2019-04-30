@@ -96,7 +96,7 @@ void BoundingVolumeHierarchyImpl<DeviceType>::queryDispatch(
 
   auto const permute =
       Details::BatchedQueries<DeviceType>::sortQueriesAlongZOrderCurve(
-          bvh.bounds(), queries);
+          bvh.getBounds(), queries);
 
   queries =
       Details::BatchedQueries<DeviceType>::applyPermutation(permute, queries);
@@ -299,7 +299,7 @@ void BoundingVolumeHierarchyImpl<DeviceType>::queryDispatch(
 
   auto const permute =
       Details::BatchedQueries<DeviceType>::sortQueriesAlongZOrderCurve(
-          bvh.bounds(), queries);
+          bvh.getBounds(), queries);
 
   queries =
       Details::BatchedQueries<DeviceType>::applyPermutation(permute, queries);

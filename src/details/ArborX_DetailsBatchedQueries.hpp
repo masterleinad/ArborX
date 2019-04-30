@@ -51,9 +51,9 @@ public:
   // the end.  We decided to keep reversePermutation around for now.
 
   template <typename Query>
-  static Kokkos::View<size_t *, DeviceType>
-  sortQueriesAlongZOrderCurve(Box const &scene_bounding_box,
-                              Kokkos::View<Query *, DeviceType> queries)
+  static Kokkos::View<size_t *, DeviceType> sortQueriesAlongZOrderCurve(
+      Kokkos::View<Box const, DeviceType> scene_bounding_box,
+      Kokkos::View<Query *, DeviceType> queries)
   {
     auto const n_queries = queries.extent(0);
 
@@ -64,7 +64,7 @@ public:
                          KOKKOS_LAMBDA(int i) {
                            Point xyz =
                                Details::returnCentroid(queries(i)._geometry);
-                           translateAndScale(xyz, xyz, scene_bounding_box);
+                           translateAndScale(xyz, xyz, scene_bounding_box());
                            morton_codes(i) = morton3D(xyz[0], xyz[1], xyz[2]);
                          });
     Kokkos::fence();

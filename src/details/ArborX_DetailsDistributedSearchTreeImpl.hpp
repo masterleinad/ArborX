@@ -25,8 +25,6 @@
 
 #include <numeric> // accumulate
 
-#include <mpi.h>
-
 namespace ArborX
 {
 
