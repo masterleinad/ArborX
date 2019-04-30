@@ -124,7 +124,10 @@ DistributedSearchTree<DeviceType>::DistributedSearchTree(
   // FIXME when we move to MPI with CUDA-aware support, we will not need to
   // copy from the device to the host
   auto boxes_host = Kokkos::create_mirror_view(boxes);
-  boxes_host(comm_rank) = _bottom_tree.bounds();
+  auto bounds = _bottom_tree.getBounds();
+  auto bounds_host = Kokkos::create_mirror_view(bounds);
+  Kokkos::deep_copy(bounds_host, bounds);
+  boxes_host(comm_rank) = bounds_host();
   MPI_Allgather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL,
                 static_cast<void *>(boxes_host.data()), sizeof(Box), MPI_BYTE,
                 _comm);
