@@ -58,6 +58,17 @@ public:
     return getBoundingVolume(getRoot());
   }
 
+  Kokkos::View<bounding_volume_type, DeviceType> getBounds() const
+  {
+    Kokkos::View<bounding_volume_type, DeviceType> bounds("bounds");
+    using ExecutionSpace = typename DeviceType::execution_space;
+    auto bvh = *this;
+    Kokkos::parallel_for(ARBORX_MARK_REGION("copy bounds"),
+                         Kokkos::RangePolicy<ExecutionSpace>(0, 1),
+                         KOKKOS_LAMBDA(int) { bounds() = bvh.bounds(); });
+    return bounds;
+  }
+
   template <typename Predicates, typename... Args>
   void query(Predicates const &predicates, Args &&... args) const
   {
