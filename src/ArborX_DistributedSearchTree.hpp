@@ -42,7 +42,13 @@ public:
   /** Returns the smallest axis-aligned box able to contain all the objects
    *  stored in the tree or an invalid box if the tree is empty.
    */
-  bounding_volume_type bounds() const { return _top_tree.bounds(); }
+  bounding_volume_type bounds() const
+  {
+    auto bounds = _top_tree.getBounds();
+    auto bounds_host = Kokkos::create_mirror_view(bounds);
+    Kokkos::deep_copy(bounds_host, bounds);
+    return bounds_host();
+  }
 
   /** Returns the global number of objects stored in the tree.
    */
