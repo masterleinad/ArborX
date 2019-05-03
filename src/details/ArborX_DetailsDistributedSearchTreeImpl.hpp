@@ -345,8 +345,8 @@ void DistributedSearchTreeImpl<DeviceType>::queryDispatch(
     ////////////////////////////////////////////////////////////////////////////
     // Forward queries
     ////////////////////////////////////////////////////////////////////////////
-    Kokkos::View<int *, DeviceType> ids("query_ids");
-    Kokkos::View<Query *, DeviceType> fwd_queries("fwd_queries");
+    Kokkos::View<int *, DeviceType> ids("query_ids", 0);
+    Kokkos::View<Query *, DeviceType> fwd_queries("fwd_queries", 0);
     forwardQueries(comm, queries, indices, offset, fwd_queries, ids, ranks);
     ////////////////////////////////////////////////////////////////////////////
 
