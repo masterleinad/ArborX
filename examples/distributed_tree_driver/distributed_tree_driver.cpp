@@ -24,32 +24,36 @@
 #include <utility>
 #include <vector>
 
+#include <boost/accumulators/accumulators.hpp>
+#include <boost/accumulators/statistics/stats.hpp>
+#include <boost/accumulators/statistics/mean.hpp>
+#include <boost/accumulators/statistics/median.hpp>
+#include <boost/accumulators/statistics/variance.hpp>
+
 #include <mpi.h>
 
 struct HelpPrinted
 {
 };
 
+using namespace boost::accumulators;
+
 // Poor man's replacement for Teuchos::TimeMonitor
 class TimeMonitor
 {
-  using container_type = std::vector<std::pair<std::string, double>>;
-  using entry_reference_type = container_type::reference;
-  container_type _data;
-
-public:
   class Timer
   {
-    entry_reference_type _entry;
-    bool _started;
+    using data_type = accumulator_set<double, stats<tag::count, tag::mean, tag::median, tag::variance>>;
+    data_type _entry;
+    bool _started=false;
     std::chrono::high_resolution_clock::time_point _tick;
 
   public:
-    Timer(entry_reference_type ref)
-        : _entry{ref}
-        , _started{false}
-    {
-    }
+    Timer() = default;
+
+    // Prevent accidental copy construction
+    Timer(Timer const &) = delete;
+
     void start()
     {
       assert(!_started);
@@ -61,24 +65,30 @@ public:
       assert(_started);
       std::chrono::duration<double> duration =
           std::chrono::high_resolution_clock::now() - _tick;
-      // NOTE I have put much thought into whether we should use the
-      // operator+= and keep track of how many times the timer was
-      // restarted.  To be honest I have not even looked was the original
-      // TimeMonitor behavior is :)
-      _entry.second = duration.count();
+      _entry(duration.count());
       _started = false;
     }
+
+    data_type const & get_statistics () const
+    {
+      return _entry;
+    }
   };
+
+  using container_type = std::map<std::string, Timer>;
+  using entry_reference_type = container_type::reference;
+  using entry_const_reference_type = container_type::const_reference;
+  container_type _data;
+
+public:
+
   // NOTE Original code had the pointer semantics.  Can change in the future.
-  // The smart pointer is a distraction.  The main problem here is that the
+  // The smart pointer is a distraction. The main problem here is that the
   // reference stored by the timer is invalidated if the time monitor gets
   // out of scope.
-  std::unique_ptr<Timer> getNewTimer(std::string name)
+  Timer & getTimer(std::string name)
   {
-    // FIXME Consider searching whether there already is an entry with the
-    // same name.
-    _data.emplace_back(std::move(name), 0.);
-    return std::unique_ptr<Timer>(new Timer(_data.back()));
+    return _data[name];
   }
   void summarize(MPI_Comm comm, std::ostream &os = std::cout)
   {
@@ -94,17 +104,18 @@ public:
       os << "TimeMonitor results over 1 processor\n\n";
       os << "Timer Name\tGlobal Time\n";
       os << "----------------------------------------\n";
-      for (int i = 0; i < n_timers; ++i)
+      for (auto const& timer: _data)
       {
-        os << _data[i].first << "\t" << _data[i].second << "\n";
+        os << timer.first << "\t" << mean(timer.second.get_statistics()) << "\n";
       }
       os << "========================================\n";
       return;
     }
     std::vector<double> all_entries(comm_size * n_timers);
+    std::cout << "first: " << _data.begin()->first << ", " << mean(_data.begin()->second.get_statistics()) << std::endl;
     std::transform(
         _data.begin(), _data.end(), all_entries.begin() + comm_rank * n_timers,
-        [](std::pair<std::string, double> const &x) { return x.second; });
+        [](entry_const_reference_type x) { return mean(x.second.get_statistics()); });
     // FIXME No guarantee that all processors have the same timers!
     MPI_Allgather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, all_entries.data(),
                   n_timers, MPI_DOUBLE, comm);
@@ -116,7 +127,8 @@ public:
       os << "----------------------------------------\n";
     }
     std::vector<double> tmp(comm_size);
-    for (int i = 0; i < n_timers; ++i)
+    auto timer_it = _data.begin();
+    for (int i = 0; i < n_timers; ++i, ++timer_it)
     {
       for (int j = 0; j < comm_size; ++j)
       {
@@ -127,7 +139,7 @@ public:
       auto mean = std::accumulate(tmp.begin(), tmp.end(), 0.) / comm_size;
       if (comm_rank == 0)
       {
-        os << _data[i].first << "\t" << min << "\t" << mean << "\t" << max
+        os << timer_it->first << "\t" << min << "\t" << mean << "\t" << max
            << "\n";
       }
     }
@@ -274,12 +286,12 @@ int main_(std::vector<std::string> const &args)
                        });
   Kokkos::fence();
 
-  auto construction = time_monitor.getNewTimer("construction");
+  auto &construction = time_monitor.getTimer("construction");
   MPI_Barrier(comm);
-  construction->start();
+  construction.start();
   ArborX::DistributedSearchTree<DeviceType> distributed_tree(comm,
                                                              bounding_boxes);
-  construction->stop();
+  construction.stop();
 
   std::ostream &os = std::cout;
   if (comm_rank == 0)
@@ -301,11 +313,11 @@ int main_(std::vector<std::string> const &args)
     Kokkos::View<int *, DeviceType> indices("indices", 0);
     Kokkos::View<int *, DeviceType> ranks("ranks", 0);
 
-    auto knn = time_monitor.getNewTimer("knn");
+    auto & knn = time_monitor.getTimer("knn");
     MPI_Barrier(comm);
-    knn->start();
+    knn.start();
     distributed_tree.query(queries, indices, offset, ranks);
-    knn->stop();
+    knn.stop();
 
     if (comm_rank == 0)
       os << "knn done\n";
@@ -333,11 +345,11 @@ int main_(std::vector<std::string> const &args)
     Kokkos::View<int *, DeviceType> indices("indices", 0);
     Kokkos::View<int *, DeviceType> ranks("ranks", 0);
 
-    auto radius = time_monitor.getNewTimer("radius");
+    auto & radius = time_monitor.getTimer("radius");
     MPI_Barrier(comm);
-    radius->start();
+    radius.start();
     distributed_tree.query(queries, indices, offset, ranks);
-    radius->stop();
+    radius.stop();
 
     if (comm_rank == 0)
       os << "radius done\n";
