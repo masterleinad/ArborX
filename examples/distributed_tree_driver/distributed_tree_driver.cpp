@@ -14,6 +14,11 @@
 
 #include <Kokkos_Core.hpp>
 
+#include <boost/accumulators/accumulators.hpp>
+#include <boost/accumulators/statistics/mean.hpp>
+#include <boost/accumulators/statistics/median.hpp>
+#include <boost/accumulators/statistics/stats.hpp>
+#include <boost/accumulators/statistics/variance.hpp>
 #include <boost/program_options.hpp>
 
 #include <algorithm>
@@ -23,12 +28,6 @@
 #include <random>
 #include <utility>
 #include <vector>
-
-#include <boost/accumulators/accumulators.hpp>
-#include <boost/accumulators/statistics/stats.hpp>
-#include <boost/accumulators/statistics/mean.hpp>
-#include <boost/accumulators/statistics/median.hpp>
-#include <boost/accumulators/statistics/variance.hpp>
 
 #include <mpi.h>
 
@@ -43,9 +42,10 @@ class TimeMonitor
 {
   class Timer
   {
-    using data_type = accumulator_set<double, stats<tag::count, tag::mean, tag::median, tag::variance>>;
+    using data_type = accumulator_set<
+        double, stats<tag::count, tag::mean, tag::median, tag::variance>>;
     data_type _entry;
-    bool _started=false;
+    bool _started = false;
     std::chrono::high_resolution_clock::time_point _tick;
 
   public:
@@ -69,10 +69,7 @@ class TimeMonitor
       _started = false;
     }
 
-    data_type const & get_statistics () const
-    {
-      return _entry;
-    }
+    data_type const &get_statistics() const { return _entry; }
   };
 
   using container_type = std::map<std::string, Timer>;
@@ -81,15 +78,8 @@ class TimeMonitor
   container_type _data;
 
 public:
+  Timer &getTimer(std::string name) { return _data[name]; }
 
-  // NOTE Original code had the pointer semantics.  Can change in the future.
-  // The smart pointer is a distraction. The main problem here is that the
-  // reference stored by the timer is invalidated if the time monitor gets
-  // out of scope.
-  Timer & getTimer(std::string name)
-  {
-    return _data[name];
-  }
   void summarize(MPI_Comm comm, std::ostream &os = std::cout)
   {
     // FIXME Haven't tried very hard to format the output.
@@ -104,18 +94,24 @@ public:
       os << "TimeMonitor results over 1 processor\n\n";
       os << "Timer Name\tGlobal Time\n";
       os << "----------------------------------------\n";
-      for (auto const& timer: _data)
+      for (auto const &timer : _data)
       {
-        os << timer.first << "\t" << mean(timer.second.get_statistics()) << "\n";
+        auto const &statistics = timer.second.get_statistics();
+        os << timer.first << "\t" << mean(statistics) << ", "
+           << count(statistics) << ", " << mean(statistics) << ", "
+           << variance(statistics) << "\n";
       }
       os << "========================================\n";
       return;
     }
     std::vector<double> all_entries(comm_size * n_timers);
-    std::cout << "first: " << _data.begin()->first << ", " << mean(_data.begin()->second.get_statistics()) << std::endl;
-    std::transform(
-        _data.begin(), _data.end(), all_entries.begin() + comm_rank * n_timers,
-        [](entry_const_reference_type x) { return mean(x.second.get_statistics()); });
+    std::cout << "first: " << _data.begin()->first << ", "
+              << mean(_data.begin()->second.get_statistics()) << std::endl;
+    std::transform(_data.begin(), _data.end(),
+                   all_entries.begin() + comm_rank * n_timers,
+                   [](entry_const_reference_type x) {
+                     return mean(x.second.get_statistics());
+                   });
     // FIXME No guarantee that all processors have the same timers!
     MPI_Allgather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, all_entries.data(),
                   n_timers, MPI_DOUBLE, comm);
@@ -206,153 +202,157 @@ int main_(std::vector<std::string> const &args)
   MPI_Comm_rank(comm, &comm_rank);
   int comm_size;
   MPI_Comm_size(comm, &comm_size);
-  Kokkos::View<ArborX::Point *, DeviceType> random_points("random_points", 0);
+
+  for (unsigned int i = 0; i < 10; ++i)
   {
-    // Random points are "reused" between building the tree and performing
-    // queries. Note that this means that for the points in the middle of
-    // the local domains there won't be any communication.
-    auto n = std::max(n_values, n_queries);
-    Kokkos::resize(random_points, n);
-
-    auto random_points_host = Kokkos::create_mirror_view(random_points);
-
-    // Generate random points uniformely distributed within a box.
-    auto const a = std::cbrt(n_values);
-    std::uniform_real_distribution<double> distribution(-a, +a);
-    std::default_random_engine generator;
-    auto random = [&distribution, &generator]() {
-      return distribution(generator);
-    };
-
-    double offset_x = 0.;
-    double offset_y = 0.;
-    double offset_z = 0.;
-    // Change the geometry of the problem. In 1D, all the point clouds are
-    // aligned on a line. In 2D, the point clouds create a board and in 3D,
-    // they create a box.
-    switch (partition_dim)
+    Kokkos::View<ArborX::Point *, DeviceType> random_points("random_points", 0);
     {
-    case 1:
-    {
-      offset_x = 2. * (1. - overlap) * a * comm_rank;
+      // Random points are "reused" between building the tree and performing
+      // queries. Note that this means that for the points in the middle of
+      // the local domains there won't be any communication.
+      auto n = std::max(n_values, n_queries);
+      Kokkos::resize(random_points, n);
 
-      break;
+      auto random_points_host = Kokkos::create_mirror_view(random_points);
+
+      // Generate random points uniformely distributed within a box.
+      auto const a = std::cbrt(n_values);
+      std::uniform_real_distribution<double> distribution(-a, +a);
+      std::default_random_engine generator;
+      auto random = [&distribution, &generator]() {
+        return distribution(generator);
+      };
+
+      double offset_x = 0.;
+      double offset_y = 0.;
+      double offset_z = 0.;
+      // Change the geometry of the problem. In 1D, all the point clouds are
+      // aligned on a line. In 2D, the point clouds create a board and in 3D,
+      // they create a box.
+      switch (partition_dim)
+      {
+      case 1:
+      {
+        offset_x = 2. * (1. - overlap) * a * comm_rank;
+
+        break;
+      }
+      case 2:
+      {
+        int i_max = std::ceil(std::sqrt(comm_size));
+        int i = comm_rank % i_max;
+        int j = comm_rank / i_max;
+        offset_x = 2. * (1. - overlap) * a * i;
+        offset_y = 2. * (1. - overlap) * a * j;
+
+        break;
+      }
+      case 3:
+      {
+        int i_max = std::ceil(std::cbrt(comm_size));
+        int j_max = i_max;
+        int i = comm_rank % i_max;
+        int j = (comm_rank / i_max) % j_max;
+        int k = comm_rank / (i_max * j_max);
+        offset_x = 2. * (1. - overlap) * a * i;
+        offset_y = 2. * (1. - overlap) * a * j;
+        offset_z = 2. * (1. - overlap) * a * k;
+
+        break;
+      }
+      default:
+      {
+        throw std::runtime_error("partition_dim should be 1, 2, or 3");
+      }
+      }
+
+      for (int i = 0; i < n; ++i)
+        random_points_host(i) = {
+            {offset_x + random(), offset_y + random(), offset_z + random()}};
+      Kokkos::deep_copy(random_points, random_points_host);
     }
-    case 2:
-    {
-      int i_max = std::ceil(std::sqrt(comm_size));
-      int i = comm_rank % i_max;
-      int j = comm_rank / i_max;
-      offset_x = 2. * (1. - overlap) * a * i;
-      offset_y = 2. * (1. - overlap) * a * j;
 
-      break;
-    }
-    case 3:
-    {
-      int i_max = std::ceil(std::cbrt(comm_size));
-      int j_max = i_max;
-      int i = comm_rank % i_max;
-      int j = (comm_rank / i_max) % j_max;
-      int k = comm_rank / (i_max * j_max);
-      offset_x = 2. * (1. - overlap) * a * i;
-      offset_y = 2. * (1. - overlap) * a * j;
-      offset_z = 2. * (1. - overlap) * a * k;
-
-      break;
-    }
-    default:
-    {
-      throw std::runtime_error("partition_dim should be 1, 2, or 3");
-    }
-    }
-
-    for (int i = 0; i < n; ++i)
-      random_points_host(i) = {
-          {offset_x + random(), offset_y + random(), offset_z + random()}};
-    Kokkos::deep_copy(random_points, random_points_host);
-  }
-
-  Kokkos::View<ArborX::Box *, DeviceType> bounding_boxes(
-      Kokkos::ViewAllocateWithoutInitializing("bounding_boxes"), n_values);
-  Kokkos::parallel_for("bvh_driver:construct_bounding_boxes",
-                       Kokkos::RangePolicy<ExecutionSpace>(0, n_values),
-                       KOKKOS_LAMBDA(int i) {
-                         double const x = random_points(i)[0];
-                         double const y = random_points(i)[1];
-                         double const z = random_points(i)[2];
-                         bounding_boxes(i) = {{{x - 1., y - 1., z - 1.}},
-                                              {{x + 1., y + 1., z + 1.}}};
-                       });
-  Kokkos::fence();
-
-  auto &construction = time_monitor.getTimer("construction");
-  MPI_Barrier(comm);
-  construction.start();
-  ArborX::DistributedSearchTree<DeviceType> distributed_tree(comm,
-                                                             bounding_boxes);
-  construction.stop();
-
-  std::ostream &os = std::cout;
-  if (comm_rank == 0)
-    os << "contruction done\n";
-
-  if (perform_knn_search)
-  {
-    Kokkos::View<ArborX::Nearest<ArborX::Point> *, DeviceType> queries(
-        Kokkos::ViewAllocateWithoutInitializing("queries"), n_queries);
-    Kokkos::parallel_for("bvh_driver:setup_knn_search_queries",
-                         Kokkos::RangePolicy<ExecutionSpace>(0, n_queries),
+    Kokkos::View<ArborX::Box *, DeviceType> bounding_boxes(
+        Kokkos::ViewAllocateWithoutInitializing("bounding_boxes"), n_values);
+    Kokkos::parallel_for("bvh_driver:construct_bounding_boxes",
+                         Kokkos::RangePolicy<ExecutionSpace>(0, n_values),
                          KOKKOS_LAMBDA(int i) {
-                           queries(i) = ArborX::nearest<ArborX::Point>(
-                               random_points(i), n_neighbors);
+                           double const x = random_points(i)[0];
+                           double const y = random_points(i)[1];
+                           double const z = random_points(i)[2];
+                           bounding_boxes(i) = {{{x - 1., y - 1., z - 1.}},
+                                                {{x + 1., y + 1., z + 1.}}};
                          });
     Kokkos::fence();
 
-    Kokkos::View<int *, DeviceType> offset("offset", 0);
-    Kokkos::View<int *, DeviceType> indices("indices", 0);
-    Kokkos::View<int *, DeviceType> ranks("ranks", 0);
-
-    auto & knn = time_monitor.getTimer("knn");
+    auto &construction = time_monitor.getTimer("construction");
     MPI_Barrier(comm);
-    knn.start();
-    distributed_tree.query(queries, indices, offset, ranks);
-    knn.stop();
+    construction.start();
+    ArborX::DistributedSearchTree<DeviceType> distributed_tree(comm,
+                                                               bounding_boxes);
+    construction.stop();
 
+    std::ostream &os = std::cout;
     if (comm_rank == 0)
-      os << "knn done\n";
-  }
+      os << "contruction done\n";
 
-  if (perform_radius_search)
-  {
-    Kokkos::View<ArborX::Within *, DeviceType> queries(
-        Kokkos::ViewAllocateWithoutInitializing("queries"), n_queries);
-    // radius chosen in order to control the number of results per query
-    // NOTE: minus "1+sqrt(3)/2 \approx 1.37" matches the size of the boxes
-    // inserted into the tree (mid-point between half-edge and
-    // half-diagonal)
-    double const r =
-        2. * std::cbrt(static_cast<double>(n_neighbors) * 3. / (4. * M_PI)) -
-        (1. + std::sqrt(3.)) / 2.;
-    Kokkos::parallel_for("bvh_driver:setup_radius_search_queries",
-                         Kokkos::RangePolicy<ExecutionSpace>(0, n_queries),
-                         KOKKOS_LAMBDA(int i) {
-                           queries(i) = ArborX::within(random_points(i), r);
-                         });
-    Kokkos::fence();
+    if (perform_knn_search)
+    {
+      Kokkos::View<ArborX::Nearest<ArborX::Point> *, DeviceType> queries(
+          Kokkos::ViewAllocateWithoutInitializing("queries"), n_queries);
+      Kokkos::parallel_for("bvh_driver:setup_knn_search_queries",
+                           Kokkos::RangePolicy<ExecutionSpace>(0, n_queries),
+                           KOKKOS_LAMBDA(int i) {
+                             queries(i) = ArborX::nearest<ArborX::Point>(
+                                 random_points(i), n_neighbors);
+                           });
+      Kokkos::fence();
 
-    Kokkos::View<int *, DeviceType> offset("offset", 0);
-    Kokkos::View<int *, DeviceType> indices("indices", 0);
-    Kokkos::View<int *, DeviceType> ranks("ranks", 0);
+      Kokkos::View<int *, DeviceType> offset("offset", 0);
+      Kokkos::View<int *, DeviceType> indices("indices", 0);
+      Kokkos::View<int *, DeviceType> ranks("ranks", 0);
 
-    auto & radius = time_monitor.getTimer("radius");
-    MPI_Barrier(comm);
-    radius.start();
-    distributed_tree.query(queries, indices, offset, ranks);
-    radius.stop();
+      auto &knn = time_monitor.getTimer("knn");
+      MPI_Barrier(comm);
+      knn.start();
+      distributed_tree.query(queries, indices, offset, ranks);
+      knn.stop();
 
-    if (comm_rank == 0)
-      os << "radius done\n";
+      if (comm_rank == 0)
+        os << "knn done\n";
+    }
+
+    if (perform_radius_search)
+    {
+      Kokkos::View<ArborX::Within *, DeviceType> queries(
+          Kokkos::ViewAllocateWithoutInitializing("queries"), n_queries);
+      // radius chosen in order to control the number of results per query
+      // NOTE: minus "1+sqrt(3)/2 \approx 1.37" matches the size of the boxes
+      // inserted into the tree (mid-point between half-edge and
+      // half-diagonal)
+      double const r =
+          2. * std::cbrt(static_cast<double>(n_neighbors) * 3. / (4. * M_PI)) -
+          (1. + std::sqrt(3.)) / 2.;
+      Kokkos::parallel_for("bvh_driver:setup_radius_search_queries",
+                           Kokkos::RangePolicy<ExecutionSpace>(0, n_queries),
+                           KOKKOS_LAMBDA(int i) {
+                             queries(i) = ArborX::within(random_points(i), r);
+                           });
+      Kokkos::fence();
+
+      Kokkos::View<int *, DeviceType> offset("offset", 0);
+      Kokkos::View<int *, DeviceType> indices("indices", 0);
+      Kokkos::View<int *, DeviceType> ranks("ranks", 0);
+
+      auto &radius = time_monitor.getTimer("radius");
+      MPI_Barrier(comm);
+      radius.start();
+      distributed_tree.query(queries, indices, offset, ranks);
+      radius.stop();
+
+      if (comm_rank == 0)
+        os << "radius done\n";
+    }
   }
   time_monitor.summarize(comm);
 
