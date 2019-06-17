@@ -48,31 +48,41 @@ class TimeMonitor
                                       tag::median, tag::variance>>;
     data_type _statistics;
     bool _started = false;
+    const MPI_Comm _mpi_comm;
     std::chrono::high_resolution_clock::time_point _tick;
 
   public:
-    Timer() = default;
+    Timer(const MPI_Comm mpi_communicator = MPI_COMM_WORLD) : _mpi_comm(mpi_communicator) {}
 
     // Prevent accidental copy construction
     Timer(Timer const &) = delete;
 
+    // Reset the lap timer to start measuring a new iteration.
     void start()
     {
       assert(!_started);
       _tick = std::chrono::high_resolution_clock::now();
       _started = true;
     }
+
+    // Take the maximum of the elapsed lap time across all the MPI processes and store it in the boost::accumulator object.
     void stop()
     {
       assert(_started);
       std::chrono::duration<double> duration =
           std::chrono::high_resolution_clock::now() - _tick;
+      MPI_Allreduce(MPI_IN_PLACE, &duration, 1, MPI_DOUBLE, MPI_MAX, _mpi_comm);
       _statistics(duration.count());
       _started = false;
     }
 
     data_type const &get_statistics() const { return _statistics; }
 
+    // Following CppCon 2015: Bryce Adelstein-Lelbach “Benchmarking C++ Code" (https://www.youtube.com/watch?v=zWxSZcpeS8Q,
+    // https://github.com/CppCon/CppCon2015/tree/master/Presentations/Benchmarking%20C%2B%2B%20Code)
+    // given a relative margin of error e_m, a quantile z corresponding to the given confidence to be achieved,
+    // the (estimated) mean \nu and the (estimated) standard deviation \sigma, the number of required samples n can be computed as
+    // n = ((z \sigma)/(e_m/2 \mu))^2.
     int estimate_required_sample_size(double confidence,
                                       double relative_error_margin) const
     {
@@ -92,13 +102,20 @@ class TimeMonitor
   using container_type = std::map<std::string, Timer>;
   using entry_reference_type = container_type::reference;
   using entry_const_reference_type = container_type::const_reference;
+  const MPI_Comm _mpi_comm;
   container_type _data;
 
 public:
+  TimeMonitor(const MPI_Comm mpi_communicator = MPI_COMM_WORLD) : _mpi_comm(mpi_communicator) {}
+
+  // Provide access to timers by their names.
   Timer &getTimer(std::string name) { return _data[name]; }
 
+  // Return a non-modifyable reference to std::vector of all timers.
   container_type const &getAllTimer() const { return _data; }
 
+  // Estimate the number of samples required to achieve a given margin of error
+  // with a given confidence as the maximum of the estimates for all the timers stored.
   int estimate_required_sample_size(double confidence,
                                     double relative_error_margin) const
   {
@@ -112,13 +129,14 @@ public:
         });
   }
 
-  void summarize(MPI_Comm comm, std::ostream &os = std::cout)
+  // Print statistics about all the timersi stored using os.
+  void summarize(std::ostream &os = std::cout)
   {
     // FIXME Haven't tried very hard to format the output.
     int comm_size;
-    MPI_Comm_size(comm, &comm_size);
+    MPI_Comm_size(_mpi_comm, &comm_size);
     int comm_rank;
-    MPI_Comm_rank(comm, &comm_rank);
+    MPI_Comm_rank(_mpi_comm, &comm_rank);
     int n_timers = _data.size();
     if (comm_size == 1)
     {
@@ -146,7 +164,7 @@ public:
                    });
     // FIXME No guarantee that all processors have the same timers!
     MPI_Allgather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, all_entries.data(),
-                  n_timers, MPI_DOUBLE, comm);
+                  n_timers, MPI_DOUBLE, _mpi_comm);
     if (comm_rank == 0)
     {
       os << "========================================\n\n";
@@ -431,7 +449,7 @@ int run(std::vector<std::string> const &args, TimeMonitor &time_monitor)
   std::cout << "variance" << final_stddev << std::endl;
   std::cout << "sample_variance" << sample_stddev << std::endl;
 
-  time_monitor.summarize(MPI_COMM_WORLD);
+  time_monitor.summarize();
 }
 
 int main(int argc, char *argv[])
