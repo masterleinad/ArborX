@@ -433,9 +433,11 @@ int main(int argc, char *argv[])
     // NOTE Lame trick to get a valid default value
 #if defined(KOKKOS_ENABLE_CUDA)
     node = "cuda";
+    std::cout << "Found CUDA" << std::endl;
 #elif defined(KOKKOS_ENABLE_OPENMP)
     node = "openmp";
 #elif defined(KOKKOS_ENABLE_SERIAL)
+    std::cout << "Ddidn't find CUDA" << std::endl;
     node = "serial";
 #endif
     bpo::options_description desc("Parallel setting:");
@@ -457,6 +459,8 @@ int main(int argc, char *argv[])
     {
       std::cout << desc << '\n';
     }
+
+    std::cout << "Using node type: " << node << std::endl;
 
     if (node == "serial")
     {

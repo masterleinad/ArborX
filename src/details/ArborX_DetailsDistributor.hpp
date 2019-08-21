@@ -93,7 +93,12 @@ public:
   template <typename View>
   size_t createFromSends(View const &destination_ranks)
   {
+    std::cout << "start create" << std::endl;
+    auto start = std::chrono::system_clock::now();
+
     static_assert(View::rank == 1, "");
+    static_assert(std::is_same<typename View::non_const_value_type, int>::value,
+                  "");
     static_assert(std::is_same<typename View::non_const_value_type, int>::value,
                   "");
     int comm_rank;
@@ -107,16 +112,26 @@ public:
     sortAndDetermineBufferLayout(destination_ranks, _permute, _destinations,
                                  _dest_counts, _dest_offsets);
 
+    auto end = std::chrono::system_clock::now();
+    std::chrono::duration<double> elapsed_seconds = end-start;
+    std::cout << "elapsed time 0: " << elapsed_seconds.count() << "s\n";
+    start = std::chrono::system_clock::now();
     {
       std::vector<int> mask(comm_size);
       for (auto i : _destinations)
         mask[i] = 1;
+      std::cout << mask.size() << std::endl;
       MPI_Alltoall(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, mask.data(), 1, MPI_INT,
                    _comm);
       for (int i = 0; i < comm_size; ++i)
         if (mask[i] == 1)
           _sources.push_back(i);
     }
+    elapsed_seconds = end-start;
+    std::cout << "elapsed time 1: " << elapsed_seconds.count() << "s\n";
+
+    std::cout << "After all to all" << std::endl;
+    start = std::chrono::system_clock::now();
 
     int const indegrees = _sources.size();
     int const outdegrees = _destinations.size();
@@ -137,12 +152,24 @@ public:
     }
     if (!requests.empty())
       MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
+    start = std::chrono::system_clock::now();
+    end = std::chrono::system_clock::now();
+
+    elapsed_seconds = end-start;
+    std::cout << "elapsed time 2: " << elapsed_seconds.count() << "s\n";
+
+    std::cout << "After all to all 2" << std::endl;
+    start = std::chrono::system_clock::now();
 
     _src_offsets.resize(indegrees + 1);
     // exclusive scan
     _src_offsets[0] = 0;
     for (int i = 0; i < indegrees; ++i)
       _src_offsets[i + 1] = _src_offsets[i] + _src_counts[i];
+
+    end = std::chrono::system_clock::now();
+    elapsed_seconds = end-start;
+    std::cout << "elapsed time 3: " << elapsed_seconds.count() << "s\n";
 
     return _src_offsets.back();
   }
