@@ -33,7 +33,7 @@ struct TreeTypeTraits;
 template <typename... DeviceTypes>
 struct TreeTypeTraits<std::tuple<DeviceTypes...>>
 {
-  using type = boost::mpl::list<ArborX::BVH<DeviceTypes>...>;
+  using type = std::tuple<ArborX::BVH<DeviceTypes>...>;
 };
 
 using TreeTypes = typename TreeTypeTraits<ARBORX_DEVICE_TYPES>::type;
