@@ -3,6 +3,9 @@
 
 #include <Kokkos_Core.hpp>
 
+#include <boost/fusion/adapted/std_tuple.hpp>
+#include <boost/fusion/include/std_tuple.hpp>
+#include <boost/mpl/list.hpp>
 #include <tuple>
 
 using ARBORX_DEVICE_TYPES = std::tuple<@ARBORX_DEVICE_TYPES@>;

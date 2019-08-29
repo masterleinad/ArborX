@@ -40,7 +40,7 @@ pipeline {
                         dockerfile {
                             filename "Dockerfile"
                             dir "docker"
-                            additionalBuildArgs '--build-arg BASE=nvidia/cuda:9.2-devel-ubuntu18.04 --build-arg KOKKOS_OPTIONS="--with-serial --with-openmp --with-cuda --with-cuda-options=enable_lambda --arch=SNB,Volta70 --compiler=clang++ --cxxstandard=c++14"'
+                            additionalBuildArgs '--build-arg BASE=nvidia/cuda:9.2-devel-ubuntu18.04 --build-arg ADDITIONAL_LD_LIBRARY_PATHS=/usr/local/cuda-9.2/targets/x86_64-linux/lib/ --build-arg KOKKOS_OPTIONS="-DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_STANDARD=14 -DCMAKE_CXX_COMPILER=clang++ -DKokkos_ENABLE_SERIAL=ON -DKokkos_ENABLE_CUDA=ON -DKokkos_ENABLE_CUDA_LAMBDA=ON -DKokkos_ARCH=SNB,Volta70"'
                             args '-v /tmp/ccache:/tmp/ccache'
                             label 'NVIDIA_Tesla_V100-PCIE-32GB && nvidia-docker'
                         }
