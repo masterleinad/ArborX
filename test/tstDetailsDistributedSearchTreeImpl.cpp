@@ -23,6 +23,12 @@
 
 namespace tt = boost::test_tools;
 
+#include <boost/mpl/list.hpp>
+BOOST_MPL_ASSERT(
+    (boost::mpl::is_sequence<boost::mpl::list<int, long, unsigned char>>));
+BOOST_MPL_ASSERT_NOT((boost::mpl::is_sequence<int>));
+// BOOST_MPL_ASSERT((boost::mpl::is_sequence<ARBORX_DEVICE_TYPES>));
+
 BOOST_AUTO_TEST_CASE_TEMPLATE(sort_results, DeviceType, ARBORX_DEVICE_TYPES)
 {
   std::vector<int> ids_ = {4, 3, 2, 1, 4, 3, 2, 4, 3, 4};

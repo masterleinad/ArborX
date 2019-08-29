@@ -15,7 +15,7 @@
 #include <ArborX_Exception.hpp>
 
 #include <Kokkos_Core.hpp>
-
+//#include "BoostTest_CUDA_clang_workarounds.hpp"
 #include <boost/test/unit_test.hpp>
 
 #include <algorithm>

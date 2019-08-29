@@ -1,7 +1,9 @@
-ARG BASE=nvidia/cuda:10.1-devel
+ARG BASE=nvidia/cuda:9.2-devel-ubuntu18.04
 FROM $BASE
 
-ARG NPROCS=4
+ENV LD_LIBRARY_PATH=/usr/local/cuda-9.2/targets/x86_64-linux/lib/:$LD_LIBRARY_PATH 
+
+ARG NPROCS=8
 
 RUN apt-get update && apt-get install -y \
         build-essential \
@@ -109,7 +111,7 @@ RUN SCRATCH_DIR=/scratch && mkdir -p ${SCRATCH_DIR} && cd ${SCRATCH_DIR} && \
 
 # Install Kokkos
 ARG KOKKOS_VERSION=d5c36238dc6a2ea049fa96fbc5bc4c53b2c039f5
-ARG KOKKOS_OPTIONS="-DCMAKE_CXX_STANDARD=14 -DKokkos_ENABLE_SERIAL=ON -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_DEPRECATED_CODE=OFF -DKokkos_ENABLE_CUDA=ON -DKokkos_ENABLE_CUDA_LAMBDA=ON"
+ARG KOKKOS_OPTIONS="-DCMAKE_CXX_EXTENSIONS=OFF -DCMAKE_CXX_STANDARD=14 -DCMAKE_CXX_COMPILER=clang++ -DKokkos_ENABLE_SERIAL=ON -DKokkos_ENABLE_CUDA=ON -DKokkos_ENABLE_CUDA_LAMBDA=ON -DKokkos_ARCH=SNB,Volta70"
 ENV KOKKOS_DIR=/opt/kokkos
 RUN KOKKOS_URL=https://github.com/kokkos/kokkos/archive/${KOKKOS_VERSION}.tar.gz && \
     KOKKOS_ARCHIVE=kokkos-${KOKKOS_HASH}.tar.gz && \
