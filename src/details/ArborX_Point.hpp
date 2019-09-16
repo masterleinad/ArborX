@@ -20,30 +20,42 @@ namespace ArborX
 {
 class Point
 {
+private:
+  struct Data
+  {
+    double coords[3];
+  } _data;
+
 public:
   KOKKOS_INLINE_FUNCTION
   constexpr Point()
-      : _coords{}
+      : _data{}
   {
   }
 
   KOKKOS_INLINE_FUNCTION
-  constexpr Point(const std::array<double, 3> &coords)
-      : _coords{coords}
+  constexpr Point(Data data)
+      : _data{data}
   {
   }
 
   KOKKOS_INLINE_FUNCTION
-  double &operator[](unsigned int i) { return _coords[i]; }
+  constexpr double &operator[](unsigned int i) { return _data.coords[i]; }
 
   KOKKOS_INLINE_FUNCTION
-  constexpr double const &operator[](unsigned int i) const
+  constexpr const double &operator[](unsigned int i) const { return _data.coords[i]; }
+
+  KOKKOS_INLINE_FUNCTION
+  double volatile &operator[](unsigned int i) volatile
   {
-    return _coords[i];
+    return _data.coords[i];
   }
 
-private:
-  std::array<double, 3> _coords;
+  KOKKOS_INLINE_FUNCTION
+  double const volatile &operator[](unsigned int i) const volatile
+  {
+    return _data.coords[i];
+  }
 };
 } // namespace ArborX
 
