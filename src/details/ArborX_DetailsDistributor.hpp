@@ -185,6 +185,15 @@ public:
       std::size_t const total_message_size =
           _src_counts[i] * num_packets * sizeof(ValueType);
       int const n_chunks = (total_message_size + chunk_size - 1) / chunk_size;
+    if (_sources[i] == comm_rank)
+{
+auto it = std::find(_destinations.begin(), _destinations.end(), comm_rank);
+ARBORX_ASSERT(it!=_destinations.end());
+std::memcpy(dest_buffer.data() +
+                                           _dest_offsets[*it] * num_packets, src_buffer.data() +
+                                           _src_offsets[i] * num_packets, total_message_size);
+}
+else{
       for (int chunk = 0; chunk < n_chunks; ++chunk)
       {
         requests.emplace_back();
@@ -197,11 +206,13 @@ public:
                   &requests.back());
       }
     }
+}
     for (int i = 0; i < outdegrees; ++i)
     {
       std::size_t const total_message_size =
           _dest_counts[i] * num_packets * sizeof(ValueType);
       int const n_chunks = (total_message_size + chunk_size - 1) / chunk_size;
+    if (_destinations[i] != comm_rank)
       for (int chunk = 0; chunk < n_chunks; ++chunk)
       {
         requests.emplace_back();
