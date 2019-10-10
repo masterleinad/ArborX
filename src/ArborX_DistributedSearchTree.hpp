@@ -123,24 +123,20 @@ DistributedSearchTree<DeviceType>::DistributedSearchTree(
       comm_size);
   // FIXME when we move to MPI with CUDA-aware support, we will not need to
   // copy from the device to the host
-  auto boxes_host = Kokkos::create_mirror_view(boxes);
-  boxes_host(comm_rank) = _bottom_tree.bounds();
+  boxes(comm_rank) = _bottom_tree.bounds();
   MPI_Allgather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL,
-                static_cast<void *>(boxes_host.data()), sizeof(Box), MPI_BYTE,
+                static_cast<void *>(boxes.data()), sizeof(Box), MPI_BYTE,
                 _comm);
-  Kokkos::deep_copy(boxes, boxes_host);
 
   _top_tree = BVH<DeviceType>(boxes);
 
   _bottom_tree_sizes = Kokkos::View<size_type *, DeviceType>(
       Kokkos::ViewAllocateWithoutInitializing("leave_count_in_local_trees"),
       comm_size);
-  auto bottom_tree_sizes_host = Kokkos::create_mirror_view(_bottom_tree_sizes);
-  bottom_tree_sizes_host(comm_rank) = _bottom_tree.size();
+  _bottom_tree_sizes(comm_rank) = _bottom_tree.size();
   MPI_Allgather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL,
-                static_cast<void *>(bottom_tree_sizes_host.data()),
+                static_cast<void *>(_bottom_tree_sizes.data()),
                 sizeof(size_type), MPI_BYTE, _comm);
-  Kokkos::deep_copy(_bottom_tree_sizes, bottom_tree_sizes_host);
 
   _top_tree_size = accumulate(_bottom_tree_sizes, 0);
 }
