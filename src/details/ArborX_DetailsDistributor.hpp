@@ -135,22 +135,38 @@ public:
     ARBORX_ASSERT(num_packets * _dest_offsets.back() == exports.size());
 
     using ValueType = typename View::value_type;
+    using ExecutionSpace = typename View::execution_space;
     static_assert(View::rank == 1, "");
     static_assert(
         Kokkos::Impl::MemorySpaceAccess<typename View::memory_space,
                                         Kokkos::HostSpace>::accessible,
         "");
 
-    std::vector<ValueType> dest_buffer(exports.size());
+
+    Kokkos::View<typename View::traits::non_const_value_type*, 
+     	    typename View::traits::device_type> dest_buffer(
+      Kokkos::ViewAllocateWithoutInitializing("destination_buffer"),
+      exports.size());
     std::vector<ValueType> src_buffer(imports.size());
 
-    // TODO
-    // * apply permutation on the device in a parallel for
-    // * switch to MPI with CUDA support (do not copy to host)
-    for (int i = 0; i < _dest_offsets.back(); ++i)
-      std::copy(&exports[num_packets * i],
-                &exports[num_packets * i] + num_packets,
-                &dest_buffer[num_packets * _permute[i]]);
+  std::cout << exports.size() << std::endl;
+
+    for (unsigned int k=0; k<_dest_offsets.back()*num_packets; ++k)
+    {
+	     int const i = k /num_packets;
+        	     int const j = k % num_packets;
+		     int const permuted_index = _permute[i];
+        dest_buffer(num_packets * _permute[i] +j) = exports[num_packets * i+j];
+    }
+
+    Kokkos::parallel_for(
+      "copy_detinations_permuted", 
+      Kokkos::RangePolicy<ExecutionSpace>(0, _dest_offsets.back()*num_packets),
+      KOKKOS_LAMBDA (int const k) {
+        int const i = k /num_packets;
+        int const j = k % num_packets;
+        dest_buffer(num_packets * _permute[i] +j) = exports[num_packets * i+j];
+      });
 
     int comm_rank;
     MPI_Comm_rank(_comm, &comm_rank);
