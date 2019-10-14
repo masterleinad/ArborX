@@ -27,6 +27,8 @@
 
 #include <mpi.h>
 
+#define ARBORX_CUDA_AWARE_MPI
+
 namespace ArborX
 {
 
