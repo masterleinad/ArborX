@@ -31,8 +31,8 @@ namespace Details
 // but also returns the sorted unique elements in that array with the
 // corresponding element counts and displacement (offsets)
 template <typename InputView, typename OutputView>
-static void sortAndDetermineBufferLayout(InputView ranks,
-                                         OutputView permutation_indices,
+static void sortAndDetermineBufferLayout(InputView const ranks,
+                                         OutputView const permutation_indices,
                                          std::vector<int> &unique_ranks,
                                          std::vector<int> &counts,
                                          std::vector<int> &offsets)
@@ -137,27 +137,15 @@ public:
     using ValueType = typename View::value_type;
     using ExecutionSpace = typename View::execution_space;
     static_assert(View::rank == 1, "");
-    static_assert(
-        Kokkos::Impl::MemorySpaceAccess<typename View::memory_space,
-                                        Kokkos::HostSpace>::accessible,
-        "");
 
-
-    Kokkos::View<typename View::traits::non_const_value_type*, 
+    Kokkos::View<ValueType*, 
      	    typename View::traits::device_type> dest_buffer(
       Kokkos::ViewAllocateWithoutInitializing("destination_buffer"),
       exports.size());
-    std::vector<ValueType> src_buffer(imports.size());
+    Kokkos::View<ValueType*, typename View::traits::device_type> src_buffer(Kokkos::ViewAllocateWithoutInitializing("source_buffer"),imports.size());
 
-  std::cout << exports.size() << std::endl;
-
-    for (unsigned int k=0; k<_dest_offsets.back()*num_packets; ++k)
-    {
-	     int const i = k /num_packets;
-        	     int const j = k % num_packets;
-		     int const permuted_index = _permute[i];
-        dest_buffer(num_packets * _permute[i] +j) = exports[num_packets * i+j];
-    }
+    Kokkos::View<int*, typename View::traits::device_type> permute_mirror(Kokkos::ViewAllocateWithoutInitializing("permute_device_mirror"), _permute.size());
+    Kokkos::deep_copy(permute_mirror, _permute);
 
     Kokkos::parallel_for(
       "copy_detinations_permuted", 
@@ -165,7 +153,7 @@ public:
       KOKKOS_LAMBDA (int const k) {
         int const i = k /num_packets;
         int const j = k % num_packets;
-        dest_buffer(num_packets * _permute[i] +j) = exports[num_packets * i+j];
+        dest_buffer(num_packets * permute_mirror[i] +j) = exports[num_packets * i+j];
       });
 
     int comm_rank;
@@ -202,7 +190,23 @@ public:
         auto const position = it - _sources.begin();
         auto const receive_buffer_ptr =
             src_buffer.data() + _src_offsets[position] * num_packets;
-        std::memcpy(receive_buffer_ptr, send_buffer_ptr, message_size);
+	if (std::is_same<typename View::traits::memory_space, Kokkos::CudaSpace>::value)
+	{ 
+        const auto error_code = cudaMemcpy(receive_buffer_ptr, send_buffer_ptr, message_size, cudaMemcpyDeviceToDevice);
+	if (error_code!= cudaSuccess)
+	{
+		std::cout << cudaGetErrorString(error_code) << std::endl;
+		abort();
+	}
+	}
+	else if (std::is_same<typename View::traits::memory_space, Kokkos::HostSpace>::value)
+	{
+		     std::memcpy(receive_buffer_ptr, send_buffer_ptr, message_size);	
+	}
+	else
+	{
+	ARBORX_ASSERT(false);
+	}
       }
       else
       {
@@ -214,7 +218,7 @@ public:
     if (!requests.empty())
       MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
 
-    std::copy(src_buffer.begin(), src_buffer.end(), imports.data());
+    const auto error_code = cudaMemcpy(imports.data(), src_buffer.data(), src_buffer.size()*sizeof(ValueType), cudaMemcpyDeviceToDevice);
   }
   size_t getTotalReceiveLength() const { return _src_offsets.back(); }
   size_t getTotalSendLength() const { return _dest_offsets.back(); }
