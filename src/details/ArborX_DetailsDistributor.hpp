@@ -138,23 +138,27 @@ public:
     using ExecutionSpace = typename View::execution_space;
     static_assert(View::rank == 1, "");
 
-    Kokkos::View<ValueType*, 
-     	    typename View::traits::device_type> dest_buffer(
-      Kokkos::ViewAllocateWithoutInitializing("destination_buffer"),
-      exports.size());
-    Kokkos::View<ValueType*, typename View::traits::device_type> src_buffer(Kokkos::ViewAllocateWithoutInitializing("source_buffer"),imports.size());
+    Kokkos::View<ValueType *, typename View::traits::device_type> dest_buffer(
+        Kokkos::ViewAllocateWithoutInitializing("destination_buffer"),
+        exports.size());
+    Kokkos::View<ValueType *, typename View::traits::device_type> src_buffer(
+        Kokkos::ViewAllocateWithoutInitializing("source_buffer"),
+        imports.size());
 
-    Kokkos::View<int*, typename View::traits::device_type> permute_mirror(Kokkos::ViewAllocateWithoutInitializing("permute_device_mirror"), _permute.size());
+    Kokkos::View<int *, typename View::traits::device_type> permute_mirror(
+        Kokkos::ViewAllocateWithoutInitializing("permute_device_mirror"),
+        _permute.size());
     Kokkos::deep_copy(permute_mirror, _permute);
 
-    Kokkos::parallel_for(
-      "copy_detinations_permuted", 
-      Kokkos::RangePolicy<ExecutionSpace>(0, _dest_offsets.back()*num_packets),
-      KOKKOS_LAMBDA (int const k) {
-        int const i = k /num_packets;
-        int const j = k % num_packets;
-        dest_buffer(num_packets * permute_mirror[i] +j) = exports[num_packets * i+j];
-      });
+    Kokkos::parallel_for("copy_detinations_permuted",
+                         Kokkos::RangePolicy<ExecutionSpace>(
+                             0, _dest_offsets.back() * num_packets),
+                         KOKKOS_LAMBDA(int const k) {
+                           int const i = k / num_packets;
+                           int const j = k % num_packets;
+                           dest_buffer(num_packets * permute_mirror[i] + j) =
+                               exports[num_packets * i + j];
+                         });
 
     int comm_rank;
     MPI_Comm_rank(_comm, &comm_rank);
@@ -190,23 +194,27 @@ public:
         auto const position = it - _sources.begin();
         auto const receive_buffer_ptr =
             src_buffer.data() + _src_offsets[position] * num_packets;
-	if (std::is_same<typename View::traits::memory_space, Kokkos::CudaSpace>::value)
-	{ 
-        const auto error_code = cudaMemcpy(receive_buffer_ptr, send_buffer_ptr, message_size, cudaMemcpyDeviceToDevice);
-	if (error_code!= cudaSuccess)
-	{
-		std::cout << cudaGetErrorString(error_code) << std::endl;
-		abort();
-	}
-	}
-	else if (std::is_same<typename View::traits::memory_space, Kokkos::HostSpace>::value)
-	{
-		     std::memcpy(receive_buffer_ptr, send_buffer_ptr, message_size);	
-	}
-	else
-	{
-	ARBORX_ASSERT(false);
-	}
+        if (std::is_same<typename View::traits::memory_space,
+                         Kokkos::CudaSpace>::value)
+        {
+          const auto error_code =
+              cudaMemcpy(receive_buffer_ptr, send_buffer_ptr, message_size,
+                         cudaMemcpyDeviceToDevice);
+          if (error_code != cudaSuccess)
+          {
+            std::cout << cudaGetErrorString(error_code) << std::endl;
+            abort();
+          }
+        }
+        else if (std::is_same<typename View::traits::memory_space,
+                              Kokkos::HostSpace>::value)
+        {
+          std::memcpy(receive_buffer_ptr, send_buffer_ptr, message_size);
+        }
+        else
+        {
+          ARBORX_ASSERT(false);
+        }
       }
       else
       {
@@ -218,7 +226,9 @@ public:
     if (!requests.empty())
       MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
 
-    const auto error_code = cudaMemcpy(imports.data(), src_buffer.data(), src_buffer.size()*sizeof(ValueType), cudaMemcpyDeviceToDevice);
+    const auto error_code = cudaMemcpy(imports.data(), src_buffer.data(),
+                                       src_buffer.size() * sizeof(ValueType),
+                                       cudaMemcpyDeviceToDevice);
   }
   size_t getTotalReceiveLength() const { return _src_offsets.back(); }
   size_t getTotalSendLength() const { return _dest_offsets.back(); }
