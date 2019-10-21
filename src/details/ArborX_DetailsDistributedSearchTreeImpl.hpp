@@ -517,7 +517,8 @@ void DistributedSearchTreeImpl<DeviceType>::forwardQueries(
   Kokkos::parallel_for(ARBORX_MARK_REGION("forward_queries_fill_buffer"),
                        Kokkos::RangePolicy<ExecutionSpace>(0, n_queries),
                        KOKKOS_LAMBDA(int q) {
-		       std::fill(exports.data()+offset(q), exports.data()+offset(q+1), queries(q));
+                         std::fill(exports.data() + offset(q),
+                                   exports.data() + offset(q + 1), queries(q));
                        });
 
   Kokkos::View<int *, DeviceType> export_ranks("export_ranks", n_exports);
@@ -530,7 +531,8 @@ void DistributedSearchTreeImpl<DeviceType>::forwardQueries(
   Kokkos::parallel_for(ARBORX_MARK_REGION("forward_queries_fill_ids"),
                        Kokkos::RangePolicy<ExecutionSpace>(0, n_queries),
                        KOKKOS_LAMBDA(int q) {
-                       std::fill(export_ids.data()+offset(q), export_ids.data()+offset(q+1), q);
+                         std::fill(export_ids.data() + offset(q),
+                                   export_ids.data() + offset(q + 1), q);
                        });
   Kokkos::View<int *, DeviceType> import_ids("import_ids", n_imports);
   sendAcrossNetwork(distributor, export_ids, import_ids);
