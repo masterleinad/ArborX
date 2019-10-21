@@ -70,7 +70,7 @@ if(ARBORX_ENABLE_MPI)
   target_link_libraries(ArborX_DistributedSearchTree.exe PRIVATE ArborX Boost::unit_test_framework)
   target_compile_definitions(ArborX_DistributedSearchTree.exe PRIVATE BOOST_TEST_DYN_LINK ARBORX_MPI_UNIT_TEST)
   target_include_directories(ArborX_DistributedSearchTree.exe PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-  add_test(NAME ArborX_DistributedSearchTree COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_MAX_NUMPROCS} ${MPIEXEC_PREFLAGS} ./ArborX_DistributedSearchTree.exe ${MPIEXEC_POSTFLAGS})
+  add_test(NAME ArborX_DistributedSearchTree COMMAND ${MPIEXEC_EXECUTABLE} --allow-run-as-root ${MPIEXEC_NUMPROC_FLAG} ${MPIEXEC_MAX_NUMPROCS} ${MPIEXEC_PREFLAGS} ./ArborX_DistributedSearchTree.exe ${MPIEXEC_POSTFLAGS})
 
   add_executable(ArborX_DetailsDistributedSearchTreeImpl.exe tstDetailsDistributedSearchTreeImpl.cpp utf_main.cpp)
   target_link_libraries(ArborX_DetailsDistributedSearchTreeImpl.exe PRIVATE ArborX Boost::unit_test_framework)
