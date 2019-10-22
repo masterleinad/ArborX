@@ -15,12 +15,13 @@
 
 #include <Kokkos_Core.hpp> // FIXME
 
-#include <algorithm> // max_element
 #include <numeric>   // iota
 #include <sstream>
 #include <vector>
 
 #include <mpi.h>
+
+#include <details/ArborX_DetailsUtils.hpp>
 
 namespace ArborX
 {
@@ -61,12 +62,11 @@ static void sortAndDetermineBufferLayout(InputView const ranks,
 
   while (true)
   {
-    // TODO consider replacing with parallel reduce
-    int const largest_rank =
-        *std::max_element(ranks_duplicate.data(), ranks_duplicate.data() + n);
+    int const largest_rank = ArborX::max(ranks_duplicate);
     if (largest_rank == -1)
       break;
     unique_ranks.push_back(largest_rank);
+
     counts.push_back(0);
     // TODO consider replacing with parallel scan
     for (int i = 0; i < n; ++i)
@@ -79,6 +79,23 @@ static void sortAndDetermineBufferLayout(InputView const ranks,
       }
     }
     offsets.push_back(offsets.back() + counts.back());
+
+/*  Kokkos::parallel_scan(
+      "set_permutation_indices", Kokkos::RangePolicy<Kokkos::HostSpace>(0, n),
+      KOKKOS_LAMBDA(int const i, int &update, bool const final)
+    {
+      if (ranks_duplicate(i) == largest_rank)
+      {
+        update += 1;
+        if (final)
+        {
+          ranks_duplicate(i) = -1;
+          permutation_indices(i) = offsets.back() + update;
+        }
+        ++counts.back();
+      }
+    });
+    offsets.push_back(offsets.back() + counts.back());*/
   }
 }
 

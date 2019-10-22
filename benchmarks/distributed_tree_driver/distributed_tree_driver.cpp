@@ -477,7 +477,12 @@ int main(int argc, char *argv[])
     else if (node == "cuda")
     {
 #ifdef KOKKOS_ENABLE_CUDA
-      using Node = Kokkos::Cuda;
+//      using Node = Kokkos::Cuda;
+      using Node = Kokkos::Device<Kokkos::Cuda, Kokkos::CudaSpace>;
+      //Kokkos::ViewTraits<int *, Kokkos::CudaSpace::execution_space>::memory_space dumm1 = 1;
+      //Kokkos::ViewTraits<int *, Kokkos::Device<Kokkos::CudaSpace::execution_space, Kokkos::CudaSpace::memory_space>>::memory_space dumm2 = 1;
+      //Kokkos::View<int *, Kokkos::Device<Kokkos::CudaSpace::execution_space, Kokkos::CudaSpace::memory_space>> bla("bla", 10);
+      //Kokkos::View<int *, Kokkos::CudaSpace::execution_space> blabla(bla);
       main_<Node>(pass_further, comm);
 #else
       throw std::runtime_error("CUDA node type is disabled");

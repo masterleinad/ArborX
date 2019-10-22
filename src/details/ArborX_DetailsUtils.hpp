@@ -25,12 +25,12 @@ namespace Details
 {
 // NOTE: This functor is used in exclusivePrefixSum( src, dst ).  We were
 // getting a compile error on CUDA when using a KOKKOS_LAMBDA.
-template <typename T, typename DeviceType>
+template <typename T, typename MemorySpace>
 class ExclusiveScanFunctor
 {
 public:
-  ExclusiveScanFunctor(Kokkos::View<T *, DeviceType> const &in,
-                       Kokkos::View<T *, DeviceType> const &out)
+  ExclusiveScanFunctor(Kokkos::View<T *, MemorySpace> const &in,
+                       Kokkos::View<T *, MemorySpace> const &out)
       : _in(in)
       , _out(out)
   {
@@ -45,8 +45,8 @@ public:
   }
 
 private:
-  Kokkos::View<T *, DeviceType> _in;
-  Kokkos::View<T *, DeviceType> _out;
+  Kokkos::View<T *, MemorySpace> _in;
+  Kokkos::View<T *, MemorySpace> _out;
 };
 } // namespace Details
 
@@ -80,12 +80,13 @@ void exclusivePrefixSum(Kokkos::View<ST, SP...> const &src,
   using ExecutionSpace =
       typename Kokkos::ViewTraits<DT, DP...>::execution_space;
   using ValueType = typename Kokkos::ViewTraits<DT, DP...>::value_type;
+  using MemorySpace = typename Kokkos::ViewTraits<DT, DP...>::memory_space;
 
   auto const n = src.extent(0);
   ARBORX_ASSERT(n == dst.extent(0));
   Kokkos::parallel_scan(
       "exclusive_scan", Kokkos::RangePolicy<ExecutionSpace>(0, n),
-      Details::ExclusiveScanFunctor<ValueType, ExecutionSpace>(src, dst));
+      Details::ExclusiveScanFunctor<ValueType, MemorySpace>(src, dst));
 }
 
 /** \brief In-place exclusive scan.
