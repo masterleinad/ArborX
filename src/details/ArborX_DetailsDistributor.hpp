@@ -52,7 +52,7 @@ static void sortAndDetermineBufferLayout(InputView const ranks,
 
   offsets.push_back(0);
 
-  auto const n = ranks.extent_int(0);
+  int const n = ranks.extent_int(0);
   if (n == 0)
     return;
 
@@ -60,42 +60,34 @@ static void sortAndDetermineBufferLayout(InputView const ranks,
       Kokkos::ViewAllocateWithoutInitializing(ranks.label()), ranks.size());
   Kokkos::deep_copy(ranks_duplicate, ranks);
 
-  while (true)
-  {
-    int const largest_rank = ArborX::max(ranks_duplicate);
-    if (largest_rank == -1)
-      break;
-    unique_ranks.push_back(largest_rank);
+using HostExecutionSpace = decltype(ranks_duplicate)::execution_space;
 
-    counts.push_back(0);
-    // TODO consider replacing with parallel scan
-    for (int i = 0; i < n; ++i)
-    {
-      if (ranks_duplicate(i) == largest_rank)
-      {
-        ranks_duplicate(i) = -1;
-        permutation_indices(i) = offsets.back() + counts.back();
-        ++counts.back();
+int offset =0;
+    while (true) {
+    int const next_biggest_rank = ArborX::max(ranks_duplicate);
+    if (next_biggest_rank == -1) break;
+    unique_ranks.push_back(next_biggest_rank);
+    offsets.push_back(offset);
+    Kokkos::View<int> total("total");
+
+    Kokkos::parallel_scan("process biggest rank items", Kokkos::RangePolicy<HostExecutionSpace>(0,n),
+    KOKKOS_LAMBDA(int i, int& index, const bool last_pass) {
+      if (last_pass && (ranks_duplicate(i) == next_biggest_rank)) {
+        permutation_indices(i) = index + offset;
       }
-    }
-    offsets.push_back(offsets.back() + counts.back());
-
-/*  Kokkos::parallel_scan(
-      "set_permutation_indices", Kokkos::RangePolicy<Kokkos::HostSpace>(0, n),
-      KOKKOS_LAMBDA(int const i, int &update, bool const final)
-    {
-      if (ranks_duplicate(i) == largest_rank)
-      {
-        update += 1;
-        if (final)
-        {
-          ranks_duplicate(i) = -1;
-          permutation_indices(i) = offsets.back() + update;
+      if (ranks_duplicate(i) == next_biggest_rank) ++index;
+      if (last_pass) {
+        if (i + 1 == ranks_duplicate.extent(0)) {
+          total() = index;
         }
-        ++counts.back();
+        if (ranks_duplicate(i) == next_biggest_rank) {
+          ranks_duplicate(i) = -1;
+        }
       }
     });
-    offsets.push_back(offsets.back() + counts.back());*/
+    auto count = total();
+    counts.push_back(count);
+    offset += count;
   }
 }
 
