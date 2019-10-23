@@ -511,7 +511,9 @@ void DistributedSearchTreeImpl<DeviceType>::forwardQueries(
 
   int const n_queries = queries.extent(0);
   int const n_exports = lastElement(offset);
+  MPI_Barrier(MPI_COMM_WORLD);
   int const n_imports = distributor.createFromSends(indices);
+  MPI_Barrier(MPI_COMM_WORLD);
 
   Kokkos::View<Query *, DeviceType> exports(queries.label(), n_exports);
   Kokkos::parallel_for(ARBORX_MARK_REGION("forward_queries_fill_buffer"),
@@ -570,7 +572,9 @@ void DistributedSearchTreeImpl<DeviceType>::communicateResultsBack(
                        });
 
   Distributor distributor(comm);
+  MPI_Barrier(MPI_COMM_WORLD);
   int const n_imports = distributor.createFromSends(export_ranks);
+  MPI_Barrier(MPI_COMM_WORLD);
 
   // export_ranks already has adequate size since it was used as a buffer to
   // make the new communication plan.
