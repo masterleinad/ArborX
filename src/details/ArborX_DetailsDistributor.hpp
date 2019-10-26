@@ -31,18 +31,14 @@ namespace Details
 {
 
 // NOTE: We were getting a compile error on CUDA when using a KOKKOS_LAMBDA.
-template <typename DeviceType, typename OutputView>
+template <typename DeviceType>
 class BiggestRankItemsFunctor
 {
-  static_assert(
-      std::is_same<typename DeviceType::memory_space, Kokkos::HostSpace>::value,
-      "");
-
 public:
   BiggestRankItemsFunctor(
       const Kokkos::View<int *, DeviceType> &ranks_duplicate,
-      const int largest_rank, const OutputView &permutation_indices,
-      const int offset, const Kokkos::View<int, DeviceType> &total)
+      const Kokkos::View<int, DeviceType> &largest_rank, const Kokkos::View<int*, DeviceType> &permutation_indices,
+      const Kokkos::View<int, DeviceType> &offset, const Kokkos::View<int, DeviceType> &total)
       : _ranks_duplicate(ranks_duplicate)
       , _largest_rank(largest_rank)
       , _permutation_indices(permutation_indices)
@@ -53,30 +49,45 @@ public:
   KOKKOS_INLINE_FUNCTION void operator()(int i, int &update,
                                          bool last_pass) const
   {
-    if (last_pass && (_ranks_duplicate(i) == _largest_rank))
+	  printf("Here1: %d\n", i);
+     const bool is_largest_rank = true;//(_ranks_duplicate(i) == _largest_rank());	  
+//     __syncthreads();
+               printf("Here13: %d\n", i);
+    if (last_pass && is_largest_rank)
     {
-      _permutation_indices(i) = update + _offset;
+	                  printf("Here5: %d\n", i);
+      _permutation_indices(i) = update + _offset();
+                    printf("Here6: %d\n", i);
     }
-    if (_ranks_duplicate(i) == _largest_rank)
+              printf("Here2: %d\n", i);
+    if (is_largest_rank)
+    {
+	                  printf("Here7: %d\n", i);
       ++update;
+                    printf("Here8: %d\n", i);
+    }
+              printf("Here3: %d\n", i);
     if (last_pass)
     {
+	                  printf("Here9: %d\n", i);
       if (i + 1 == _ranks_duplicate.extent(0))
       {
         _total() = update;
       }
-      if (_ranks_duplicate(i) == _largest_rank)
+      if (is_largest_rank)
       {
         _ranks_duplicate(i) = -1;
       }
+                    printf("Here10: %d\n", i);
     }
+              printf("Here4: %d\n", i);
   }
 
 private:
   const Kokkos::View<int *, DeviceType> &_ranks_duplicate;
-  const int _largest_rank;
-  const OutputView &_permutation_indices;
-  const int _offset;
+  const Kokkos::View<int, DeviceType> &_largest_rank;
+  const Kokkos::View<int*, DeviceType> &_permutation_indices;
+  const Kokkos::View<int, DeviceType> &_offset;
   const Kokkos::View<int, DeviceType> &_total;
 };
 
@@ -93,7 +104,7 @@ static void sortAndDetermineBufferLayout(InputView ranks,
   ARBORX_ASSERT(unique_ranks.empty());
   ARBORX_ASSERT(offsets.empty());
   ARBORX_ASSERT(counts.empty());
-  ARBORX_ASSERT(permutation_indices.extent(0) == ranks.extent(0));
+  ARBORX_ASSERT(permutation_indices.extent_int(0) == ranks.extent_int(0));
   static_assert(
       std::is_same<typename InputView::non_const_value_type, int>::value, "");
   static_assert(std::is_same<typename OutputView::value_type, int>::value, "");
@@ -107,38 +118,50 @@ static void sortAndDetermineBufferLayout(InputView ranks,
   auto const n = ranks.extent_int(0);
   if (n == 0)
     return;
-  using ST = decltype(n);
-  using DeviceType = typename OutputView::traits::device_type;
-  using ExecutionSpace = typename OutputView::traits::execution_space;
 
-  Kokkos::View<int *, DeviceType> ranks_duplicate(
+  std::cout << n << std::endl;
+
+  using ST = decltype(n);
+  using DeviceType = typename InputView::traits::memory_space;
+//  using DeviceType = typename InputView::traits::device_type;
+  using ExecutionSpace = typename InputView::traits::execution_space;
+
+  Kokkos::View<int *, DeviceType> device_ranks_duplicate(
       Kokkos::ViewAllocateWithoutInitializing(ranks.label()), ranks.size());
-  Kokkos::deep_copy(ranks_duplicate, ranks);
+  Kokkos::deep_copy(device_ranks_duplicate, ranks);
+
+  Kokkos::View<int*, DeviceType> device_permutation_indices(Kokkos::ViewAllocateWithoutInitializing(permutation_indices.label()), permutation_indices.size());
 
   // this implements a "sort" which is O(N * R) where (R) is
   // the total number of unique destination ranks.
   // it performs better than other algorithms in
   // the case when (R) is small, but results may vary
-  int offset = 0;
+  Kokkos::View<int, DeviceType> device_offset("offset");
+  Kokkos::View<int, DeviceType> device_total("total");
+  Kokkos::View<int, Kokkos::HostSpace> largest_rank("largest_rank");
   while (true)
   {
-    int const largest_rank = ArborX::max(ranks_duplicate);
-    if (largest_rank == -1)
+	  largest_rank() = ArborX::max(device_ranks_duplicate);
+       	  if (largest_rank() == -1)
       break;
-    unique_ranks.push_back(largest_rank);
-    Kokkos::View<int, DeviceType> total("total");
+	      unique_ranks.push_back(largest_rank());
+    auto device_largest_rank = Kokkos::create_mirror_view_and_copy(ExecutionSpace(), largest_rank);
     Kokkos::parallel_scan(
         "process biggest rank items", Kokkos::RangePolicy<ExecutionSpace>(0, n),
-        BiggestRankItemsFunctor<DeviceType, OutputView>{
-            ranks_duplicate, largest_rank, permutation_indices, offset, total});
-    // cudaDeviceSynchronize();
-    auto host_total =
-        Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), total);
-    auto count = host_total();
+        BiggestRankItemsFunctor<DeviceType>{
+            device_ranks_duplicate, device_largest_rank, device_permutation_indices, device_offset, device_total});
+    cudaDeviceSynchronize();
+    auto total =
+        Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), device_total);
+    auto count = total();
     counts.push_back(count);
-    offset += count;
-    offsets.push_back(offset);
+    auto offset =
+        Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), device_offset);
+    offset() += count;
+    offsets.push_back(offset());
   }
+  Kokkos::deep_copy(permutation_indices, device_permutation_indices);
+  std::cout << "done" << std::endl;
 }
 
 class Distributor
