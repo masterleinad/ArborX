@@ -113,10 +113,6 @@ static void sortAndDetermineBufferLayout(InputView ranks,
       Kokkos::ViewAllocateWithoutInitializing(ranks.label()), ranks.size());
   Kokkos::deep_copy(ranks_duplicate, ranks);
 
-  for (unsigned int i = 0; i < ranks_duplicate.size(); ++i)
-      std::cout << ranks_duplicate(i) << " ";
-    std::cout << std::endl;
-
   // this implements a "sort" which is O(N * R) where (R) is
   // the total number of unique destination ranks.
   // it performs better than other algorithms in
@@ -128,32 +124,18 @@ static void sortAndDetermineBufferLayout(InputView ranks,
     if (largest_rank == -1)
       break;
     unique_ranks.push_back(largest_rank);
-    counts.push_back(0);
-    offsets.push_back(offset);
     Kokkos::View<int, DeviceType> total("total");
     Kokkos::parallel_scan(
         "process biggest rank items", Kokkos::RangePolicy<ExecutionSpace>(0, n),
         BiggestRankItemsFunctor<DeviceType, OutputView>{
             ranks_duplicate, largest_rank, permutation_indices, offset, total});
-    cudaDeviceSynchronize();
+    // cudaDeviceSynchronize();
     auto host_total =
         Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), total);
     auto count = host_total();
     counts.push_back(count);
     offset += count;
     offsets.push_back(offset);
-    for (unsigned int i = 0; i < ranks_duplicate.size(); ++i)
-      std::cout << ranks_duplicate(i) << " ";
-    std::cout << std::endl;
-    for (unsigned int i = 0; i < counts.size(); ++i)
-      std::cout << counts[i] << " ";
-    std::cout << std::endl;
-    for (unsigned int i = 0; i < offsets.size(); ++i)
-      std::cout << offsets[i] << " ";
-    std::cout << std::endl;
-    for (unsigned int i = 0; i < permutation_indices.size(); ++i)
-      std::cout << permutation_indices(i) << " ";
-    std::cout << std::endl;
   }
 }
 
