@@ -11,6 +11,7 @@
 #ifndef ARBORX_DETAILS_DISTRIBUTOR_HPP
 #define ARBORX_DETAILS_DISTRIBUTOR_HPP
 
+#include <ArborX_DetailsUtils.hpp>
 #include <ArborX_Exception.hpp>
 
 #include <Kokkos_Core.hpp> // FIXME
@@ -26,6 +27,56 @@ namespace ArborX
 {
 namespace Details
 {
+
+// NOTE: We were getting a compile error on CUDA when using a KOKKOS_LAMBDA.
+template <typename DeviceType, typename OutputView>
+class BiggestRankItemsFunctor
+{
+  static_assert(
+      std::is_same<typename DeviceType::memory_space, Kokkos::HostSpace>::value,
+      "");
+
+public:
+  BiggestRankItemsFunctor(
+      const Kokkos::View<int *, DeviceType> &ranks_duplicate,
+      const int largest_rank, const OutputView &permutation_indices,
+      const int offset, const Kokkos::View<int, DeviceType> &total)
+      : _ranks_duplicate(ranks_duplicate)
+      , _largest_rank(largest_rank)
+      , _permutation_indices(permutation_indices)
+      , _offset(offset)
+      , _total(total)
+  {
+  }
+  KOKKOS_INLINE_FUNCTION void operator()(int i, int &update,
+                                         bool last_pass) const
+  {
+    if (last_pass && (_ranks_duplicate(i) == _largest_rank))
+    {
+      _permutation_indices(i) = update + _offset;
+    }
+    if (_ranks_duplicate(i) == _largest_rank)
+      ++update;
+    if (last_pass)
+    {
+      if (i + 1 == _ranks_duplicate.extent(0))
+      {
+        _total() = update;
+      }
+      if (_ranks_duplicate(i) == _largest_rank)
+      {
+        _ranks_duplicate(i) = -1;
+      }
+    }
+  }
+
+private:
+  const Kokkos::View<int *, DeviceType> &_ranks_duplicate;
+  const int _largest_rank;
+  const OutputView &_permutation_indices;
+  const int _offset;
+  const Kokkos::View<int, DeviceType> &_total;
+};
 
 // Computes the array of indices that sort the input array (in reverse order)
 // but also returns the sorted unique elements in that array with the
@@ -54,31 +105,55 @@ static void sortAndDetermineBufferLayout(InputView ranks,
   auto const n = ranks.extent_int(0);
   if (n == 0)
     return;
+  using ST = decltype(n);
+  using DeviceType = typename OutputView::traits::device_type;
+  using ExecutionSpace = typename OutputView::traits::execution_space;
 
-  Kokkos::View<int *, Kokkos::HostSpace> ranks_duplicate(
+  Kokkos::View<int *, DeviceType> ranks_duplicate(
       Kokkos::ViewAllocateWithoutInitializing(ranks.label()), ranks.size());
   Kokkos::deep_copy(ranks_duplicate, ranks);
 
+  for (unsigned int i = 0; i < ranks_duplicate.size(); ++i)
+      std::cout << ranks_duplicate(i) << " ";
+    std::cout << std::endl;
+
+  // this implements a "sort" which is O(N * R) where (R) is
+  // the total number of unique destination ranks.
+  // it performs better than other algorithms in
+  // the case when (R) is small, but results may vary
+  int offset = 0;
   while (true)
   {
-    // TODO consider replacing with parallel reduce
-    int const largest_rank =
-        *std::max_element(ranks_duplicate.data(), ranks_duplicate.data() + n);
+    int const largest_rank = ArborX::max(ranks_duplicate);
     if (largest_rank == -1)
       break;
     unique_ranks.push_back(largest_rank);
     counts.push_back(0);
-    // TODO consider replacing with parallel scan
-    for (int i = 0; i < n; ++i)
-    {
-      if (ranks_duplicate(i) == largest_rank)
-      {
-        ranks_duplicate(i) = -1;
-        permutation_indices(i) = offsets.back() + counts.back();
-        ++counts.back();
-      }
-    }
-    offsets.push_back(offsets.back() + counts.back());
+    offsets.push_back(offset);
+    Kokkos::View<int, DeviceType> total("total");
+    Kokkos::parallel_scan(
+        "process biggest rank items", Kokkos::RangePolicy<ExecutionSpace>(0, n),
+        BiggestRankItemsFunctor<DeviceType, OutputView>{
+            ranks_duplicate, largest_rank, permutation_indices, offset, total});
+    cudaDeviceSynchronize();
+    auto host_total =
+        Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), total);
+    auto count = host_total();
+    counts.push_back(count);
+    offset += count;
+    offsets.push_back(offset);
+    for (unsigned int i = 0; i < ranks_duplicate.size(); ++i)
+      std::cout << ranks_duplicate(i) << " ";
+    std::cout << std::endl;
+    for (unsigned int i = 0; i < counts.size(); ++i)
+      std::cout << counts[i] << " ";
+    std::cout << std::endl;
+    for (unsigned int i = 0; i < offsets.size(); ++i)
+      std::cout << offsets[i] << " ";
+    std::cout << std::endl;
+    for (unsigned int i = 0; i < permutation_indices.size(); ++i)
+      std::cout << permutation_indices(i) << " ";
+    std::cout << std::endl;
   }
 }
 
