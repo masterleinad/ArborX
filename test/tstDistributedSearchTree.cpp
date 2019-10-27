@@ -33,8 +33,6 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(hello_world, DeviceType, ARBORX_DEVICE_TYPES)
   int comm_size;
   MPI_Comm_size(comm, &comm_size);
 
-  std::cout << "Here1" << std::endl;
-
   int const n = 4;
   Kokkos::View<ArborX::Point *, DeviceType> points("points", n);
   // [  rank 0       [  rank 1       [  rank 2       [  rank 3       [
@@ -45,17 +43,12 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(hello_world, DeviceType, ARBORX_DEVICE_TYPES)
   //                                 0   1   2   3   ^   ^   ^   ^
   //                                                 0   1   2   3
   using ExecutionSpace = typename DeviceType::execution_space;
-  std::cout << "Here2" << std::endl;
   Kokkos::parallel_for(Kokkos::RangePolicy<ExecutionSpace>(0, n),
                        KOKKOS_LAMBDA(int i) {
                          points(i) = {{(double)i / n + comm_rank, 0., 0.}};
                        });
-  std::cout << "Here3" << std::endl;
 
   ArborX::DistributedSearchTree<DeviceType> tree(comm, points);
-
-  std::cout << "Here4" << std::endl;
-
 
   // 0---0---0---0---1---1---1---1---2---2---2---2---3---3---3---3---
   // |               |               |               |               |
@@ -71,13 +64,10 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(hello_world, DeviceType, ARBORX_DEVICE_TYPES)
   Kokkos::View<decltype(ArborX::intersects(ArborX::Sphere{})) *, DeviceType>
       queries("queries", 1);
   auto queries_host = Kokkos::create_mirror_view(queries);
-  std::cout << "Here1" << std::endl;
 
   queries_host(0) = ArborX::intersects(
       ArborX::Sphere{{{0.5 + comm_size - 1 - comm_rank, 0., 0.}}, 0.5});
   deep_copy(queries, queries_host);
-  std::cout << "Here5" << std::endl;
-
 
   // 0---0---0---0---1---1---1---1---2---2---2---2---3---3---3---3---
   // |               |               |               |               |
@@ -94,9 +84,6 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(hello_world, DeviceType, ARBORX_DEVICE_TYPES)
       {{0.0 + comm_size - 1 - comm_rank, 0., 0.}},
       comm_rank < comm_size - 1 ? 3 : 2);
   deep_copy(nearest_queries, nearest_queries_host);
-
-  std::cout << "Here6" << std::endl;
-
 
   std::vector<int> indices_ref;
   std::vector<int> ranks_ref;
@@ -116,7 +103,6 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(hello_world, DeviceType, ARBORX_DEVICE_TYPES)
     checkResults(tree, queries, indices_ref, {0, n}, ranks_ref);
   }
 
-  std::cout << "Here7" << std::endl;
 
   BOOST_TEST(n > 2);
   if (comm_rank < comm_size - 1)
@@ -130,11 +116,9 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(hello_world, DeviceType, ARBORX_DEVICE_TYPES)
     checkResults(tree, nearest_queries, {0, 1}, {0, 2},
                  {comm_size - 1 - comm_rank, comm_size - 1 - comm_rank});
   }
-  std::cout << "Here8" << std::endl;
-
 }
 
-/*BOOST_AUTO_TEST_CASE_TEMPLATE(empty_tree, DeviceType, ARBORX_DEVICE_TYPES)
+BOOST_AUTO_TEST_CASE_TEMPLATE(empty_tree, DeviceType, ARBORX_DEVICE_TYPES)
 {
   MPI_Comm comm = MPI_COMM_WORLD;
   int comm_rank;
@@ -202,9 +186,9 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(hello_world, DeviceType, ARBORX_DEVICE_TYPES)
                    {{{0., 0., 0.}}, comm_size},
                }),
                {}, {0, 0}, {}, {});
-}*/
+}
 
-/*BOOST_AUTO_TEST_CASE_TEMPLATE(unique_leaf_on_rank_0, DeviceType,
+BOOST_AUTO_TEST_CASE_TEMPLATE(unique_leaf_on_rank_0, DeviceType,
                               ARBORX_DEVICE_TYPES)
 {
   MPI_Comm comm = MPI_COMM_WORLD;
@@ -243,9 +227,9 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(hello_world, DeviceType, ARBORX_DEVICE_TYPES)
                     comm_size},
                }),
                {0}, {0, 1}, {0});
-}*/
+}
 
-/*BOOST_AUTO_TEST_CASE_TEMPLATE(one_leaf_per_rank, DeviceType,
+BOOST_AUTO_TEST_CASE_TEMPLATE(one_leaf_per_rank, DeviceType,
                               ARBORX_DEVICE_TYPES)
 {
   MPI_Comm comm = MPI_COMM_WORLD;
@@ -295,9 +279,9 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(hello_world, DeviceType, ARBORX_DEVICE_TYPES)
                      {{{0., 0., 0.}}, comm_rank * comm_size},
                  }),
                  {}, {0, 0}, {});
-}*/
+}
 
-/*BOOST_AUTO_TEST_CASE_TEMPLATE(do_not_exceed_capacity, DeviceType,
+BOOST_AUTO_TEST_CASE_TEMPLATE(do_not_exceed_capacity, DeviceType,
                               ARBORX_DEVICE_TYPES)
 {
   // This unit tests exposes bug that essentially assumed the number of
@@ -323,9 +307,9 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(hello_world, DeviceType, ARBORX_DEVICE_TYPES)
   Kokkos::View<int *, DeviceType> offset("offset", 0);
   Kokkos::View<int *, DeviceType> ranks("ranks", 0);
   BOOST_CHECK_NO_THROW(tree.query(queries, indices, offset, ranks));
-}*/
+}
 
-/*BOOST_AUTO_TEST_CASE_TEMPLATE(non_approximate_nearest_neighbors, DeviceType,
+BOOST_AUTO_TEST_CASE_TEMPLATE(non_approximate_nearest_neighbors, DeviceType,
                               ARBORX_DEVICE_TYPES)
 {
   MPI_Comm comm = MPI_COMM_WORLD;
@@ -374,9 +358,9 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(hello_world, DeviceType, ARBORX_DEVICE_TYPES)
                      {{{(double)(comm_size - 1 - comm_rank) + .75, 0., 0.}}, 1},
                  }),
                  {0}, {0, 1}, {comm_size - 1});
-}*/
+}
 
-/*std::vector<std::array<double, 3>>
+std::vector<std::array<double, 3>>
 make_random_cloud(double const Lx, double const Ly, double const Lz,
                   int const n, double const seed)
 {
@@ -497,4 +481,4 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(boost_comparison, DeviceType, ARBORX_DEVICE_TYPES)
       BoostRTreeHelpers::performQueries(rtree, within_queries_host);
 
   validateResults(bvh_results, rtree_results);
-}*/
+}
