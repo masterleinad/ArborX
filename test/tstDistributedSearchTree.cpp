@@ -64,7 +64,6 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(hello_world, DeviceType, ARBORX_DEVICE_TYPES)
   Kokkos::View<decltype(ArborX::intersects(ArborX::Sphere{})) *, DeviceType>
       queries("queries", 1);
   auto queries_host = Kokkos::create_mirror_view(queries);
-
   queries_host(0) = ArborX::intersects(
       ArborX::Sphere{{{0.5 + comm_size - 1 - comm_rank, 0., 0.}}, 0.5});
   deep_copy(queries, queries_host);
