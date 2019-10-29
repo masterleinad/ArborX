@@ -98,6 +98,11 @@ static void sortAndDetermineBufferLayout(InputView ranks,
   if (n == 0)
     return;
 
+  std::cout << "ranks" << std::endl;
+  for (unsigned int i=0; i<ranks.size(); ++i)
+    std::cout << ranks(i) << ' ';
+  std::cout << std::endl;
+
   // this implements a "sort" which is O(N * R) where (R) is the total number of
   // unique destination ranks. it performs better than other algorithms in the
   // case when (R) is small, but results may vary
@@ -145,6 +150,34 @@ static void sortAndDetermineBufferLayout(InputView ranks,
     counts.push_back(offsets[i] - offsets[i - 1]);
   Kokkos::deep_copy(permutation_indices, device_permutation_indices);
   ARBORX_ASSERT(offsets.back() == ranks.size());
+
+  std::cout << "unique_ranks" << std::endl;
+  for (const auto el: unique_ranks)
+    std::cout << el << ' ';
+  std::cout << std::endl;
+
+  std::cout << "counts" << std::endl;  
+  for (const auto el: counts)  
+    std::cout << el << ' ';  
+  std::cout << std::endl;  
+
+std::cout << "offstes" << std::endl;  
+  for (const auto el: offsets)  
+    std::cout << el << ' ';  
+  std::cout << std::endl; 
+
+ std::cout << "permutation" << std::endl;
+  for (unsigned int i=0; i<permutation_indices.size(); ++i)
+    std::cout << permutation_indices(i) << ' ';
+  std::cout << std::endl;
+
+  std::vector <int> permutation_copy(permutation_indices.size());
+	  for (unsigned int i=0; i<permutation_indices.size(); ++i)
+		  permutation_copy[i] = permutation_indices(i);
+
+  std::sort(permutation_copy.begin(), permutation_copy.end());
+  for (unsigned int i=0; i<permutation_indices.size(); ++i)
+	   ARBORX_ASSERT(permutation_copy[i]==i);
 }
 
 class Distributor
