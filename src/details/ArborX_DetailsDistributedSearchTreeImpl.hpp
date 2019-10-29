@@ -27,8 +27,6 @@
 
 #include <mpi.h>
 
-#define ARBORX_CUDA_AWARE_MPI
-
 namespace ArborX
 {
 
@@ -198,7 +196,16 @@ DistributedSearchTreeImpl<DeviceType>::sendAcrossNetwork(
     Distributor const &distributor, View exports,
     typename View::non_const_type imports)
 {
-  ARBORX_ASSERT((exports.extent(0) == distributor.getTotalSendLength()) &&
+	std::cout << exports.extent(0) << " vs. " << distributor.getTotalSendLength() << std::endl
+                << imports.extent(0) << " vs. " << distributor.getTotalReceiveLength() << std::endl
+                << exports.extent(1) << " vs. " << imports.extent(1) << std::endl
+                << exports.extent(2) << " vs. " << imports.extent(2) << std::endl
+                << exports.extent(3) << " vs. " << imports.extent(3) << std::endl
+                << exports.extent(4) << " vs. " << imports.extent(4) << std::endl
+                << exports.extent(5) << " vs. " << imports.extent(5) << std::endl
+                << exports.extent(6) << " vs. " << imports.extent(6) << std::endl
+                << exports.extent(7) << " vs. " << imports.extent(7) << std::endl;
+  assert((exports.extent(0) == distributor.getTotalSendLength()) &&
                 (imports.extent(0) == distributor.getTotalReceiveLength()) &&
                 (exports.extent(1) == imports.extent(1)) &&
                 (exports.extent(2) == imports.extent(2)) &&
@@ -548,7 +555,10 @@ void DistributedSearchTreeImpl<DeviceType>::forwardQueries(
   Kokkos::deep_copy(export_ranks, comm_rank);
 
   Kokkos::View<int *, DeviceType> import_ranks("import_ranks", n_imports);
+  std::cout << "1 "<< exports.extent(0) << " vs. " << distributor.getTotalSendLength() << std::endl;
+
   sendAcrossNetwork(distributor, export_ranks, import_ranks);
+
 
   Kokkos::View<int *, DeviceType> export_ids("export_ids", n_exports);
   Kokkos::parallel_for(ARBORX_MARK_REGION("forward_queries_fill_ids"),
@@ -560,10 +570,14 @@ void DistributedSearchTreeImpl<DeviceType>::forwardQueries(
                          }
                        });
   Kokkos::View<int *, DeviceType> import_ids("import_ids", n_imports);
+  std::cout << "6 "<< export_ids.extent(0) << " vs. " << distributor.getTotalSendLength() << std::endl;
+
   sendAcrossNetwork(distributor, export_ids, import_ids);
 
   // Send queries across the network
   Kokkos::View<Query *, DeviceType> imports(queries.label(), n_imports);
+  std::cout << "7 "<< exports.extent(0) << " vs. " << distributor.getTotalSendLength() << std::endl;
+
   sendAcrossNetwork(distributor, exports, imports);
 
   fwd_queries = imports;
@@ -615,8 +629,11 @@ void DistributedSearchTreeImpl<DeviceType>::communicateResultsBack(
   Kokkos::View<int *, DeviceType> import_indices(indices.label(), n_imports);
   Kokkos::View<int *, DeviceType> import_ranks(ranks.label(), n_imports);
   Kokkos::View<int *, DeviceType> import_ids(ids.label(), n_imports);
+  std::cout << "2 "<< export_indices.extent(0) << " vs. " << distributor.getTotalSendLength() << std::endl;
   sendAcrossNetwork(distributor, export_indices, import_indices);
+  std::cout << "3 "<< export_ranks.extent(0) << " vs. " << distributor.getTotalSendLength() << std::endl;
   sendAcrossNetwork(distributor, export_ranks, import_ranks);
+  std::cout << "4 "<< export_ids.extent(0) << " vs. " << distributor.getTotalSendLength() << std::endl;
   sendAcrossNetwork(distributor, export_ids, import_ids);
 
   ids = import_ids;
@@ -629,6 +646,7 @@ void DistributedSearchTreeImpl<DeviceType>::communicateResultsBack(
     Kokkos::View<double *, DeviceType> export_distances = distances;
     Kokkos::View<double *, DeviceType> import_distances(distances.label(),
                                                         n_imports);
+    std::cout << "5 "<< export_distances.extent(0) << " vs. " << distributor.getTotalSendLength() << std::endl;
     sendAcrossNetwork(distributor, export_distances, import_distances);
     distances = import_distances;
   }
