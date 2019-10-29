@@ -103,7 +103,6 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(hello_world, DeviceType, ARBORX_DEVICE_TYPES)
     checkResults(tree, queries, indices_ref, {0, n}, ranks_ref);
   }
 
-
   BOOST_TEST(n > 2);
   if (comm_rank < comm_size - 1)
   {

@@ -37,13 +37,11 @@ public:
       const Kokkos::View<int *, DeviceType> &ranks_duplicate,
       const Kokkos::View<int, DeviceType> &largest_rank,
       const Kokkos::View<int *, DeviceType> &permutation_indices,
-      const Kokkos::View<int, DeviceType> &offset,
-      const Kokkos::View<int, DeviceType> &total)
+      const Kokkos::View<int, DeviceType> &offset)
       : _ranks_duplicate(ranks_duplicate)
       , _largest_rank(largest_rank)
       , _permutation_indices(permutation_indices)
       , _offset(offset)
-      , _total(total)
   {
   }
   KOKKOS_INLINE_FUNCTION void operator()(int i, int &update,
@@ -68,7 +66,6 @@ private:
   const Kokkos::View<int, DeviceType> _largest_rank;
   const Kokkos::View<int *, DeviceType> _permutation_indices;
   const Kokkos::View<int, DeviceType> _offset;
-  const Kokkos::View<int, DeviceType> _total;
 };
 
 // Computes the array of indices that sort the input array (in reverse order)
@@ -99,24 +96,19 @@ static void sortAndDetermineBufferLayout(InputView ranks,
   if (n == 0)
     return;
 
-  using ST = decltype(n);
+  // this implements a "sort" which is O(N * R) where (R) is the total number of
+  // unique destination ranks. it performs better than other algorithms in the
+  // case when (R) is small, but results may vary
   using DeviceType = typename InputView::traits::device_type;
   using ExecutionSpace = typename InputView::traits::execution_space;
 
   Kokkos::View<int *, DeviceType> device_ranks_duplicate(
       Kokkos::ViewAllocateWithoutInitializing(ranks.label()), ranks.size());
   Kokkos::deep_copy(device_ranks_duplicate, ranks);
-
   Kokkos::View<int *, DeviceType> device_permutation_indices(
       Kokkos::ViewAllocateWithoutInitializing(permutation_indices.label()),
       permutation_indices.size());
-
-  // this implements a "sort" which is O(N * R) where (R) is
-  // the total number of unique destination ranks.
-  // it performs better than other algorithms in
-  // the case when (R) is small, but results may vary
   Kokkos::View<int, DeviceType> device_offset("offset");
-  Kokkos::View<int, DeviceType> device_total("total");
   Kokkos::View<int, Kokkos::HostSpace> largest_rank("largest_rank");
   while (true)
   {
@@ -126,26 +118,20 @@ static void sortAndDetermineBufferLayout(InputView ranks,
     unique_ranks.push_back(largest_rank());
     auto device_largest_rank =
         Kokkos::create_mirror_view_and_copy(DeviceType(), largest_rank);
-    Kokkos::parallel_scan(
-        "process biggest rank items", Kokkos::RangePolicy<ExecutionSpace>(0, n),
-        BiggestRankItemsFunctor<DeviceType>{
-            device_ranks_duplicate, device_largest_rank,
-            device_permutation_indices, device_offset, device_total});
-    //auto total =
-    //    Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), device_total);
-    //auto count = total();
-    //ARBORX_ASSERT(count>0);
-    //counts.push_back(count);
+    Kokkos::parallel_scan("process_biggest_rank_items",
+                          Kokkos::RangePolicy<ExecutionSpace>(0, n),
+                          BiggestRankItemsFunctor<DeviceType>{
+                              device_ranks_duplicate, device_largest_rank,
+                              device_permutation_indices, device_offset});
     auto offset =
         Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), device_offset);
-    //offset() += count;
-    //Kokkos::deep_copy(device_offset, offset); 
     offsets.push_back(offset());
   }
-  for (unsigned int i=1; i<offsets.size(); ++i)
-    counts.push_back(offsets[i]-offsets[i-1]);
+  counts.reserve(offsets.size() - 1);
+  for (unsigned int i = 1; i < offsets.size(); ++i)
+    counts.push_back(offsets[i] - offsets[i - 1]);
   Kokkos::deep_copy(permutation_indices, device_permutation_indices);
-  ARBORX_ASSERT(offsets.back()==ranks.size());
+  ARBORX_ASSERT(offsets.back() == ranks.size());
 }
 
 class Distributor
