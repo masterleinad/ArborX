@@ -60,7 +60,7 @@ public:
       ++update;
     }
     if (last_pass && i + 1 == _ranks_duplicate.extent(0))
-      _total() = update;
+      _offset() += update;
   }
 
 private:
@@ -111,12 +111,6 @@ static void sortAndDetermineBufferLayout(InputView ranks,
       Kokkos::ViewAllocateWithoutInitializing(permutation_indices.label()),
       permutation_indices.size());
 
-  auto host_ranks =
-        Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), ranks);
-  for (unsigned int i=0; i<host_ranks.size(); ++i)
-    std::cout << host_ranks[i] << ' ';
-  std::cout << std::endl;
-
   // this implements a "sort" which is O(N * R) where (R) is
   // the total number of unique destination ranks.
   // it performs better than other algorithms in
@@ -132,29 +126,25 @@ static void sortAndDetermineBufferLayout(InputView ranks,
     unique_ranks.push_back(largest_rank());
     auto device_largest_rank =
         Kokkos::create_mirror_view_and_copy(DeviceType(), largest_rank);
-    cudaDeviceSynchronize();
     Kokkos::parallel_scan(
         "process biggest rank items", Kokkos::RangePolicy<ExecutionSpace>(0, n),
         BiggestRankItemsFunctor<DeviceType>{
             device_ranks_duplicate, device_largest_rank,
             device_permutation_indices, device_offset, device_total});
-    cudaDeviceSynchronize();
-    auto total =
-        Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), device_total);
-    auto count = total();
-    ARBORX_ASSERT(count>0);
-    counts.push_back(count);
+    //auto total =
+    //    Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), device_total);
+    //auto count = total();
+    //ARBORX_ASSERT(count>0);
+    //counts.push_back(count);
     auto offset =
         Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), device_offset);
-    offset() += count;
-    Kokkos::deep_copy(device_offset, offset); 
+    //offset() += count;
+    //Kokkos::deep_copy(device_offset, offset); 
     offsets.push_back(offset());
   }
+  for (unsigned int i=1; i<offsets.size(); ++i)
+    counts.push_back(offsets[i]-offsets[i-1]);
   Kokkos::deep_copy(permutation_indices, device_permutation_indices);
-  std::cout << "offsets" << std::endl;
-  for (const auto el: offsets)
-    std::cout << el << " ";
-  std::cout << std::endl;
   ARBORX_ASSERT(offsets.back()==ranks.size());
 }
 
@@ -183,13 +173,11 @@ public:
     sortAndDetermineBufferLayout(destination_ranks, _permute, _destinations,
                                  _dest_counts, _dest_offsets);
 
-    cudaDeviceSynchronize();
     std::vector<int> src_counts_dense(comm_size);
     for (int i = 0; i < _destinations.size(); ++i)
     {
       src_counts_dense[_destinations[i]] = _dest_counts[i];
     }
-    cudaDeviceSynchronize();
     MPI_Alltoall(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, src_counts_dense.data(), 1,
                  MPI_INT, _comm);
 

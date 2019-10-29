@@ -25,7 +25,7 @@
 
 #define BOOST_TEST_MODULE DistributedSearchTree
 
-/*BOOST_AUTO_TEST_CASE_TEMPLATE(hello_world, DeviceType, ARBORX_DEVICE_TYPES)
+BOOST_AUTO_TEST_CASE_TEMPLATE(hello_world, DeviceType, ARBORX_DEVICE_TYPES)
 {
   MPI_Comm comm = MPI_COMM_WORLD;
   int comm_rank;
@@ -358,7 +358,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(non_approximate_nearest_neighbors, DeviceType,
                      {{{(double)(comm_size - 1 - comm_rank) + .75, 0., 0.}}, 1},
                  }),
                  {0}, {0, 1}, {comm_size - 1});
-}*/
+}
 
 std::vector<std::array<double, 3>>
 make_random_cloud(double const Lx, double const Ly, double const Lz,
