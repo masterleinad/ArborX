@@ -13,6 +13,7 @@
 
 #include <ArborX_Config.hpp>
 
+#include <ArborX_DetailsUtils.hpp>
 #include <ArborX_Exception.hpp>
 
 #include <Kokkos_Core.hpp> // FIXME
@@ -28,6 +29,46 @@ namespace ArborX
 {
 namespace Details
 {
+
+// NOTE: We were getting a compile error on CUDA when using a KOKKOS_LAMBDA.
+template <typename DeviceType>
+class BiggestRankItemsFunctor
+{
+public:
+  BiggestRankItemsFunctor(
+      const Kokkos::View<int *, DeviceType> &ranks_duplicate,
+      const Kokkos::View<int, DeviceType> &largest_rank,
+      const Kokkos::View<int *, DeviceType> &permutation_indices,
+      const Kokkos::View<int, DeviceType> &offset)
+      : _ranks_duplicate(ranks_duplicate)
+      , _largest_rank(largest_rank)
+      , _permutation_indices(permutation_indices)
+      , _offset(offset)
+  {
+  }
+  KOKKOS_INLINE_FUNCTION void operator()(int i, int &update,
+                                         bool last_pass) const
+  {
+    const bool is_largest_rank = (_ranks_duplicate(i) == _largest_rank());
+    if (is_largest_rank)
+    {
+      if (last_pass)
+      {
+        _permutation_indices(i) = update + _offset();
+        _ranks_duplicate(i) = -1;
+      }
+      ++update;
+    }
+    if (last_pass && i + 1 == _ranks_duplicate.extent(0))
+      _offset() += update;
+  }
+
+private:
+  const Kokkos::View<int *, DeviceType> _ranks_duplicate;
+  const Kokkos::View<int, DeviceType> _largest_rank;
+  const Kokkos::View<int *, DeviceType> _permutation_indices;
+  const Kokkos::View<int, DeviceType> _offset;
+};
 
 // Computes the array of indices that sort the input array (in reverse order)
 // but also returns the sorted unique elements in that array with the
