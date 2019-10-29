@@ -70,19 +70,18 @@ static void sortAndDetermineBufferLayout(InputView ranks,
       Kokkos::ViewAllocateWithoutInitializing(permutation_indices.label()),
       permutation_indices.size());
   Kokkos::View<int, DeviceType> device_offset("offset");
-  Kokkos::View<int, Kokkos::HostSpace> largest_rank("largest_rank");
   while (true)
   {
-    largest_rank() = ArborX::max(device_ranks_duplicate);
-    if (largest_rank() == -1)
+    int const largest_rank = ArborX::max(device_ranks_duplicate);
+    if (largest_rank == -1)
       break;
-    unique_ranks.push_back(largest_rank());
-    auto device_largest_rank =
-        Kokkos::create_mirror_view_and_copy(DeviceType(), largest_rank);
+    unique_ranks.push_back(largest_rank);
+    auto device_largest_rank = Kokkos::View<int, DeviceType>("largest_rank");
+    Kokkos::deep_copy(device_largest_rank, largest_rank);
     Kokkos::parallel_scan(
         "process_biggest_rank_items", Kokkos::RangePolicy<ExecutionSpace>(0, n),
         KOKKOS_LAMBDA(int i, int &update, bool last_pass) {
-          const bool is_largest_rank =
+          bool const is_largest_rank =
               (device_ranks_duplicate(i) == device_largest_rank());
           if (is_largest_rank)
           {
