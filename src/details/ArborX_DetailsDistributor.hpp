@@ -22,6 +22,7 @@
 #include <numeric>   // iota
 #include <sstream>
 #include <vector>
+#include <cassert>
 
 #include <mpi.h>
 
@@ -141,6 +142,7 @@ static void sortAndDetermineBufferLayout(InputView ranks,
           if (last_pass && i + 1 == device_ranks_duplicate.extent(0))
             device_offset() += update;
         });
+    ExecutionSpace().fence();
     auto offset =
         Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), device_offset);
     offsets.push_back(offset());
@@ -149,7 +151,7 @@ static void sortAndDetermineBufferLayout(InputView ranks,
   for (unsigned int i = 1; i < offsets.size(); ++i)
     counts.push_back(offsets[i] - offsets[i - 1]);
   Kokkos::deep_copy(permutation_indices, device_permutation_indices);
-  ARBORX_ASSERT(offsets.back() == ranks.size());
+  assert(offsets.back() == ranks.size());
 
   std::cout << "unique_ranks" << std::endl;
   for (const auto el: unique_ranks)
@@ -177,7 +179,13 @@ std::cout << "offstes" << std::endl;
 
   std::sort(permutation_copy.begin(), permutation_copy.end());
   for (unsigned int i=0; i<permutation_indices.size(); ++i)
-	   ARBORX_ASSERT(permutation_copy[i]==i);
+  {
+    if (!(permutation_copy[i]==i))
+    {
+      std::cout << permutation_copy[i] << " should be " << i << std::endl;
+      assert(permutation_copy[i]==i);
+    }
+  }
 }
 
 class Distributor

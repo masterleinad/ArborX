@@ -25,7 +25,7 @@
 
 #define BOOST_TEST_MODULE DistributedSearchTree
 
-BOOST_AUTO_TEST_CASE_TEMPLATE(hello_world, DeviceType, ARBORX_DEVICE_TYPES)
+/*BOOST_AUTO_TEST_CASE_TEMPLATE(hello_world, DeviceType, ARBORX_DEVICE_TYPES)
 {
   MPI_Comm comm = MPI_COMM_WORLD;
   int comm_rank;
@@ -277,7 +277,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(one_leaf_per_rank, DeviceType,
                      {{{0., 0., 0.}}, comm_rank * comm_size},
                  }),
                  {}, {0, 0}, {});
-}
+}*/
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(do_not_exceed_capacity, DeviceType,
                               ARBORX_DEVICE_TYPES)
@@ -306,7 +306,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(do_not_exceed_capacity, DeviceType,
   Kokkos::View<int *, DeviceType> ranks("ranks", 0);
   BOOST_CHECK_NO_THROW(tree.query(queries, indices, offset, ranks));
 }
-
+/*
 BOOST_AUTO_TEST_CASE_TEMPLATE(non_approximate_nearest_neighbors, DeviceType,
                               ARBORX_DEVICE_TYPES)
 {
@@ -479,4 +479,4 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(boost_comparison, DeviceType, ARBORX_DEVICE_TYPES)
       BoostRTreeHelpers::performQueries(rtree, within_queries_host);
 
   validateResults(bvh_results, rtree_results);
-}
+}*/
