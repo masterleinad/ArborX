@@ -29,46 +29,6 @@ namespace ArborX
 namespace Details
 {
 
-// NOTE: We were getting a compile error on CUDA when using a KOKKOS_LAMBDA.
-template <typename DeviceType>
-class BiggestRankItemsFunctor
-{
-public:
-  BiggestRankItemsFunctor(
-      const Kokkos::View<int *, DeviceType> &ranks_duplicate,
-      const Kokkos::View<int, DeviceType> &largest_rank,
-      const Kokkos::View<int *, DeviceType> &permutation_indices,
-      const Kokkos::View<int, DeviceType> &offset)
-      : _ranks_duplicate(ranks_duplicate)
-      , _largest_rank(largest_rank)
-      , _permutation_indices(permutation_indices)
-      , _offset(offset)
-  {
-  }
-  KOKKOS_INLINE_FUNCTION void operator()(int i, int &update,
-                                         bool last_pass) const
-  {
-    const bool is_largest_rank = (_ranks_duplicate(i) == _largest_rank());
-    if (is_largest_rank)
-    {
-      if (last_pass)
-      {
-        _permutation_indices(i) = update + _offset();
-        _ranks_duplicate(i) = -1;
-      }
-      ++update;
-    }
-    if (last_pass && i + 1 == _ranks_duplicate.extent(0))
-      _offset() += update;
-  }
-
-private:
-  const Kokkos::View<int *, DeviceType> _ranks_duplicate;
-  const Kokkos::View<int, DeviceType> _largest_rank;
-  const Kokkos::View<int *, DeviceType> _permutation_indices;
-  const Kokkos::View<int, DeviceType> _offset;
-};
-
 // Computes the array of indices that sort the input array (in reverse order)
 // but also returns the sorted unique elements in that array with the
 // corresponding element counts and displacement (offsets)
@@ -119,11 +79,23 @@ static void sortAndDetermineBufferLayout(InputView ranks,
     unique_ranks.push_back(largest_rank());
     auto device_largest_rank =
         Kokkos::create_mirror_view_and_copy(DeviceType(), largest_rank);
-    Kokkos::parallel_scan("process_biggest_rank_items",
-                          Kokkos::RangePolicy<ExecutionSpace>(0, n),
-                          BiggestRankItemsFunctor<DeviceType>{
-                              device_ranks_duplicate, device_largest_rank,
-                              device_permutation_indices, device_offset});
+    Kokkos::parallel_scan(
+        "process_biggest_rank_items", Kokkos::RangePolicy<ExecutionSpace>(0, n),
+        KOKKOS_LAMBDA(int i, int &update, bool last_pass) {
+          const bool is_largest_rank =
+              (device_ranks_duplicate(i) == device_largest_rank());
+          if (is_largest_rank)
+          {
+            if (last_pass)
+            {
+              device_permutation_indices(i) = update + device_offset();
+              device_ranks_duplicate(i) = -1;
+            }
+            ++update;
+          }
+          if (last_pass && i + 1 == device_ranks_duplicate.extent(0))
+            device_offset() += update;
+        });
     auto offset =
         Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), device_offset);
     offsets.push_back(offset());
