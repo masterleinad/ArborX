@@ -58,30 +58,66 @@ static void sortAndDetermineBufferLayout(InputView ranks,
     return;
 
   Kokkos::View<int *, Kokkos::HostSpace> ranks_duplicate(
-      Kokkos::ViewAllocateWithoutInitializing(ranks.label()), ranks.size());
+      Kokkos::ViewAllocateWithoutInitializing(ranks.label()), n);
   Kokkos::deep_copy(ranks_duplicate, ranks);
 
-  while (true)
+  std::cout << "ranks_duplicate" << std::endl;
+  for (unsigned int i = 0; i < n; ++i)
+    std::cout << ranks_duplicate(i) << ' ';
+  std::cout << std::endl;
+
+  Kokkos::View<int *, Kokkos::HostSpace> inverse_permutation(
+      Kokkos::ViewAllocateWithoutInitializing("inverse_permutation"), n);
+  ArborX::iota(inverse_permutation);
+
+  std::sort(inverse_permutation.data(), inverse_permutation.data() + n,
+            [&](const int a, const int b) {
+              return (ranks_duplicate[a] > ranks_duplicate[b]);
+            });
+
+  int current_rank = ranks_duplicate(inverse_permutation(0));
+  unique_ranks.push_back(current_rank);
+  for (unsigned int i = 0; i < n; ++i)
   {
-    // TODO consider replacing with parallel reduce
-    int const largest_rank =
-        *std::max_element(ranks_duplicate.data(), ranks_duplicate.data() + n);
-    if (largest_rank == -1)
-      break;
-    unique_ranks.push_back(largest_rank);
-    counts.push_back(0);
-    // TODO consider replacing with parallel scan
-    for (int i = 0; i < n; ++i)
+    const int new_rank = ranks_duplicate(inverse_permutation(i));
+    if (new_rank != current_rank)
     {
-      if (ranks_duplicate(i) == largest_rank)
-      {
-        ranks_duplicate(i) = -1;
-        permutation_indices(i) = offsets.back() + counts.back();
-        ++counts.back();
-      }
+      current_rank = new_rank;
+      unique_ranks.push_back(current_rank);
+      offsets.push_back(i);
     }
-    offsets.push_back(offsets.back() + counts.back());
+    permutation_indices(inverse_permutation(i)) = i;
   }
+  offsets.push_back(n);
+
+  counts.reserve(offsets.size() - 1);
+  for (unsigned int i = 1; i < offsets.size(); ++i)
+    counts.push_back(offsets[i] - offsets[i - 1]);
+
+  std::cout << "permutation_indices" << std::endl;
+  for (unsigned int i = 0; i < n; ++i)
+    std::cout << permutation_indices(i) << ' ';
+  std::cout << std::endl;
+
+  std::cout << "inverse permutation" << std::endl;
+  for (unsigned int i = 0; i < n; ++i)
+    std::cout << inverse_permutation(i) << ' ';
+  std::cout << std::endl;
+
+  std::cout << "offsets" << std::endl;
+  for (const int el : offsets)
+    std::cout << el << ' ';
+  std::cout << std::endl;
+
+  std::cout << "counts" << std::endl;
+  for (const int el : counts)
+    std::cout << el << ' ';
+  std::cout << std::endl;
+
+  std::cout << "unique_ranks" << std::endl;
+  for (const int el : unique_ranks)
+    std::cout << el << ' ';
+  std::cout << std::endl;
 }
 
 class Distributor
