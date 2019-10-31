@@ -209,4 +209,11 @@ pipeline {
             }
         }
     }
+    post {
+        always {
+            node('docker') {
+                recordIssues enabledForFailure: true, tools: [cmake(), gcc(), clang()]
+            }
+        }
+    }
 }
