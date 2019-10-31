@@ -14,6 +14,7 @@
 #include <ArborX_Config.hpp>
 
 #include <ArborX_Exception.hpp>
+#include <ArborX_DetailsSortUtils.hpp>
 
 #include <Kokkos_Core.hpp> // FIXME
 
@@ -66,14 +67,19 @@ static void sortAndDetermineBufferLayout(InputView ranks,
     std::cout << ranks_duplicate(i) << ' ';
   std::cout << std::endl;
 
-  Kokkos::View<int *, Kokkos::HostSpace> inverse_permutation(
+/*  Kokkos::View<int *, Kokkos::HostSpace> inverse_permutation(
       Kokkos::ViewAllocateWithoutInitializing("inverse_permutation"), n);
-  ArborX::iota(inverse_permutation);
+  ArborX::iota(inverse_permutation);*/
 
-  std::sort(inverse_permutation.data(), inverse_permutation.data() + n,
+  auto inverse_permutation = ArborX::Details::sortObjects(ranks_duplicate);
+
+  std::reverse(inverse_permutation.data(), inverse_permutation.data()+n);
+  std::reverse(ranks_duplicate.data(), ranks_duplicate.data()+n);
+
+/*  std::sort(inverse_permutation.data(), inverse_permutation.data() + n,
             [&](const int a, const int b) {
               return (ranks_duplicate[a] > ranks_duplicate[b]);
-            });
+            });*/
 
   int current_rank = ranks_duplicate(inverse_permutation(0));
   unique_ranks.push_back(current_rank);

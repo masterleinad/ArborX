@@ -54,9 +54,9 @@ namespace Details
 {
 
 // NOTE returns the permutation indices **and** sorts the morton codes
-template <typename DeviceType>
+template <typename DeviceType, typename T>
 Kokkos::View<size_t *, DeviceType>
-sortObjects(Kokkos::View<unsigned int *, DeviceType> view)
+sortObjects(Kokkos::View<T *, DeviceType> view)
 {
   using ExecutionSpace = typename DeviceType::execution_space;
 
@@ -81,7 +81,7 @@ sortObjects(Kokkos::View<unsigned int *, DeviceType> view)
 
   // Passing the SizeType template argument to Kokkos::BinSort because it
   // defaults to the memory space size type which is different on the host and
-  // on cuda (size_t versus unsigned int respectively).  size_t feels like a
+  // on cuda (size_t versus T respectively).  size_t feels like a
   // better choice here because its size is guaranteed to coincide with the
   // pointer size which is a good thing for converting with reinterpret_cast
   // (when leaf indices are encoded into the pointer to one of their children)
