@@ -136,20 +136,31 @@ static void sortAndDetermineBufferLayout(InputView ranks,
             {
               device_permutation_indices(i) = update + device_offset();
               device_ranks_duplicate(i) = -1;
+              //sleep(1);
             }
+	              ExecutionSpace().fence();
+	    //sleep(1);
             ++update;
+	              ExecutionSpace().fence();
+            sleep(1);
           }
+	  ExecutionSpace().fence();
+//	  sleep(1);
           if (last_pass && i + 1 == device_ranks_duplicate.extent(0))
             device_offset() += update;
         });
     ExecutionSpace().fence();
+    //sleep(10);
     auto offset =
         Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), device_offset);
     offsets.push_back(offset());
   }
+  ExecutionSpace().fence();
+  //sleep(10);
   counts.reserve(offsets.size() - 1);
   for (unsigned int i = 1; i < offsets.size(); ++i)
     counts.push_back(offsets[i] - offsets[i - 1]);
+  //sleep(10);
   Kokkos::deep_copy(permutation_indices, device_permutation_indices);
   assert(offsets.back() == ranks.size());
 
