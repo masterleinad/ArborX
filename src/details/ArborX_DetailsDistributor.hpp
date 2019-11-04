@@ -13,6 +13,7 @@
 
 #include <ArborX_Config.hpp>
 
+#include <ArborX_DetailsUtils.hpp>
 #include <ArborX_Exception.hpp>
 
 #include <Kokkos_Core.hpp> // FIXME
