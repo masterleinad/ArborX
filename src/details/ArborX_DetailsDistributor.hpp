@@ -67,32 +67,21 @@ static void sortAndDetermineBufferLayout(InputView ranks,
     std::cout << ranks_duplicate(i) << ' ';
   std::cout << std::endl;
 
-/*  Kokkos::View<int *, Kokkos::HostSpace> inverse_permutation(
-      Kokkos::ViewAllocateWithoutInitializing("inverse_permutation"), n);
-  ArborX::iota(inverse_permutation);*/
-
   auto inverse_permutation = ArborX::Details::sortObjects(ranks_duplicate);
+  Kokkos::deep_copy(permutation_indices, inverse_permutation);
 
-  std::reverse(inverse_permutation.data(), inverse_permutation.data()+n);
-  std::reverse(ranks_duplicate.data(), ranks_duplicate.data()+n);
-
-/*  std::sort(inverse_permutation.data(), inverse_permutation.data() + n,
-            [&](const int a, const int b) {
-              return (ranks_duplicate[a] > ranks_duplicate[b]);
-            });*/
-
-  int current_rank = ranks_duplicate(inverse_permutation(0));
+  unique_ranks.clear();
+  int current_rank = ranks(inverse_permutation(0));
   unique_ranks.push_back(current_rank);
   for (unsigned int i = 0; i < n; ++i)
   {
-    const int new_rank = ranks_duplicate(inverse_permutation(i));
+    const int new_rank = ranks(inverse_permutation(i));
     if (new_rank != current_rank)
     {
       current_rank = new_rank;
       unique_ranks.push_back(current_rank);
       offsets.push_back(i);
     }
-    permutation_indices(inverse_permutation(i)) = i;
   }
   offsets.push_back(n);
 

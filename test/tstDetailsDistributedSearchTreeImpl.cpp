@@ -230,7 +230,8 @@ void checkBufferLayout(std::vector<int> const &ranks,
                    Kokkos::MemoryTraits<Kokkos::Unmanaged>>(permute.data(),
                                                             permute.size()),
       unique, counts, offsets);
-  BOOST_TEST(permute_ref == permute, tt::per_element());
+  for (unsigned int i=0; i<permute.size(); ++i)
+     BOOST_TEST(ranks[permute_ref[i]] == ranks[permute[i]]);
   BOOST_TEST(unique_ref == unique, tt::per_element());
   BOOST_TEST(counts_ref == counts, tt::per_element());
   BOOST_TEST(offsets_ref == offsets, tt::per_element());
@@ -240,11 +241,11 @@ BOOST_AUTO_TEST_CASE(sort_and_determine_buffer_layout)
 {
   checkBufferLayout({}, {}, {}, {}, {0});
   checkBufferLayout({2, 2}, {0, 1}, {2}, {2}, {0, 2});
-  checkBufferLayout({3, 3, 2, 3, 2, 1}, {0, 1, 3, 2, 4, 5}, {3, 2, 1},
-                    {3, 2, 1}, {0, 3, 5, 6});
-  checkBufferLayout({1, 2, 3, 2, 3, 3}, {5, 3, 0, 4, 1, 2}, {3, 2, 1},
-                    {3, 2, 1}, {0, 3, 5, 6});
-  checkBufferLayout({0, 1, 2, 3}, {3, 2, 1, 0}, {3, 2, 1, 0}, {1, 1, 1, 1},
+  checkBufferLayout({3, 3, 2, 3, 2, 1}, {5, 2, 4, 0, 1, 3}, {1, 2, 3},
+                    {1, 2, 3}, {0, 1, 3, 6});
+  checkBufferLayout({1, 2, 3, 2, 3, 3}, {0, 1, 3, 2, 4, 5}, {1, 2, 3},
+                    {1, 2, 3}, {0, 1, 3, 6});
+  checkBufferLayout({0, 1, 2, 3}, {0, 1, 2, 3}, {0, 1, 2, 3}, {1, 1, 1, 1},
                     {0, 1, 2, 3, 4});
 }
 
