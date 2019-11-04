@@ -23,7 +23,7 @@
 
 namespace tt = boost::test_tools;
 
-BOOST_AUTO_TEST_CASE_TEMPLATE(sort_results, DeviceType, ARBORX_DEVICE_TYPES)
+/*BOOST_AUTO_TEST_CASE_TEMPLATE(sort_results, DeviceType, ARBORX_DEVICE_TYPES)
 {
   std::vector<int> ids_ = {4, 3, 2, 1, 4, 3, 2, 4, 3, 4};
   std::vector<int> sorted_ids = {1, 2, 2, 3, 3, 3, 4, 4, 4, 4};
@@ -210,7 +210,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(create_layout_right_mirror_view, DeviceType,
   auto y = subview(u, make_pair(8, 16));
   auto y_h = create_layout_right_mirror_view(y);
   checkViewWasNotAllocated(y, y_h);
-}
+}*/
 
 void checkBufferLayout(std::vector<int> const &ranks,
                        std::vector<int> const &permute_ref,
@@ -247,7 +247,7 @@ BOOST_AUTO_TEST_CASE(sort_and_determine_buffer_layout)
   checkBufferLayout({0, 1, 2, 3}, {3, 2, 1, 0}, {3, 2, 1, 0}, {1, 1, 1, 1},
                     {0, 1, 2, 3, 4});
 }
-
+/*
 BOOST_AUTO_TEST_CASE(pointer_depth)
 {
   static_assert(ArborX::Details::internal::PointerDepth<double>::value == 0,
@@ -275,4 +275,4 @@ BOOST_AUTO_TEST_CASE(pointer_depth)
   static_assert(
       ArborX::Details::internal::PointerDepth<double[2][3][4]>::value == 0,
       "Failing for double[2][3][4]");
-}
+}*/

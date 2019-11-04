@@ -31,46 +31,6 @@ namespace ArborX
 namespace Details
 {
 
-// NOTE: We were getting a compile error on CUDA when using a KOKKOS_LAMBDA.
-template <typename DeviceType>
-class BiggestRankItemsFunctor
-{
-public:
-  BiggestRankItemsFunctor(
-      const Kokkos::View<int *, DeviceType> &ranks_duplicate,
-      const Kokkos::View<int, DeviceType> &largest_rank,
-      const Kokkos::View<int *, DeviceType> &permutation_indices,
-      const Kokkos::View<int, DeviceType> &offset)
-      : _ranks_duplicate(ranks_duplicate)
-      , _largest_rank(largest_rank)
-      , _permutation_indices(permutation_indices)
-      , _offset(offset)
-  {
-  }
-  KOKKOS_INLINE_FUNCTION void operator()(int i, int &update,
-                                         bool last_pass) const
-  {
-    const bool is_largest_rank = (_ranks_duplicate(i) == _largest_rank());
-    if (is_largest_rank)
-    {
-      if (last_pass)
-      {
-        _permutation_indices(i) = update + _offset();
-        _ranks_duplicate(i) = -1;
-      }
-      ++update;
-    }
-    if (last_pass && i + 1 == _ranks_duplicate.extent(0))
-      _offset() += update;
-  }
-
-private:
-  const Kokkos::View<int *, DeviceType> _ranks_duplicate;
-  const Kokkos::View<int, DeviceType> _largest_rank;
-  const Kokkos::View<int *, DeviceType> _permutation_indices;
-  const Kokkos::View<int, DeviceType> _offset;
-};
-
 // Computes the array of indices that sort the input array (in reverse order)
 // but also returns the sorted unique elements in that array with the
 // corresponding element counts and displacement (offsets)
@@ -98,11 +58,6 @@ static void sortAndDetermineBufferLayout(InputView ranks,
   auto const n = ranks.extent_int(0);
   if (n == 0)
     return;
-
-  std::cout << "ranks" << std::endl;
-  for (unsigned int i=0; i<ranks.size(); ++i)
-    std::cout << ranks(i) << ' ';
-  std::cout << std::endl;
 
   // this implements a "sort" which is O(N * R) where (R) is the total number of
   // unique destination ranks. it performs better than other algorithms in the
@@ -136,55 +91,38 @@ static void sortAndDetermineBufferLayout(InputView ranks,
             {
               device_permutation_indices(i) = update + device_offset();
               device_ranks_duplicate(i) = -1;
-              //sleep(1);
             }
-	              ExecutionSpace().fence();
-	    //sleep(1);
             ++update;
-	              ExecutionSpace().fence();
-            sleep(1);
           }
-	  ExecutionSpace().fence();
-//	  sleep(1);
           if (last_pass && i + 1 == device_ranks_duplicate.extent(0))
             device_offset() += update;
         });
-    ExecutionSpace().fence();
-    //sleep(10);
+    //ExecutionSpace().fence();
     auto offset =
         Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), device_offset);
     offsets.push_back(offset());
   }
-  ExecutionSpace().fence();
-  //sleep(10);
+  //ExecutionSpace().fence();
   counts.reserve(offsets.size() - 1);
   for (unsigned int i = 1; i < offsets.size(); ++i)
     counts.push_back(offsets[i] - offsets[i - 1]);
-  //sleep(10);
   Kokkos::deep_copy(permutation_indices, device_permutation_indices);
   assert(offsets.back() == ranks.size());
 
-  std::cout << "unique_ranks" << std::endl;
-  for (const auto el: unique_ranks)
-    std::cout << el << ' ';
-  std::cout << std::endl;
+  if (std::is_same<ExecutionSpace, Kokkos::Serial>::value)
+  {
+	  std::cout << "Serial" << std::endl;
+	  abort();
+  }
+ if (std::is_same<ExecutionSpace, Kokkos::Threads>::value)
+          std::cout << "Threads" << std::endl;
+/* if (std::is_same<ExecutionSpace, Kokkos::OpenMP>::value)
+          std::cout << "OpenMP" << std::endl;
+ if (std::is_same<ExecutionSpace, Kokkos::Cuda>::value)
+          std::cout << "Cuda" << std::endl;*/
 
-  std::cout << "counts" << std::endl;  
-  for (const auto el: counts)  
-    std::cout << el << ' ';  
-  std::cout << std::endl;  
 
-std::cout << "offstes" << std::endl;  
-  for (const auto el: offsets)  
-    std::cout << el << ' ';  
-  std::cout << std::endl; 
-
- std::cout << "permutation" << std::endl;
-  for (unsigned int i=0; i<permutation_indices.size(); ++i)
-    std::cout << permutation_indices(i) << ' ';
-  std::cout << std::endl;
-
-  std::vector <int> permutation_copy(permutation_indices.size());
+  /*std::vector <int> permutation_copy(permutation_indices.size());
 	  for (unsigned int i=0; i<permutation_indices.size(); ++i)
 		  permutation_copy[i] = permutation_indices(i);
 
@@ -196,7 +134,7 @@ std::cout << "offstes" << std::endl;
       std::cout << permutation_copy[i] << " should be " << i << std::endl;
       assert(permutation_copy[i]==i);
     }
-  }
+  }*/
 }
 
 class Distributor
