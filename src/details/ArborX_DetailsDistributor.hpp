@@ -63,7 +63,7 @@ static void sortAndDetermineBufferLayout(InputView ranks,
   Kokkos::deep_copy(ranks_duplicate, ranks);
 
   std::cout << "ranks_duplicate" << std::endl;
-  for (unsigned int i = 0; i < n; ++i)
+  for (int i = 0; i < n; ++i)
     std::cout << ranks_duplicate(i) << ' ';
   std::cout << std::endl;
 
@@ -71,11 +71,12 @@ static void sortAndDetermineBufferLayout(InputView ranks,
   Kokkos::deep_copy(permutation_indices, inverse_permutation);
 
   unique_ranks.clear();
-  int current_rank = ranks(inverse_permutation(0));
+  Kokkos::deep_copy(ranks_duplicate, ranks);
+  int current_rank = ranks_duplicate(inverse_permutation(0));
   unique_ranks.push_back(current_rank);
-  for (unsigned int i = 0; i < n; ++i)
+  for (int i = 0; i < n; ++i)
   {
-    const int new_rank = ranks(inverse_permutation(i));
+    const int new_rank = ranks_duplicate(inverse_permutation(i));
     if (new_rank != current_rank)
     {
       current_rank = new_rank;
@@ -90,12 +91,12 @@ static void sortAndDetermineBufferLayout(InputView ranks,
     counts.push_back(offsets[i] - offsets[i - 1]);
 
   std::cout << "permutation_indices" << std::endl;
-  for (unsigned int i = 0; i < n; ++i)
+  for (int i = 0; i < n; ++i)
     std::cout << permutation_indices(i) << ' ';
   std::cout << std::endl;
 
   std::cout << "inverse permutation" << std::endl;
-  for (unsigned int i = 0; i < n; ++i)
+  for (int i = 0; i < n; ++i)
     std::cout << inverse_permutation(i) << ' ';
   std::cout << std::endl;
 
