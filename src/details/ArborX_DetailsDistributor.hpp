@@ -52,6 +52,9 @@ static void sortAndDetermineBufferLayout(InputView ranks,
                                       Kokkos::HostSpace>::accessible,
       "");
 
+  counts.clear();
+  offsets.clear();
+  unique_ranks.clear();
   offsets.push_back(0);
 
   auto const n = ranks.extent_int(0);
@@ -70,35 +73,32 @@ static void sortAndDetermineBufferLayout(InputView ranks,
   Kokkos::View<int *, DeviceType> device_permutation_indices(
       Kokkos::ViewAllocateWithoutInitializing(permutation_indices.label()),
       permutation_indices.size());
-  Kokkos::View<int, DeviceType> device_offset("offset");
+  int offset = 0;
   while (true)
   {
     int const largest_rank = ArborX::max(device_ranks_duplicate);
     if (largest_rank == -1)
       break;
     unique_ranks.push_back(largest_rank);
-    auto device_largest_rank = Kokkos::View<int, DeviceType>("largest_rank");
-    Kokkos::deep_copy(device_largest_rank, largest_rank);
-    Kokkos::parallel_scan(
-        "process_biggest_rank_items", Kokkos::RangePolicy<ExecutionSpace>(0, n),
-        KOKKOS_LAMBDA(int i, int &update, bool last_pass) {
-          bool const is_largest_rank =
-              (device_ranks_duplicate(i) == device_largest_rank());
-          if (is_largest_rank)
-          {
-            if (last_pass)
-            {
-              device_permutation_indices(i) = update + device_offset();
-              device_ranks_duplicate(i) = -1;
-            }
-            ++update;
-          }
-          if (last_pass && i + 1 == device_ranks_duplicate.extent(0))
-            device_offset() += update;
-        });
-    auto offset =
-        Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), device_offset);
-    offsets.push_back(offset());
+    int result = 0;
+    Kokkos::parallel_scan("process_biggest_rank_items",
+                          Kokkos::RangePolicy<ExecutionSpace>(0, n),
+                          KOKKOS_LAMBDA(int i, int &update, bool last_pass) {
+                            bool const is_largest_rank =
+                                (device_ranks_duplicate(i) == largest_rank);
+                            if (is_largest_rank)
+                            {
+                              if (last_pass)
+                              {
+                                device_permutation_indices(i) = update + offset;
+                                device_ranks_duplicate(i) = -1;
+                              }
+                              ++update;
+                            }
+                          },
+                          result);
+    offset += result;
+    offsets.push_back(offset);
   }
   counts.reserve(offsets.size() - 1);
   for (unsigned int i = 1; i < offsets.size(); ++i)
