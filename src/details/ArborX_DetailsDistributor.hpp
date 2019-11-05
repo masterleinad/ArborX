@@ -104,7 +104,7 @@ static void sortAndDetermineBufferLayout(InputView ranks,
   for (unsigned int i = 1; i < offsets.size(); ++i)
     counts.push_back(offsets[i] - offsets[i - 1]);
   Kokkos::deep_copy(permutation_indices, device_permutation_indices);
-  ARBORX_ASSERT(offsets.back() == ranks.size());
+  ARBORX_ASSERT(offsets.back() == static_cast<int>(ranks.size()));
 }
 
 class Distributor
