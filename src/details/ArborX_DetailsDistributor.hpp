@@ -68,18 +68,25 @@ static void sortAndDetermineBufferLayout(InputView ranks,
   Kokkos::View<int *, DeviceType> device_ranks_duplicate(
       Kokkos::ViewAllocateWithoutInitializing(ranks.label()), ranks.size());
   Kokkos::deep_copy(device_ranks_duplicate, ranks);
+  std::cout << "ranks" << std::endl;
+  for(unsigned int i=0; i<device_ranks_duplicate.size(); ++i)
+    std::cout << device_ranks_duplicate(i) << ' ';
+  std::cout << std::endl;
   Kokkos::View<int *, DeviceType> device_permutation_indices(
       Kokkos::ViewAllocateWithoutInitializing(permutation_indices.label()),
       permutation_indices.size());
-  Kokkos::View<int, DeviceType> device_offset("offset");
+//  Kokkos::View<int, DeviceType, Kokkos::MemoryTraits<Kokkos::Atomic>> device_offset("offset");
+  int offset = 0;
   while (true)
   {
     int const largest_rank = ArborX::max(device_ranks_duplicate);
     if (largest_rank == -1)
       break;
+    std::cout << "largest rank: " << largest_rank << std::endl;
     unique_ranks.push_back(largest_rank);
     auto device_largest_rank = Kokkos::View<int, DeviceType>("largest_rank");
     Kokkos::deep_copy(device_largest_rank, largest_rank);
+    int result;
     Kokkos::parallel_scan(
         "process_biggest_rank_items", Kokkos::RangePolicy<ExecutionSpace>(0, n),
         KOKKOS_LAMBDA(int i, int &update, bool last_pass) {
@@ -87,20 +94,25 @@ static void sortAndDetermineBufferLayout(InputView ranks,
               (device_ranks_duplicate(i) == device_largest_rank());
           if (is_largest_rank)
           {
+	            printf("i: %d\n", i);
             if (last_pass)
             {
-              device_permutation_indices(i) = update + device_offset();
+              device_permutation_indices(i) = update + offset;//device_offset();
+//              printf("update: %d, offset: %d\n", update, device_offset());
+	      printf("device_permutation_indices(%d): %d\n", i, device_permutation_indices(i));
               device_ranks_duplicate(i) = -1;
             }
             ++update;
           }
-          if (last_pass && i + 1 == device_ranks_duplicate.extent(0))
-            device_offset() += update;
-        });
+/*          if (last_pass && i + 1 == device_ranks_duplicate.extent(0))
+            device_offset() += update;*/
+        }, result);
+    std::cout << "result: " << result << std::endl;
+    offset += result;
     //ExecutionSpace().fence();
-    auto offset =
-        Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), device_offset);
-    offsets.push_back(offset());
+    //auto offset =
+    //    Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), device_offset);
+    offsets.push_back(offset);
   }
   //ExecutionSpace().fence();
   counts.reserve(offsets.size() - 1);
@@ -109,20 +121,20 @@ static void sortAndDetermineBufferLayout(InputView ranks,
   Kokkos::deep_copy(permutation_indices, device_permutation_indices);
   assert(offsets.back() == ranks.size());
 
-  if (std::is_same<ExecutionSpace, Kokkos::Serial>::value)
+  /*if (std::is_same<ExecutionSpace, Kokkos::Serial>::value)
   {
 	  std::cout << "Serial" << std::endl;
 	  abort();
   }
  if (std::is_same<ExecutionSpace, Kokkos::Threads>::value)
           std::cout << "Threads" << std::endl;
-/* if (std::is_same<ExecutionSpace, Kokkos::OpenMP>::value)
+ if (std::is_same<ExecutionSpace, Kokkos::OpenMP>::value)
           std::cout << "OpenMP" << std::endl;
  if (std::is_same<ExecutionSpace, Kokkos::Cuda>::value)
           std::cout << "Cuda" << std::endl;*/
 
 
-  /*std::vector <int> permutation_copy(permutation_indices.size());
+  std::vector <int> permutation_copy(permutation_indices.size());
 	  for (unsigned int i=0; i<permutation_indices.size(); ++i)
 		  permutation_copy[i] = permutation_indices(i);
 
@@ -134,7 +146,7 @@ static void sortAndDetermineBufferLayout(InputView ranks,
       std::cout << permutation_copy[i] << " should be " << i << std::endl;
       assert(permutation_copy[i]==i);
     }
-  }*/
+  }
 }
 
 class Distributor
