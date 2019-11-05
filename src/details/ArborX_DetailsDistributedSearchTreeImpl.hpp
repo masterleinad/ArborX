@@ -462,7 +462,7 @@ void applyPermutations(BinSort &)
 }
 
 template <typename BinSort, typename View, typename... OtherViews>
-void applyPermutations(BinSort &bin_sort, View view, OtherViews... other_views)
+void applyPermutations(BinSort const &bin_sort, View view, OtherViews... other_views)
 {
   ARBORX_ASSERT(bin_sort.get_permute_vector().extent(0) == view.extent(0));
   bin_sort.sort(view);
@@ -474,25 +474,19 @@ template <typename View, typename... OtherViews>
 void DistributedSearchTreeImpl<DeviceType>::sortResults(
     View keys, OtherViews... other_views)
 {
-  auto const n = keys.extent(0);
-  // If they were no queries, min_val and max_val values won't change after
-  // the parallel reduce (they are initialized to +infty and -infty
-  // respectively) and the sort will hang.
-  if (n == 0)
-    return;
-
+  // copy keys?
   using Comp = Kokkos::BinOp1D<View>;
-  using Value = typename View::non_const_value_type;
+  Kokkos::BinSort<View, Comp> bin_sort;
+  auto const permutation = ArborX::Details::sortObjects(keys);
+  Kokkos::deep_copy(bin_sort.sort_order, permutation);
 
-  Kokkos::MinMaxScalar<Value> result;
+  /*Kokkos::MinMaxScalar<Value> result;
   Kokkos::MinMax<Value> reducer(result);
   parallel_reduce(Kokkos::RangePolicy<ExecutionSpace>(0, n),
                   Kokkos::Impl::min_max_functor<View>(keys), reducer);
   if (result.min_val == result.max_val)
-    return;
-  Kokkos::BinSort<View, Comp> bin_sort(
-      keys, Comp(n / 2, result.min_val, result.max_val), true);
-  bin_sort.create_permute_vector();
+    return;*/ 
+
   applyPermutations(bin_sort, other_views...);
 }
 
