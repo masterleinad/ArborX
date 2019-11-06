@@ -461,12 +461,18 @@ void applyPermutations(BinSort &)
   // do nothing
 }
 
-template <typename BinSort, typename View, typename... OtherViews>
-void applyPermutations(BinSort const &bin_sort, View view, OtherViews... other_views)
+template <typename PermutationView, typename View, typename... OtherViews>
+void applyPermutations(PermutationView const &permutation, View view, OtherViews... other_views)
 {
-  ARBORX_ASSERT(bin_sort.get_permute_vector().extent(0) == view.extent(0));
-  bin_sort.sort(view);
-  applyPermutations(bin_sort, other_views...);
+  ARBORX_ASSERT(permutation.extent(0) == view.extent(0));
+  View scratch(Kokkos::ViewAllocateWithoutInitializing("scratch"), view.size());
+		  Kokkos::parallel_for("permute", Kokkos::RangePolicy<typename View::execution_space>(0, view.size()),
+		  KOKKOS_LAMBDA(int i)
+		  {
+		     scratch(i) = view(permutation(i));
+		  });
+  Kokkos::deep_copy(view, scratch);
+  applyPermutations(permutation, other_views...);
 }
 
 template <typename DeviceType>
@@ -474,20 +480,27 @@ template <typename View, typename... OtherViews>
 void DistributedSearchTreeImpl<DeviceType>::sortResults(
     View keys, OtherViews... other_views)
 {
-  // copy keys?
-  using Comp = Kokkos::BinOp1D<View>;
-  Kokkos::BinSort<View, Comp> bin_sort;
-  auto const permutation = ArborX::Details::sortObjects(keys);
-  Kokkos::deep_copy(bin_sort.sort_order, permutation);
+  auto const n = keys.extent(0);
+  // If they were no queries, min_val and max_val values won't change after
+  // the parallel reduce (they are initialized to +infty and -infty
+  // respectively) and the sort will hang.
+  if (n == 0)
+    return;
 
-  /*Kokkos::MinMaxScalar<Value> result;
+  using Value = typename View::non_const_value_type;
+
+  Kokkos::MinMaxScalar<Value> result;
   Kokkos::MinMax<Value> reducer(result);
   parallel_reduce(Kokkos::RangePolicy<ExecutionSpace>(0, n),
                   Kokkos::Impl::min_max_functor<View>(keys), reducer);
   if (result.min_val == result.max_val)
-    return;*/ 
+    return;
 
-  applyPermutations(bin_sort, other_views...);
+  View keys_clone(Kokkos::ViewAllocateWithoutInitializing("keys"), keys.size());
+  Kokkos::deep_copy(keys_clone, keys);
+  auto const permutation = ArborX::Details::sortObjects(keys_clone);
+
+  applyPermutations(permutation, other_views...);
 }
 
 template <typename DeviceType>
