@@ -148,31 +148,31 @@ public:
 
     // Send the number of messages to the respective processors...
     std::vector<MPI_Request> send_requests(dest_size);
-    for (unsigned int i = 0; i < dest_size; ++i)
+    for (int i = 0; i < dest_size; ++i)
     {
       int const ierr =
           MPI_Isend(&(_dest_counts[i]), 1, MPI_INT, _destinations[i], 32766,
-                    mpi_comm, &(send_requests[i]));
+                    _comm, &(send_requests[i]));
       ARBORX_ASSERT(ierr == MPI_SUCCESS);
     }
 
     // ...and receive them.
     std::vector<unsigned int> origins(n_recv_from);
-    for (auto &el : origins)
+    _src_offsets.push_back(0);
+    for (unsigned int i=0; i<n_recv_from; ++i)
     {
       MPI_Status status;
-      // Probe for an incoming message from process zero
-      MPI_Probe(MPI_ANY_SOURCE, 32766, mpi_comm, &status);
+      MPI_Probe(MPI_ANY_SOURCE, 32766, _comm, &status);
       int n_elements;
-      int rank;
-      int const ierr = MPI_Recv(&n_elements, 1, MPI_UNSIGNED, status.MPI_SOURCE,
-                                32766, mpi_comm, MPI_STATUS_IGNORE);
-      AssertThrowMPI(ierr);
+      int const source_rank = status.MPI_SOURCE;
+      int const ierr = MPI_Recv(&n_elements, 1, MPI_UNSIGNED, source_rank,
+                                32766, _comm, MPI_STATUS_IGNORE);
+      ARBORX_ASSERT(ierr==MPI_SUCCESS);
       if (n_elements > 0)
       {
-        _sources.push_back(status.MPI_SOURCE);
+        _sources.push_back(source_rank);
         _src_counts.push_back(n_elements);
-        _src_offsets.push_back(n_elements + _src_counts.back());
+        _src_offsets.push_back(n_elements + _src_offsets.back());
       }
     }
 
