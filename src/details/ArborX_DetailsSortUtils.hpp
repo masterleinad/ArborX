@@ -99,8 +99,7 @@ sortObjects(Kokkos::View<NumberType *, DeviceType> view)
 // NOTE returns the permutation indices **and** sorts the morton codes
 template <typename NumberType, typename MemorySpace>
 Kokkos::View<size_t *, Kokkos::Device<Kokkos::Cuda, MemorySpace>> sortObjects(
-    Kokkos::View<NumberType *, Kokkos::Device<Kokkos::Cuda, MemorySpace>>
-        view)
+    Kokkos::View<NumberType *, Kokkos::Device<Kokkos::Cuda, MemorySpace>> view)
 {
   int const n = view.extent(0);
 

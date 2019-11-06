@@ -462,15 +462,15 @@ void applyPermutations(BinSort &)
 }
 
 template <typename PermutationView, typename View, typename... OtherViews>
-void applyPermutations(PermutationView const &permutation, View view, OtherViews... other_views)
+void applyPermutations(PermutationView const &permutation, View view,
+                       OtherViews... other_views)
 {
   ARBORX_ASSERT(permutation.extent(0) == view.extent(0));
   View scratch(Kokkos::ViewAllocateWithoutInitializing("scratch"), view.size());
-		  Kokkos::parallel_for("permute", Kokkos::RangePolicy<typename View::execution_space>(0, view.size()),
-		  KOKKOS_LAMBDA(int i)
-		  {
-		     scratch(i) = view(permutation(i));
-		  });
+  Kokkos::parallel_for(
+      "permute",
+      Kokkos::RangePolicy<typename View::execution_space>(0, view.size()),
+      KOKKOS_LAMBDA(int i) { scratch(i) = view(permutation(i)); });
   Kokkos::deep_copy(view, scratch);
   applyPermutations(permutation, other_views...);
 }
