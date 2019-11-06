@@ -133,22 +133,67 @@ public:
                                  _dest_counts, _dest_offsets);
 
     std::vector<int> src_counts_dense(comm_size);
+    std::vector<int> sent_to_process(comm_size);
     int const dest_size = _destinations.size();
     for (int i = 0; i < dest_size; ++i)
     {
       src_counts_dense[_destinations[i]] = _dest_counts[i];
+      sent_to_process[_destinations[i]] = 1;
     }
-    MPI_Alltoall(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL, src_counts_dense.data(), 1,
-                 MPI_INT, _comm);
 
-    _src_offsets.push_back(0);
-    for (int i = 0; i < comm_size; ++i)
-      if (src_counts_dense[i] > 0)
-      {
-        _sources.push_back(i);
-        _src_counts.push_back(src_counts_dense[i]);
-        _src_offsets.push_back(_src_offsets.back() + _src_counts.back());
-      }
+    unsigned int n_recv_from;
+    int const ierr = MPI_Reduce_scatter_block(
+        sent_to_process.data(), &n_recv_from, 1, MPI_INT, MPI_SUM, _comm);
+ARBORX_ASSERT(ierr == MPI_SUCCESS);
+
+      // Send the number of messages to the respective processors...
+      std::vector<MPI_Request> send_requests(dest_size);
+      for (unsigned int i=0; i<dest_size; ++i)
+        {
+          int const ierr =
+            MPI_Isend(&(_dest_counts[i]),
+                      1,
+                      MPI_INT,
+                      _destinations[i],
+                      32766,
+                      mpi_comm,
+                      &(send_requests[i]));
+          ARBORX_ASSERT(ierr == MPI_SUCCESS);
+        }
+
+
+      // ...and receive them.
+      std::vector<unsigned int> origins(n_recv_from);
+      for (auto &el : origins)
+        {
+          MPI_Status status;
+          // Probe for an incoming message from process zero
+          MPI_Probe(MPI_ANY_SOURCE, 32766, mpi_comm, &status);
+         int n_elements;
+          int rank;
+          int const ierr = MPI_Recv(&n_elements,
+                                    1,
+                                    MPI_UNSIGNED,
+				    status.MPI_SOURCE,
+                                    32766,
+                                    mpi_comm,
+                                    MPI_STATUS_IGNORE);
+          AssertThrowMPI(ierr);
+          if (n_elements>0)
+{
+          _sources.push_back(status.MPI_SOURCE);
+          _src_counts.push_back(n_elements);
+_src_offsets.push_back(n_elements+_src_counts.back());
+}
+        }
+
+      if (dest_size > 0)
+        {
+          int const ierr = MPI_Waitall(dest_size,
+                                       send_requests.data(),
+                                       MPI_STATUSES_IGNORE);
+          ARBORX_ASSERT(ierr==MPI_SUCCESS);
+        }
 
     return _src_offsets.back();
   }
