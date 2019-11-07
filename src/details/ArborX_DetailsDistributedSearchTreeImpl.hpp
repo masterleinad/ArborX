@@ -119,10 +119,13 @@ struct DistributedSearchTreeImpl
                            Kokkos::View<int *, DeviceType> query_ids,
                            Kokkos::View<int *, DeviceType> &offset);
 
-  template <typename View>
+  template <typename View, typename... OtherViews>
   static typename std::enable_if<Kokkos::is_view<View>::value>::type
   sendAcrossNetwork(Distributor const &distributor, View exports,
-                    typename View::non_const_type imports);
+                    typename View::non_const_type imports,
+                    OtherViews... other_views);
+
+  static void sendAcrossNetwork(Distributor const &distributor);
 };
 
 namespace internal
@@ -192,11 +195,11 @@ create_layout_right_mirror_view(
 }
 
 template <typename DeviceType>
-template <typename View>
+template <typename View, typename... OtherViews>
 typename std::enable_if<Kokkos::is_view<View>::value>::type
 DistributedSearchTreeImpl<DeviceType>::sendAcrossNetwork(
     Distributor const &distributor, View exports,
-    typename View::non_const_type imports)
+    typename View::non_const_type imports, OtherViews... other_views)
 {
   ARBORX_ASSERT((exports.extent(0) == distributor.getTotalSendLength()) &&
                 (imports.extent(0) == distributor.getTotalReceiveLength()) &&
@@ -230,12 +233,28 @@ DistributedSearchTreeImpl<DeviceType>::sendAcrossNetwork(
                Kokkos::MemoryTraits<Kokkos::Unmanaged>>
       import_buffer(imports_host.data(), imports_host.size());
 
-  distributor.doPostsAndWaits(export_buffer, num_packets, import_buffer);
+  auto mpi_requests =
+      distributor.doPostsAndWaits(export_buffer, num_packets, import_buffer);
+  MPI_Barrier(MPI_COMM_WORLD);
+  sendAcrossNetwork(distributor, other_views...);
+  for (auto &request : mpi_requests)
+    MPI_Wait(request.get(), MPI_STATUS_IGNORE);
 
   Kokkos::deep_copy(imports, imports_host);
 #else
-  distributor.doPostsAndWaits(exports, num_packets, imports);
+  auto mpi_requests =
+      distributor.doPostsAndWaits(exports, num_packets, imports);
+  MPI_Barrier(MPI_COMM_WORLD);
+  sendAcrossNetwork(distributor, other_views...);
+  for (auto &request : mpi_requests)
+    MPI_Wait(request.get(), MPI_STATUS_IGNORE);
 #endif
+}
+
+template <typename DeviceType>
+void DistributedSearchTreeImpl<DeviceType>::sendAcrossNetwork(
+    Distributor const &)
+{
 }
 
 template <typename DeviceType>
@@ -554,8 +573,8 @@ void DistributedSearchTreeImpl<DeviceType>::forwardQueries(
   Kokkos::View<int *, DeviceType> export_ranks("export_ranks", n_exports);
   Kokkos::deep_copy(export_ranks, comm_rank);
 
-  Kokkos::View<int *, DeviceType> import_ranks("import_ranks", n_imports);
-  sendAcrossNetwork(distributor, export_ranks, import_ranks);
+  Kokkos::View<int *, DeviceType> import_ranks(
+      Kokkos::ViewAllocateWithoutInitializing("import_ranks"), n_imports);
 
   Kokkos::View<int *, DeviceType> export_ids("export_ids", n_exports);
   Kokkos::parallel_for(ARBORX_MARK_REGION("forward_queries_fill_ids"),
@@ -567,11 +586,11 @@ void DistributedSearchTreeImpl<DeviceType>::forwardQueries(
                          }
                        });
   Kokkos::View<int *, DeviceType> import_ids("import_ids", n_imports);
-  sendAcrossNetwork(distributor, export_ids, import_ids);
 
   // Send queries across the network
   Kokkos::View<Query *, DeviceType> imports(queries.label(), n_imports);
-  sendAcrossNetwork(distributor, exports, imports);
+  sendAcrossNetwork(distributor, export_ranks, import_ranks, export_ids,
+                    import_ids, exports, imports);
 
   fwd_queries = imports;
   fwd_ids = import_ids;
@@ -619,16 +638,12 @@ void DistributedSearchTreeImpl<DeviceType>::communicateResultsBack(
                        });
   Kokkos::View<int *, DeviceType> export_indices = indices;
 
-  Kokkos::View<int *, DeviceType> import_indices(indices.label(), n_imports);
-  Kokkos::View<int *, DeviceType> import_ranks(ranks.label(), n_imports);
-  Kokkos::View<int *, DeviceType> import_ids(ids.label(), n_imports);
-  sendAcrossNetwork(distributor, export_indices, import_indices);
-  sendAcrossNetwork(distributor, export_ranks, import_ranks);
-  sendAcrossNetwork(distributor, export_ids, import_ids);
-
-  ids = import_ids;
-  ranks = import_ranks;
-  indices = import_indices;
+  Kokkos::View<int *, DeviceType> import_indices(
+      Kokkos::ViewAllocateWithoutInitializing(indices.label()), n_imports);
+  Kokkos::View<int *, DeviceType> import_ranks(
+      Kokkos::ViewAllocateWithoutInitializing(ranks.label()), n_imports);
+  Kokkos::View<int *, DeviceType> import_ids(
+      Kokkos::ViewAllocateWithoutInitializing(ids.label()), n_imports);
 
   if (distances_ptr)
   {
@@ -636,9 +651,18 @@ void DistributedSearchTreeImpl<DeviceType>::communicateResultsBack(
     Kokkos::View<double *, DeviceType> export_distances = distances;
     Kokkos::View<double *, DeviceType> import_distances(distances.label(),
                                                         n_imports);
-    sendAcrossNetwork(distributor, export_distances, import_distances);
+    sendAcrossNetwork(distributor, export_indices, import_indices, export_ranks,
+                      import_ranks, export_ids, import_ids, export_distances,
+                      import_distances);
     distances = import_distances;
   }
+  else
+    sendAcrossNetwork(distributor, export_indices, import_indices, export_ranks,
+                      import_ranks, export_ids, import_ids);
+
+  ids = import_ids;
+  ranks = import_ranks;
+  indices = import_indices;
 }
 
 template <typename DeviceType>
