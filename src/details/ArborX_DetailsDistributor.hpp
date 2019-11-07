@@ -20,7 +20,8 @@
 #include <Kokkos_Core.hpp> // FIXME
 
 #include <algorithm> // max_element
-#include <numeric>   // iota
+#include <memory>
+#include <numeric> // iota
 #include <sstream>
 #include <vector>
 
@@ -152,8 +153,9 @@ public:
   }
 
   template <typename View>
-  void doPostsAndWaits(typename View::const_type const &exports,
-                       size_t num_packets, View const &imports) const
+  std::vector<std::unique_ptr<MPI_Request>>
+  doPostsAndWaits(typename View::const_type const &exports, size_t num_packets,
+                  View const &imports) const
   {
     ARBORX_ASSERT(num_packets * _src_offsets.back() == imports.size());
     ARBORX_ASSERT(num_packets * _dest_offsets.back() == exports.size());
@@ -192,7 +194,7 @@ public:
     MPI_Comm_size(_comm, &comm_size);
     int const indegrees = _sources.size();
     int const outdegrees = _destinations.size();
-    std::vector<MPI_Request> requests;
+    std::vector<std::unique_ptr<MPI_Request>> requests;
     requests.reserve(outdegrees + indegrees);
     for (int i = 0; i < indegrees; ++i)
     {
@@ -202,9 +204,11 @@ public:
             _src_counts[i] * num_packets * sizeof(ValueType);
         auto const receive_buffer_ptr =
             imports.data() + _src_offsets[i] * num_packets;
-        requests.emplace_back();
-        MPI_Irecv(receive_buffer_ptr, message_size, MPI_BYTE, _sources[i], 123,
-                  _comm, &requests.back());
+        requests.emplace_back(new MPI_Request);
+        int const ierr =
+            MPI_Irecv(receive_buffer_ptr, message_size, MPI_BYTE, _sources[i],
+                      123, _comm, requests.back().get());
+        ARBORX_ASSERT(ierr == MPI_SUCCESS);
       }
     }
 
@@ -235,13 +239,14 @@ public:
       }
       else
       {
-        requests.emplace_back();
-        MPI_Isend(send_buffer_ptr, message_size, MPI_BYTE, _destinations[i],
-                  123, _comm, &requests.back());
+        requests.emplace_back(new MPI_Request);
+        int const ierr =
+            MPI_Isend(send_buffer_ptr, message_size, MPI_BYTE, _destinations[i],
+                      123, _comm, requests.back().get());
+        ARBORX_ASSERT(ierr == MPI_SUCCESS);
       }
     }
-    if (!requests.empty())
-      MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
+    return requests;
   }
   size_t getTotalReceiveLength() const { return _src_offsets.back(); }
   size_t getTotalSendLength() const { return _dest_offsets.back(); }
