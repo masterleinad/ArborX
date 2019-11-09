@@ -124,8 +124,6 @@ struct DistributedSearchTreeImpl
   sendAcrossNetwork(Distributor const &distributor, View exports,
                     typename View::non_const_type imports,
                     OtherViews... other_views);
-
-  static void sendAcrossNetwork(Distributor const &distributor);
 };
 
 namespace internal
@@ -201,60 +199,7 @@ DistributedSearchTreeImpl<DeviceType>::sendAcrossNetwork(
     Distributor const &distributor, View exports,
     typename View::non_const_type imports, OtherViews... other_views)
 {
-  ARBORX_ASSERT((exports.extent(0) == distributor.getTotalSendLength()) &&
-                (imports.extent(0) == distributor.getTotalReceiveLength()) &&
-                (exports.extent(1) == imports.extent(1)) &&
-                (exports.extent(2) == imports.extent(2)) &&
-                (exports.extent(3) == imports.extent(3)) &&
-                (exports.extent(4) == imports.extent(4)) &&
-                (exports.extent(5) == imports.extent(5)) &&
-                (exports.extent(6) == imports.extent(6)) &&
-                (exports.extent(7) == imports.extent(7)));
-
-  auto const num_packets = exports.extent(1) * exports.extent(2) *
-                           exports.extent(3) * exports.extent(4) *
-                           exports.extent(5) * exports.extent(6) *
-                           exports.extent(7);
-
-#ifndef ARBORX_USE_CUDA_AWARE_MPI
-  auto exports_host = create_layout_right_mirror_view(exports);
-  Kokkos::deep_copy(exports_host, exports);
-
-  auto imports_host = create_layout_right_mirror_view(imports);
-
-  using NonConstValueType = typename View::non_const_value_type;
-  using ConstValueType = typename View::const_value_type;
-
-  Kokkos::View<ConstValueType *, Kokkos::HostSpace,
-               Kokkos::MemoryTraits<Kokkos::Unmanaged>>
-      export_buffer(exports_host.data(), exports_host.size());
-
-  Kokkos::View<NonConstValueType *, Kokkos::HostSpace,
-               Kokkos::MemoryTraits<Kokkos::Unmanaged>>
-      import_buffer(imports_host.data(), imports_host.size());
-
-  auto mpi_requests =
-      distributor.doPostsAndWaits(export_buffer, num_packets, import_buffer);
-  MPI_Barrier(MPI_COMM_WORLD);
-  sendAcrossNetwork(distributor, other_views...);
-  for (auto &request : mpi_requests)
-    MPI_Wait(request.get(), MPI_STATUS_IGNORE);
-
-  Kokkos::deep_copy(imports, imports_host);
-#else
-  auto mpi_requests =
-      distributor.doPostsAndWaits(exports, num_packets, imports);
-  MPI_Barrier(MPI_COMM_WORLD);
-  sendAcrossNetwork(distributor, other_views...);
-  for (auto &request : mpi_requests)
-    MPI_Wait(request.get(), MPI_STATUS_IGNORE);
-#endif
-}
-
-template <typename DeviceType>
-void DistributedSearchTreeImpl<DeviceType>::sendAcrossNetwork(
-    Distributor const &)
-{
+  distributor.sendAcrossNetwork(exports, imports, other_views...);
 }
 
 template <typename DeviceType>
