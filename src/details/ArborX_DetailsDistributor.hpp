@@ -13,6 +13,7 @@
 
 #include <ArborX_Config.hpp>
 
+#include <ArborX_DetailsDistributedSearchTreeImpl.hpp>
 #include <ArborX_DetailsUtils.hpp> // max
 #include <ArborX_Exception.hpp>
 #include <ArborX_Macros.hpp>
@@ -20,6 +21,7 @@
 #include <Kokkos_Core.hpp> // FIXME
 
 #include <algorithm> // max_element
+#include <cassert>
 #include <memory>
 #include <numeric> // iota
 #include <sstream>
@@ -27,10 +29,75 @@
 
 #include <mpi.h>
 
-#include<cassert>
-
 namespace ArborX
 {
+
+namespace internal
+{
+template <typename PointerType>
+struct PointerDepth
+{
+  static int constexpr value = 0;
+};
+
+template <typename PointerType>
+struct PointerDepth<PointerType *>
+{
+  static int constexpr value = PointerDepth<PointerType>::value + 1;
+};
+
+template <typename PointerType, std::size_t N>
+struct PointerDepth<PointerType[N]>
+{
+  static int constexpr value = PointerDepth<PointerType>::value;
+};
+} // namespace internal
+
+template <typename View>
+inline Kokkos::View<typename View::traits::data_type, Kokkos::LayoutRight,
+                    typename View::traits::host_mirror_space>
+create_layout_right_mirror_view(
+    View const &src,
+    typename std::enable_if<!(
+        (std::is_same<typename View::traits::array_layout,
+                      Kokkos::LayoutRight>::value ||
+         (View::rank == 1 && !std::is_same<typename View::traits::array_layout,
+                                           Kokkos::LayoutStride>::value)) &&
+        std::is_same<typename View::traits::memory_space,
+                     typename View::traits::host_mirror_space::memory_space>::
+            value)>::type * = 0)
+{
+  constexpr int pointer_depth =
+      internal::PointerDepth<typename View::traits::data_type>::value;
+  return Kokkos::View<typename View::traits::data_type, Kokkos::LayoutRight,
+                      typename View::traits::host_mirror_space>(
+      std::string(src.label()).append("_layout_right_mirror"), src.extent(0),
+      pointer_depth > 1 ? src.extent(1) : KOKKOS_INVALID_INDEX,
+      pointer_depth > 2 ? src.extent(2) : KOKKOS_INVALID_INDEX,
+      pointer_depth > 3 ? src.extent(3) : KOKKOS_INVALID_INDEX,
+      pointer_depth > 4 ? src.extent(4) : KOKKOS_INVALID_INDEX,
+      pointer_depth > 5 ? src.extent(5) : KOKKOS_INVALID_INDEX,
+      pointer_depth > 6 ? src.extent(6) : KOKKOS_INVALID_INDEX,
+      pointer_depth > 7 ? src.extent(7) : KOKKOS_INVALID_INDEX);
+}
+
+template <typename View>
+inline Kokkos::View<typename View::traits::data_type, Kokkos::LayoutRight,
+                    typename View::traits::host_mirror_space>
+create_layout_right_mirror_view(
+    View const &src,
+    typename std::enable_if<
+        ((std::is_same<typename View::traits::array_layout,
+                       Kokkos::LayoutRight>::value ||
+          (View::rank == 1 && !std::is_same<typename View::traits::array_layout,
+                                            Kokkos::LayoutStride>::value)) &&
+         std::is_same<typename View::traits::memory_space,
+                      typename View::traits::host_mirror_space::memory_space>::
+             value)>::type * = 0)
+{
+  return src;
+}
+
 namespace Details
 {
 
@@ -154,71 +221,70 @@ public:
     return _src_offsets.back();
   }
 
-template <typename View, typename... OtherViews>
-typename std::enable_if<Kokkos::is_view<View>::value>::type
-sendAcrossNetwork(
-    View exports,
-    typename View::non_const_type imports, OtherViews... other_views) const
-{
-  ARBORX_ASSERT((exports.extent(0) == this->getTotalSendLength()) &&
-                (imports.extent(0) == this->getTotalReceiveLength()) &&
-                (exports.extent(1) == imports.extent(1)) &&
-                (exports.extent(2) == imports.extent(2)) &&
-                (exports.extent(3) == imports.extent(3)) &&
-                (exports.extent(4) == imports.extent(4)) &&
-                (exports.extent(5) == imports.extent(5)) &&
-                (exports.extent(6) == imports.extent(6)) &&
-                (exports.extent(7) == imports.extent(7)));
+  template <typename View, typename... OtherViews>
+  typename std::enable_if<Kokkos::is_view<View>::value>::type
+  sendAcrossNetwork(View exports, typename View::non_const_type imports,
+                    OtherViews... other_views) const
+  {
+    ARBORX_ASSERT((exports.extent(0) == this->getTotalSendLength()) &&
+                  (imports.extent(0) == this->getTotalReceiveLength()) &&
+                  (exports.extent(1) == imports.extent(1)) &&
+                  (exports.extent(2) == imports.extent(2)) &&
+                  (exports.extent(3) == imports.extent(3)) &&
+                  (exports.extent(4) == imports.extent(4)) &&
+                  (exports.extent(5) == imports.extent(5)) &&
+                  (exports.extent(6) == imports.extent(6)) &&
+                  (exports.extent(7) == imports.extent(7)));
+
+    auto const num_packets = exports.extent(1) * exports.extent(2) *
+                             exports.extent(3) * exports.extent(4) *
+                             exports.extent(5) * exports.extent(6) *
+                             exports.extent(7);
 
 #ifndef ARBORX_USE_CUDA_AWARE_MPI
-  auto exports_host = create_layout_right_mirror_view(exports);
-  Kokkos::deep_copy(exports_host, exports);
+    auto exports_host = create_layout_right_mirror_view(exports);
+    Kokkos::deep_copy(exports_host, exports);
 
-  auto imports_host = create_layout_right_mirror_view(imports);
+    auto imports_host = create_layout_right_mirror_view(imports);
 
-  using NonConstValueType = typename View::non_const_value_type;
-  using ConstValueType = typename View::const_value_type;
+    using NonConstValueType = typename View::non_const_value_type;
+    using ConstValueType = typename View::const_value_type;
 
-  Kokkos::View<ConstValueType *, Kokkos::HostSpace,
-               Kokkos::MemoryTraits<Kokkos::Unmanaged>>
-      export_buffer(exports_host.data(), exports_host.size());
+    Kokkos::View<ConstValueType *, Kokkos::HostSpace,
+                 Kokkos::MemoryTraits<Kokkos::Unmanaged>>
+        export_buffer(exports_host.data(), exports_host.size());
 
-  Kokkos::View<NonConstValueType *, Kokkos::HostSpace,
-               Kokkos::MemoryTraits<Kokkos::Unmanaged>>
-      import_buffer(imports_host.data(), imports_host.size());
+    Kokkos::View<NonConstValueType *, Kokkos::HostSpace,
+                 Kokkos::MemoryTraits<Kokkos::Unmanaged>>
+        import_buffer(imports_host.data(), imports_host.size());
 
-  auto permuted_exports = permute_source(export_buffer);
-  auto mpi_requests =
-      this->doPostsAndWaits(permuted_exports, import_buffer);
-  MPI_Barrier(MPI_COMM_WORLD);
-  this->sendAcrossNetwork(distributor, other_views...);
-  for (auto &request : mpi_requests)
-    MPI_Wait(request.get(), MPI_STATUS_IGNORE);
+    auto permuted_exports = permute_source(export_buffer);
+    auto mpi_requests =
+        this->doPostsAndWaits(permuted_exports, num_packets, import_buffer);
+    MPI_Barrier(MPI_COMM_WORLD);
+    this->sendAcrossNetwork(other_views...);
+    for (auto &request : mpi_requests)
+      MPI_Wait(request.get(), MPI_STATUS_IGNORE);
 
-  Kokkos::deep_copy(imports, imports_host);
+    Kokkos::deep_copy(imports, imports_host);
 #else
-  auto permuted_exports = permute_source(exports);
-  auto mpi_requests =
-      this->doPostsAndWaits(permuted_exports, imports);
-  MPI_Barrier(MPI_COMM_WORLD);
-  this->sendAcrossNetwork(other_views...);
-  for (auto &request : mpi_requests)
-    MPI_Wait(request.get(), MPI_STATUS_IGNORE);
+    auto permuted_exports = permute_source(exports);
+    auto mpi_requests =
+        this->doPostsAndWaits(permuted_exports, num_packets, imports);
+    MPI_Barrier(MPI_COMM_WORLD);
+    this->sendAcrossNetwork(other_views...);
+    for (auto &request : mpi_requests)
+      MPI_Wait(request.get(), MPI_STATUS_IGNORE);
 #endif
-}
+  }
 
-void sendAcrossNetwork() const
-{
-}
+  void sendAcrossNetwork() const {}
 
-template <typename View>
-Kokkos::View<typename View::value_type *, typename View::traits::device_type>
-permute_source(View const &source) const
-{
-    ARBORX_ASSERT(source.size()%_dest_offsets.back() ==0);
-    auto const num_packets = source.size()/_dest_offsets.back();
-
-    using ValueType = typename View::value_type;
+  template <typename View>
+  Kokkos::View<typename View::value_type *, typename View::traits::device_type>
+  permute_source(View const &source) const
+  {
+    using ValueType = typename View::non_const_value_type;
     using ExecutionSpace = typename View::execution_space;
     static_assert(View::rank == 1, "");
 
@@ -229,9 +295,19 @@ permute_source(View const &source) const
         "");
 #endif
 
-    Kokkos::View<ValueType *, typename View::traits::device_type> permuted_source(
-        Kokkos::ViewAllocateWithoutInitializing("destination_buffer"),
-        source.size());
+    Kokkos::View<ValueType *, typename View::traits::device_type>
+        permuted_source(
+            Kokkos::ViewAllocateWithoutInitializing("destination_buffer"),
+            source.size());
+
+    if (_dest_offsets.back() == 0)
+    {
+      ARBORX_ASSERT(source.size() == 0);
+      return permuted_source;
+    }
+
+    ARBORX_ASSERT(source.size() % _dest_offsets.back() == 0);
+    auto const num_packets = source.size() / _dest_offsets.back();
 
     auto permute_mirror = Kokkos::create_mirror_view_and_copy(
         typename View::traits::device_type(), _permute);
@@ -242,20 +318,19 @@ permute_source(View const &source) const
                          KOKKOS_LAMBDA(int const k) {
                            int const i = k / num_packets;
                            int const j = k % num_packets;
-                           permuted_source(num_packets * permute_mirror[i] + j) =
-                               source[num_packets * i + j];
+                           permuted_source(num_packets * permute_mirror[i] +
+                                           j) = source[num_packets * i + j];
                          });
 
     return permuted_source;
-}
+  }
 
   template <typename View>
   std::vector<std::unique_ptr<MPI_Request>>
-  doPostsAndWaits(typename View::const_type const &exports,
+  doPostsAndWaits(typename View::const_type const &exports, size_t num_packets,
                   View const &imports) const
   {
-    auto const num_packets = exports.size()/_dest_offsets.back();
-    ARBORX_ASSERT(exports.size()%_dest_offsets.back() ==0);
+    ARBORX_ASSERT(num_packets * _dest_offsets.back() == exports.size());
     ARBORX_ASSERT(num_packets * _src_offsets.back() == imports.size());
 
     using ValueType = typename View::value_type;
