@@ -184,7 +184,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(empty_tree, DeviceType, ARBORX_DEVICE_TYPES)
                    {{{0., 0., 0.}}, comm_size},
                }),
                {}, {0, 0}, {}, {});
-	       */
+               */
 }
 /*
 BOOST_AUTO_TEST_CASE_TEMPLATE(unique_leaf_on_rank_0, DeviceType,
