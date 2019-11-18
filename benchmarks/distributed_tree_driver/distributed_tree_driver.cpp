@@ -241,18 +241,21 @@ int main_(std::vector<std::string> const &args, const MPI_Comm comm)
   }
 
   Kokkos::View<ArborX::Point *, DeviceType> random_points("random_points", 0);
+  Kokkos::View<ArborX::Point *, DeviceType> random_queries("random_queries", 0);
   {
     // Random points are "reused" between building the tree and performing
     // queries. Note that this means that for the points in the middle of
     // the local domains there won't be any communication.
-    auto n = std::max(n_values, n_queries);
-    Kokkos::resize(random_points, n);
+    Kokkos::resize(random_points, n_values);
+    Kokkos::resize(random_queries, n_queries);
 
     auto random_points_host = Kokkos::create_mirror_view(random_points);
+    auto random_queries_host = Kokkos::create_mirror_view(random_queries);
 
     // Generate random points uniformly distributed within a box.
-    auto const a = std::cbrt(n_values);
-    std::uniform_real_distribution<double> distribution(-a, +a);
+    auto const a_values = std::cbrt(n_values);
+    auto const a_queries = std::cbrt(n_queries);
+    std::uniform_real_distribution<double> distribution(-1., 1.);
     std::default_random_engine generator;
     auto random = [&distribution, &generator]() {
       return distribution(generator);
@@ -261,6 +264,7 @@ int main_(std::vector<std::string> const &args, const MPI_Comm comm)
     double offset_x = 0.;
     double offset_y = 0.;
     double offset_z = 0.;
+    int i_max = 0;
     // Change the geometry of the problem. In 1D, all the point clouds are
     // aligned on a line. In 2D, the point clouds create a board and in 3D,
     // they create a box.
@@ -268,30 +272,31 @@ int main_(std::vector<std::string> const &args, const MPI_Comm comm)
     {
     case 1:
     {
-      offset_x = 2 * a * shift * comm_rank;
+      i_max = comm_size;	    
+      offset_x = 2 * shift * comm_rank;
 
       break;
     }
     case 2:
     {
-      int i_max = std::ceil(std::sqrt(comm_size));
+      i_max = std::ceil(std::sqrt(comm_size));
       int i = comm_rank % i_max;
       int j = comm_rank / i_max;
-      offset_x = 2 * a * shift * i;
-      offset_y = 2 * a * shift * j;
+      offset_x = 2 * shift * i;
+      offset_y = 2 * shift * j;
 
       break;
     }
     case 3:
     {
-      int i_max = std::ceil(std::cbrt(comm_size));
+      i_max = std::ceil(std::cbrt(comm_size));
       int j_max = i_max;
       int i = comm_rank % i_max;
       int j = (comm_rank / i_max) % j_max;
       int k = comm_rank / (i_max * j_max);
-      offset_x = 2 * a * shift * i;
-      offset_y = 2 * a * shift * j;
-      offset_z = 2 * a * shift * k;
+      offset_x = 2 * shift * i;
+      offset_y = 2 * shift * j;
+      offset_z = 2 * shift * k;
 
       break;
     }
@@ -301,10 +306,14 @@ int main_(std::vector<std::string> const &args, const MPI_Comm comm)
     }
     }
 
-    for (int i = 0; i < n; ++i)
+    for (int i = 0; i < n_values; ++i)
       random_points_host(i) = {
-          {offset_x + random(), offset_y + random(), offset_z + random()}};
+          {a_values *(offset_x + random()), a_values*(offset_y + random()), a_values*(offset_z + random())}};
+    for (int i=0; i < n_queries; ++i)
+      random_queries_host(i) = 
+      {{a_queries *(offset_x + random()), a_queries*(offset_y + random()), a_queries*(offset_z + random())}};
     Kokkos::deep_copy(random_points, random_points_host);
+    Kokkos::deep_copy(random_queries, random_queries_host);
   }
 
   Kokkos::View<ArborX::Box *, DeviceType> bounding_boxes(
@@ -338,7 +347,7 @@ int main_(std::vector<std::string> const &args, const MPI_Comm comm)
                          Kokkos::RangePolicy<ExecutionSpace>(0, n_queries),
                          KOKKOS_LAMBDA(int i) {
                            queries(i) = ArborX::nearest<ArborX::Point>(
-                               random_points(i), n_neighbors);
+                               random_queries(i), n_neighbors);
                          });
 
     Kokkos::View<int *, DeviceType> offset("offset", 0);
@@ -370,7 +379,7 @@ int main_(std::vector<std::string> const &args, const MPI_Comm comm)
         "bvh_driver:setup_radius_search_queries",
         Kokkos::RangePolicy<ExecutionSpace>(0, n_queries),
         KOKKOS_LAMBDA(int i) {
-          queries(i) = ArborX::intersects(ArborX::Sphere{random_points(i), r});
+          queries(i) = ArborX::intersects(ArborX::Sphere{random_queries(i), r});
         });
 
     Kokkos::View<int *, DeviceType> offset("offset", 0);
