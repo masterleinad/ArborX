@@ -548,7 +548,23 @@ void DistributedSearchTreeImpl<DeviceType>::communicateResultsBack(
                        });
 
   Distributor<DeviceType> distributor(comm);
-  int const n_imports = distributor.createFromSends(export_ranks);
+
+  std::cout << n_fwd_queries << " vs. " << n_exports << std::endl;
+
+/*  Distributor<DeviceType> distributor(comm);
+  for (unsigned int q=0; q<ranks.size(); ++q)
+	  for(unsigned int r=q+1; r<ranks.size(); ++r)
+	  {
+	       if (ranks(q) == ranks(r))
+	       {
+	           for (unsigned int q=0; q<ranks.size(); ++q)
+                   {
+		     std::cout << ranks(q) << std::endl;
+		   }
+	       }
+		  ARBORX_ASSERT(ranks(q)!=ranks(r));
+	  }*/
+  int const n_imports = distributor.createFromSends(ranks, offset);
 
   // export_ranks already has adequate size since it was used as a buffer to
   // make the new communication plan.
