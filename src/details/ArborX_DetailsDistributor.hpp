@@ -296,7 +296,7 @@ public:
     auto permuted_exports = permute_source(export_buffer);
     auto mpi_requests =
         this->doPostsAndWaits(permuted_exports, num_packets, import_buffer);
-    MPI_Barrier(MPI_COMM_WORLD);
+//    MPI_Barrier(MPI_COMM_WORLD);
     this->sendAcrossNetwork(other_views...);
     for (auto &request : mpi_requests)
       MPI_Wait(request.get(), MPI_STATUS_IGNORE);
@@ -306,7 +306,7 @@ public:
     auto permuted_exports = permute_source(exports);
     auto mpi_requests =
         this->doPostsAndWaits(permuted_exports, num_packets, imports);
-    MPI_Barrier(MPI_COMM_WORLD);
+//    MPI_Barrier(MPI_COMM_WORLD);
     this->sendAcrossNetwork(other_views...);
     for (auto &request : mpi_requests)
       MPI_Wait(request.get(), MPI_STATUS_IGNORE);
