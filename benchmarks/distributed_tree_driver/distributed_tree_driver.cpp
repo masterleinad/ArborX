@@ -309,9 +309,10 @@ int main_(std::vector<std::string> const &args, const MPI_Comm comm)
     for (int i = 0; i < n_values; ++i)
       random_points_host(i) = {
           {a_values *(offset_x + random()), a_values*(offset_y + random()), a_values*(offset_z + random())}};
+    int const max_offset = 2* shift*i_max;
     for (int i=0; i < n_queries; ++i)
       random_queries_host(i) = 
-      {{a_queries *(offset_x + random()), a_queries*(offset_y + random()), a_queries*(offset_z + random())}};
+      {{a_queries *((offset_x + random())/3+max_offset/3), a_queries*((offset_y + random())/3+max_offset/3), a_queries*((offset_z + random())/3+max_offset/3)}};
     Kokkos::deep_copy(random_points, random_points_host);
     Kokkos::deep_copy(random_queries, random_queries_host);
   }
