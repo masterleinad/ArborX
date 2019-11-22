@@ -25,6 +25,7 @@
 #include <vector>
 
 #include <mpi.h>
+#include <cassert>
 
 namespace ArborX
 {
@@ -62,8 +63,8 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
 
   offsets.push_back(0);
 
-  auto const n = lastElement(batched_offsets);
-  if (n == 0)
+  auto const n = batched_ranks.size();
+  if (n == 0 || lastElement(batched_offsets) == 0)
     return;
 
   // this implements a "sort" which is O(N * R) where (R) is the total number of
@@ -77,15 +78,21 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
   Kokkos::deep_copy(device_batched_ranks_duplicate, batched_ranks);
   Kokkos::View<int *, DeviceType> device_batched_permutation_indices(Kokkos::ViewAllocateWithoutInitializing("batched_permutation_indices"), batched_ranks.size());
 
+    Kokkos::View<int*, DeviceType> batched_counts("batched_counts", batched_offsets.size());
+  for (unsigned int i = 0; i < batched_offsets.size()-1; ++i)
+  {
+    //      std::cout << "batched_counts[" << i << "] =" << batched_offsets[i+1] << " - " << batched_offsets[i] << std::endl;
+    batched_counts[i] = batched_offsets[i+1] - batched_offsets[i];
+  }
+
   int batch_offset = 0;
   int total_offset = 0;
-  std::vector<int> batched_results_offsets;
+//  std::vector<int> batched_results_offsets;
   while (true)
   {
     int const largest_rank = ArborX::max(device_batched_ranks_duplicate);
     if (largest_rank == -1)
       break;
-    unique_ranks.push_back(largest_rank);
       struct Result
   {
     int batch_count;
@@ -112,24 +119,21 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
                                 device_batched_ranks_duplicate(i) = -1;
                               }
                               ++update.batch_count;
-			      update.total_count += batched_offsets(i+1)-batched_offsets(i);
-			      std::cout << "update total count by" << update.total_count << std::endl;
+			      update.total_count += batched_counts(i);
+//			      std::cout << i << ": update total count by" << update.total_count << std::endl;
                             }
                           },
                           result);
     batch_offset += result.batch_count;
     total_offset += result.total_count;
-    batched_results_offsets.push_back(batch_offset);
-    offsets.push_back(total_offset);
+  //  batched_results_offsets.push_back(batch_offset);
+    if (result.total_count>0)
+    {
+      unique_ranks.push_back(largest_rank);
+      offsets.push_back(total_offset);
+    }
   }
   
-  Kokkos::View<int*, DeviceType> batched_counts("batched_counts", batched_offsets.size());
-  for (unsigned int i = 0; i < batched_offsets.size()-1; ++i)
-  {
-	  std::cout << "batched_counts[" << i << "] =" << batched_offsets[i+1] << " - " << batched_offsets[i] << std::endl;
-    batched_counts[i] = batched_offsets[i+1] - batched_offsets[i];
-  }
-
   InputView exclusive_sum_batched_offsets(Kokkos::ViewAllocateWithoutInitializing("exclusive_sum_batched_offsets"), batched_offsets.size());
   ArborX::exclusivePrefixSum(batched_counts, exclusive_sum_batched_offsets);
   
@@ -138,11 +142,11 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
 int starting_permutation=0;
   for(unsigned int i=0; i<device_batched_permutation_indices.size(); ++i)
   {
-    int n_batch_entries = batched_counts[device_permutation_indices(i)];
+    int n_batch_entries = batched_counts[device_batched_permutation_indices(i)];
     Kokkos::parallel_for("iota", Kokkos::RangePolicy<ExecutionSpace>(0,n_batch_entries),
                        KOKKOS_LAMBDA(int j) { device_permutation_indices(starting_permutation+j) = exclusive_sum_batched_offsets(device_batched_permutation_indices(i))+j; 
-		       std::cout << "device_permutation_indices(" << starting_permutation+j << ") = exclusive_sum_batched_offsets(" << device_batched_permutation_indices(i)<< ")+" << j <<std::endl;
-                       std::cout << "device_permutation_indices(" << starting_permutation+j << ") = "<< exclusive_sum_batched_offsets(device_batched_permutation_indices(i))+j <<std::endl;
+		       //std::cout << "device_permutation_indices(" << starting_permutation+j << ") = exclusive_sum_batched_offsets(" << device_batched_permutation_indices(i)<< ")+" << j <<std::endl;
+                       //std::cout << "device_permutation_indices(" << starting_permutation+j << ") = "<< exclusive_sum_batched_offsets(device_batched_permutation_indices(i))+j <<std::endl;
 		       });
     starting_permutation += n_batch_entries;  
   }
@@ -155,23 +159,34 @@ int starting_permutation=0;
   std::cout << "permutation_indices" << std::endl;
   for (unsigned int i=0; i<permutation_indices.size();++i)
    {
-     std::cout << permutation_indices[i] << std::endl;
+     std::cout << permutation_indices[i] << " ";
    }
+  std::cout << std::endl;
+
     std::cout << "unqiue_ranks" << std::endl;
   for (unsigned int i=0; i<unique_ranks.size();++i)
    {
-     std::cout << unique_ranks[i] << std::endl;
+     std::cout << unique_ranks[i] << " ";
    }
+  std::cout << std::endl;
+
   std::cout << "counts" << std::endl;
   for (unsigned int i=0; i<counts.size();++i)
    {
-     std::cout << counts[i] << std::endl;
+     std::cout << counts[i] << " ";
    }
+    std::cout << std::endl;
+
   std::cout << "offsets" << std::endl;
   for (unsigned int i=0; i<offsets.size();++i)
    {
-     std::cout <<offsets[i] << std::endl;
+     std::cout <<offsets[i] << " ";
    }
+    std::cout << std::endl;
+
+  assert(unique_ranks.size() == counts.size());
+  assert(offsets.size() == unique_ranks.size()+1);
+  std::cout << "end" << std::endl;
 }
 
 // Computes the array of indices that sort the input array (in reverse order)
@@ -241,6 +256,27 @@ static void sortAndDetermineBufferLayout(InputView ranks,
     counts.push_back(offsets[i] - offsets[i - 1]);
   Kokkos::deep_copy(permutation_indices, device_permutation_indices);
   ARBORX_ASSERT(offsets.back() == static_cast<int>(ranks.size()));
+
+      std::cout << "unqiue_ranks" << std::endl;
+  for (unsigned int i=0; i<unique_ranks.size();++i)
+   {
+     std::cout << unique_ranks[i] << " ";
+   }
+  std::cout << std::endl;
+
+  std::cout << "counts" << std::endl;
+  for (unsigned int i=0; i<counts.size();++i)
+   {
+     std::cout << counts[i] << " ";
+   }
+    std::cout << std::endl;
+
+  std::cout << "offsets" << std::endl;
+  for (unsigned int i=0; i<offsets.size();++i)
+   {
+     std::cout <<offsets[i] << " ";
+   }
+    std::cout << std::endl;
 }
 
 template <typename DeviceType>
@@ -355,11 +391,6 @@ public:
     // (via the 'this' pointer) which we can't do using a KOKKOS_LAMBDA.
     // Use KOKKOS_CLASS_LAMBDA when we require C++17.
     auto const permute_copy = _permute;
-
-   for (unsigned int i=0; i<permute_copy.size();++i)
-   {
-     std::cout << permute_copy[i] << std::endl;
-   }
 
     Kokkos::parallel_for("copy_destinations_permuted",
                          Kokkos::RangePolicy<ExecutionSpace>(

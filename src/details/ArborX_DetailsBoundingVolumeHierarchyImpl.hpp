@@ -126,6 +126,7 @@ void BoundingVolumeHierarchyImpl<DeviceType>::queryDispatch(
   reallocWithoutInitializing(indices, n_results);
   int const invalid_index = -1;
   Kokkos::deep_copy(indices, invalid_index);
+
   if (distances_ptr)
   {
     Kokkos::View<double *, DeviceType> &distances = *distances_ptr;
@@ -223,7 +224,7 @@ void BoundingVolumeHierarchyImpl<DeviceType>::queryDispatch(
   Kokkos::Profiling::pushRegion("ArborX:BVH:filter_out_invalid_entries");
 
   // Find out if they are any invalid entries in the indices (i.e. at least
-  // one query asked for more neighbors that they are leaves in the tree) and
+  // one query asked for more neighbors than there are leaves in the tree) and
   // eliminate them if necessary.
   auto tmp_offset = cloneWithoutInitializingNorCopying(offset);
   Kokkos::deep_copy(tmp_offset, 0);

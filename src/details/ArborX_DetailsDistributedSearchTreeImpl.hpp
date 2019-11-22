@@ -566,6 +566,11 @@ void DistributedSearchTreeImpl<DeviceType>::communicateResultsBack(
 	  }*/
   int const n_imports = distributor.createFromSends(ranks, offset);
 
+  std::cout << "reference" << std::endl;
+  Distributor<DeviceType> dummy_distributor(comm);
+  int const dummy_n_imports = dummy_distributor.createFromSends(export_ranks);
+  assert(n_imports==dummy_n_imports);
+
   // export_ranks already has adequate size since it was used as a buffer to
   // make the new communication plan.
   Kokkos::deep_copy(export_ranks, comm_rank);
