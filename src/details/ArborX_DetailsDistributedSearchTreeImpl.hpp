@@ -577,18 +577,30 @@ void DistributedSearchTreeImpl<DeviceType>::communicateResultsBack(
 
   int const n_fwd_queries = offset.extent_int(0) - 1;
   int const n_exports = lastElement(offset);
-  Kokkos::View<int *, DeviceType> export_ranks(ranks.label(), n_exports);
-  Kokkos::parallel_for(ARBORX_MARK_REGION("setup_communication_plan"),
-                       Kokkos::RangePolicy<ExecutionSpace>(0, n_fwd_queries),
-                       KOKKOS_LAMBDA(int q) {
-                         for (int i = offset(q); i < offset(q + 1); ++i)
-                         {
-                           export_ranks(i) = ranks(q);
-                         }
-                       });
+  Kokkos::View<int *, DeviceType> export_ranks(
+      Kokkos::ViewAllocateWithoutInitializing(ranks.label()), n_exports);
 
   Distributor<DeviceType> distributor(comm);
-  int const n_imports = distributor.createFromSends(export_ranks);
+
+  // If there are much less batches than entries, use a slightly different
+  // algorithm to take advantage of the batched input.
+  int n_imports = 0;
+  if (true)
+  {
+    n_imports = distributor.createFromSends(ranks, offset);
+  }
+  else
+  {
+    Kokkos::parallel_for(ARBORX_MARK_REGION("setup_communication_plan"),
+                         Kokkos::RangePolicy<ExecutionSpace>(0, n_fwd_queries),
+                         KOKKOS_LAMBDA(int q) {
+                           for (int i = offset(q); i < offset(q + 1); ++i)
+                           {
+                             export_ranks(i) = ranks(q);
+                           }
+                         });
+    n_imports = distributor.createFromSends(export_ranks);
+  }
 
   // export_ranks already has adequate size since it was used as a buffer to
   // make the new communication plan.
