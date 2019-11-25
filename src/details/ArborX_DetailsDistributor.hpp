@@ -187,11 +187,14 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
           "device_permutation_indices_inverse"),
       permutation_indices.size());
 
+  const auto batched_counts_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), batched_counts);
+  const auto batched_permutation_indices_inverse = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), device_batched_permutation_indices);
+
   int starting_permutation = 0;
   for (unsigned int i = 0; i < device_batched_permutation_indices.size(); ++i)
   {
     int n_batch_entries =
-        batched_counts[device_batched_permutation_indices_inverse(i)];
+        batched_counts_host[batched_permutation_indices_inverse(i)];
     Kokkos::parallel_for(
         "iota", Kokkos::RangePolicy<ExecutionSpace>(0, n_batch_entries),
         KOKKOS_LAMBDA(int j) {
