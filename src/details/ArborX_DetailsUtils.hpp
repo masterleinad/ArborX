@@ -18,6 +18,8 @@
 #include <Kokkos_Sort.hpp> // min_max_functor
 #include <Kokkos_View.hpp>
 
+#include <cassert>
+
 namespace ArborX
 {
 
@@ -83,7 +85,7 @@ void exclusivePrefixSum(Kokkos::View<ST, SP...> const &src,
   using DeviceType = typename Kokkos::ViewTraits<DT, DP...>::device_type;
 
   auto const n = src.extent(0);
-  ARBORX_ASSERT(n == dst.extent(0));
+  assert(n == dst.extent(0));
   Kokkos::parallel_scan(
       "exclusive_scan", Kokkos::RangePolicy<ExecutionSpace>(0, n),
       Details::ExclusiveScanFunctor<ValueType, DeviceType>(src, dst));
