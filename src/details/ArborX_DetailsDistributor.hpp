@@ -36,7 +36,7 @@ struct Result
   int batch_count;
   int total_count;
 
-  Result &operator=(const Result &other_result) = default;
+  //Result &operator=(const Result &other_result) = default;
 
   /*Result &operator+=(const Result &other_result)
       {
@@ -45,6 +45,7 @@ struct Result
         return *this;
       }*/
 
+  KOKKOS_INLINE_FUNCTION
   Result volatile &operator+=(const volatile Result &other_result) volatile
   {
     batch_count += other_result.batch_count;
@@ -117,34 +118,35 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
     Kokkos::parallel_scan(ARBORX_MARK_REGION("process_biggest_rank_items"),
                           Kokkos::RangePolicy<ExecutionSpace>(0, n),
                           KOKKOS_LAMBDA(int i, Result &update, bool last_pass) {
-                            printf("Here1 %d %lu %d\n", i, n, 0);
+                            //printf("Here1 %d %lu %d\n", i, n, 0);
                             bool const is_largest_rank =
                                 (device_batched_ranks_duplicate(i) ==
                                  largest_rank);
-                            printf("Here2\n");
+                            //printf("Here2\n");
                             if (is_largest_rank)
                             {
                               if (last_pass)
                               {
-                                printf("Here3\n");
+                                //printf("Here3\n");
                                 device_batched_permutation_indices(i) =
                                     update.batch_count + batch_offset;
-                                printf("Here4\n");
+                                //printf("Here4\n");
                                 device_batched_ranks_duplicate(i) = -1;
-                                printf("Here5\n");
+                                //printf("Here5\n");
                               }
                               ++update.batch_count;
-                              printf("Here6\n");
+                              //printf("Here6\n");
                               update.total_count += batched_counts(i);
-                              printf("Here7\n");
+                              //printf("Here7\n");
                             }
+			    //printf("Here7a\n");
                           },
                           result);
-    printf("Here8\n");
+    //printf("Here8\n");
     batch_offset += result.batch_count;
-    total_offset += result.total_count;
     if (result.total_count > 0)
     {
+      total_offset += result.total_count;
       unique_ranks.push_back(largest_rank);
       offsets.push_back(total_offset);
     }
@@ -172,16 +174,18 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
   InputView reordered_batched_counts(
       Kokkos::ViewAllocateWithoutInitializing("reordered_batched_counts"),
       batched_offsets.size());
-  std::cout << "reordered_batches" << std::endl;
+  std::cout << "reordered_batches " << batched_offsets.size() << std::endl;
   Kokkos::parallel_for(
       "iota",
       Kokkos::RangePolicy<ExecutionSpace>(0, batched_offsets.size() - 1),
       KOKKOS_LAMBDA(int j) {
+      //printf("reordered_batched_counts(%d) = batched_counts(%d)\n", j, device_batched_permutation_indices_inverse(j));
+      //printf("reordered_batched_counts(%d) = %d\n", j, batched_counts(device_batched_permutation_indices_inverse(j)));
         reordered_batched_counts(j) =
             batched_counts(device_batched_permutation_indices_inverse(j));
       });
   ArborX::exclusivePrefixSum(batched_counts, exclusive_sum_batched_offsets);
-
+  std::cout << "permutation_inverse" << std::endl;
   Kokkos::View<int *, DeviceType> device_permutation_indices_inverse(
       Kokkos::ViewAllocateWithoutInitializing(
           "device_permutation_indices_inverse"),
@@ -192,6 +196,8 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
   const auto batched_permutation_indices_inverse =
       Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(),
                                           device_batched_permutation_indices);
+
+  std::cout << "iota " << std::endl;
 
   int starting_permutation = 0;
   for (unsigned int i = 0; i < device_batched_permutation_indices.size(); ++i)
@@ -208,6 +214,9 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
         });
     starting_permutation += n_batch_entries;
   }
+
+  std::cout << "invert permutation" << std::endl;
+
   Kokkos::View<int *, DeviceType> device_permutation_indices(
       Kokkos::ViewAllocateWithoutInitializing("device_permutation_indices"),
       permutation_indices.size());
@@ -215,8 +224,12 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
       "invert_permutation",
       Kokkos::RangePolicy<ExecutionSpace>(0, permutation_indices.size()),
       KOKKOS_LAMBDA(int i) {
+        printf("device_permutation_indices(%d) = %d < %lu\n", device_permutation_indices_inverse(i), i, permutation_indices.size());
+	assert(device_permutation_indices_inverse(i)<permutation_indices.size());
         device_permutation_indices(device_permutation_indices_inverse(i)) = i;
       });
+
+  std::cout << "end" << std::endl;
 
   counts.reserve(offsets.size() - 1);
   for (unsigned int i = 1; i < offsets.size(); ++i)
@@ -417,6 +430,7 @@ public:
                          KOKKOS_LAMBDA(int const k) {
                            int const i = k / num_packets;
                            int const j = k % num_packets;
+			   printf("dest_buffer(%lu) = exports[%lu]\n", num_packets * permute_copy[i] + j, num_packets * i + j);
                            dest_buffer(num_packets * permute_copy[i] + j) =
                                exports[num_packets * i + j];
                          });
