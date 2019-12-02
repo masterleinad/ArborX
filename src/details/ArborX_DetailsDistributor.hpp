@@ -87,6 +87,20 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
   using DeviceType = typename InputView::traits::device_type;
   using ExecutionSpace = typename InputView::traits::execution_space;
 
+  std::cout << "batched_ranks" << std::endl;
+  for (unsigned int i=0; i<batched_ranks.size(); ++i)
+  {
+    std::cout << batched_ranks(i) <<  " ";
+  }
+  std::cout << std::endl;
+
+  std::cout << "batched_offsets" << std::endl;
+  for (unsigned int i=0; i<batched_offsets.size(); ++i)
+  {
+    std::cout << batched_offsets(i) <<  " ";
+  }
+  std::cout << std::endl;
+
   Kokkos::View<int *, DeviceType> device_batched_ranks_duplicate(
       Kokkos::ViewAllocateWithoutInitializing(batched_ranks.label()),
       batched_ranks.size());
@@ -103,6 +117,13 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
       KOKKOS_LAMBDA(int i) {
         batched_counts[i] = batched_offsets[i + 1] - batched_offsets[i];
       });
+
+  std::cout << "batched_counts" << std::endl;
+  for (unsigned int i=0; i<batched_counts.size(); ++i)
+  {
+    std::cout << batched_counts(i) <<  " ";
+  }
+  std::cout << std::endl;
 
   int batch_offset = 0;
   int total_offset = 0;
@@ -152,6 +173,13 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
     }
   }
 
+  std::cout << "device_batched_permutation_indices" << std::endl;
+  for (unsigned int i=0; i<device_batched_permutation_indices.size(); ++i)
+  {
+    std::cout << device_batched_permutation_indices(i) <<  " ";
+  }
+  std::cout << std::endl;
+
   std::cout << "After parallel_scan" << std::endl;
 
   Kokkos::View<int *, DeviceType> device_batched_permutation_indices_inverse(
@@ -165,6 +193,13 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
         device_batched_permutation_indices_inverse(
             device_batched_permutation_indices(i)) = i;
       });
+
+  std::cout << "device_batched_permutation_indices_inverse" << std::endl;
+  for (unsigned int i=0; i<device_batched_permutation_indices_inverse.size(); ++i)
+  {
+    std::cout << device_batched_permutation_indices_inverse(i) <<  " ";
+  }
+  std::cout << std::endl;
 
   std::cout << "Before exclusive sum batched offsets" << std::endl;
 
@@ -184,12 +219,27 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
         reordered_batched_counts(j) =
             batched_counts(device_batched_permutation_indices_inverse(j));
       });
+
+  std::cout << "reordered_batched_counts" << std::endl;
+  for (unsigned int i=0; i<reordered_batched_counts.size(); ++i)
+  {
+    std::cout << reordered_batched_counts(i) <<  " ";
+  }
+  std::cout << std::endl;
+
   ArborX::exclusivePrefixSum(batched_counts, exclusive_sum_batched_offsets);
   std::cout << "permutation_inverse" << std::endl;
   Kokkos::View<int *, DeviceType> device_permutation_indices_inverse(
       Kokkos::ViewAllocateWithoutInitializing(
           "device_permutation_indices_inverse"),
       permutation_indices.size());
+
+    std::cout << "exclusive_sum_batched_offsets" << std::endl;
+  for (unsigned int i=0; i<exclusive_sum_batched_offsets.size(); ++i)
+  {
+    std::cout << exclusive_sum_batched_offsets(i) <<  " ";
+  }
+  std::cout << std::endl;
 
   const auto batched_counts_host =
       Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), batched_counts);
@@ -203,7 +253,11 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
   for (unsigned int i = 0; i < device_batched_permutation_indices.size(); ++i)
   {
     int n_batch_entries =
-        batched_counts_host[batched_permutation_indices_inverse(i)];
+        reordered_batched_counts[i];
+    std::cout << exclusive_sum_batched_offsets(
+                  device_batched_permutation_indices_inverse(i))<< "+" << n_batch_entries << " <= " << device_permutation_indices_inverse.size() << std::endl;
+    assert(exclusive_sum_batched_offsets(
+                  device_batched_permutation_indices_inverse(i))+n_batch_entries<=device_permutation_indices_inverse.size());
     Kokkos::parallel_for(
         "iota", Kokkos::RangePolicy<ExecutionSpace>(0, n_batch_entries),
         KOKKOS_LAMBDA(int j) {
@@ -214,6 +268,13 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
         });
     starting_permutation += n_batch_entries;
   }
+
+   std::cout << "device_permutation_indices_inverse" << std::endl;
+  for (unsigned int i=0; i<device_permutation_indices_inverse.size(); ++i)
+  {
+    std::cout << device_permutation_indices_inverse(i) <<  " ";
+  }
+  std::cout << std::endl;
 
   std::cout << "invert permutation" << std::endl;
 
@@ -228,6 +289,13 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
 	assert(device_permutation_indices_inverse(i)<permutation_indices.size());
         device_permutation_indices(device_permutation_indices_inverse(i)) = i;
       });
+
+     std::cout << "device_permutation_indices" << std::endl;
+  for (unsigned int i=0; i<device_permutation_indices.size(); ++i)
+  {
+    std::cout << device_permutation_indices(i) <<  " ";
+  }
+  std::cout << std::endl;
 
   std::cout << "end" << std::endl;
 
