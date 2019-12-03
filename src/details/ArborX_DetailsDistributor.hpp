@@ -31,6 +31,7 @@ namespace ArborX
 namespace Details
 {
 
+// Used in the batched version of sortAndDetermineBufferLayout
 struct Result
 {
   int batch_count;
@@ -48,6 +49,7 @@ struct Result
 // Computes the array of indices that sort the input array (in reverse order)
 // but also returns the sorted unique elements in that array with the
 // corresponding element counts and displacement (offsets)
+// This overload uses batched ranks and offsets.
 template <typename InputView, typename OutputView>
 static void sortAndDetermineBufferLayout(InputView batched_ranks,
                                          InputView batched_offsets,
@@ -72,9 +74,6 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
   if (n == 0 || lastElement(batched_offsets) == 0)
     return;
 
-  // this implements a "sort" which is O(N * R) where (R) is the total number of
-  // unique destination ranks. it performs better than other algorithms in the
-  // case when (R) is small, but results may vary
   using DeviceType = typename InputView::traits::device_type;
   using ExecutionSpace = typename InputView::traits::execution_space;
 
@@ -87,14 +86,16 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
       batched_ranks.size());
 
   Kokkos::View<int *, DeviceType> batched_counts("batched_counts",
-                                                 batched_offsets.size());
+                                                 batched_offsets.size() - 1);
   Kokkos::parallel_for(
-      "compute_batch_counts",
+      ARBORX_MARK_REGION("compute_batch_counts"),
       Kokkos::RangePolicy<ExecutionSpace>(0, batched_offsets.size() - 1),
       KOKKOS_LAMBDA(int i) {
         batched_counts[i] = batched_offsets[i + 1] - batched_offsets[i];
       });
 
+  // step 1: compute batch permutation, total unique_ranks, total offsets
+  //         and total counts
   int batch_offset = 0;
   int total_offset = 0;
   while (true)
@@ -131,38 +132,36 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
       offsets.push_back(total_offset);
     }
   }
+  counts.reserve(offsets.size() - 1);
+  for (unsigned int i = 1; i < offsets.size(); ++i)
+    counts.push_back(offsets[i] - offsets[i - 1]);
+  ARBORX_ASSERT(unique_ranks.size() == counts.size());
+  ARBORX_ASSERT(offsets.size() == unique_ranks.size() + 1);
 
+  // step 2: prepare for creating the total permutation by reordering batch
+  //         counts and computing the new exclusive cumulative sum for these
   Kokkos::View<int *, DeviceType> device_batched_permutation_indices_inverse(
       Kokkos::ViewAllocateWithoutInitializing(
           "batched_permutation_indices_inverse"),
       batched_ranks.size());
   Kokkos::parallel_for(
-      "invert_batched_permutation",
+      ARBORX_MARK_REGION("invert_batched_permutation"),
       Kokkos::RangePolicy<ExecutionSpace>(0, batched_ranks.size()),
       KOKKOS_LAMBDA(int i) {
         device_batched_permutation_indices_inverse(
             device_batched_permutation_indices(i)) = i;
       });
 
-  InputView exclusive_sum_batched_offsets(
-      Kokkos::ViewAllocateWithoutInitializing("exclusive_sum_batched_offsets"),
-      batched_offsets.size());
   InputView reordered_batched_counts(
       Kokkos::ViewAllocateWithoutInitializing("reordered_batched_counts"),
-      batched_offsets.size());
+      batched_offsets.size()); // the last entry is unused
   Kokkos::parallel_for(
-      "iota",
+      ARBORX_MARK_REGION("reorder_batch_counts"),
       Kokkos::RangePolicy<ExecutionSpace>(0, batched_offsets.size() - 1),
       KOKKOS_LAMBDA(int j) {
         reordered_batched_counts(j) =
             batched_counts(device_batched_permutation_indices_inverse(j));
       });
-
-  ArborX::exclusivePrefixSum(batched_counts, exclusive_sum_batched_offsets);
-  Kokkos::View<int *, DeviceType> device_permutation_indices_inverse(
-      Kokkos::ViewAllocateWithoutInitializing(
-          "device_permutation_indices_inverse"),
-      permutation_indices.size());
 
   InputView exclusive_sum_reordered_batched_offsets(
       Kokkos::ViewAllocateWithoutInitializing(
@@ -171,8 +170,14 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
   ArborX::exclusivePrefixSum(reordered_batched_counts,
                              exclusive_sum_reordered_batched_offsets);
 
+  // step 3: compute the total permutation
+  Kokkos::View<int *, DeviceType> device_permutation_indices_inverse(
+      Kokkos::ViewAllocateWithoutInitializing(
+          "device_permutation_indices_inverse"),
+      permutation_indices.size());
+
   Kokkos::parallel_for(
-      "set_permutation_indices",
+      ARBORX_MARK_REGION("set_permutation_indices"),
       Kokkos::RangePolicy<ExecutionSpace>(
           0, device_batched_permutation_indices.size()),
       KOKKOS_LAMBDA(int i) {
@@ -181,28 +186,20 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
         {
           device_permutation_indices_inverse(
               exclusive_sum_reordered_batched_offsets(i) + j) =
-              exclusive_sum_batched_offsets(
-                  device_batched_permutation_indices_inverse(i)) +
+              batched_offsets(device_batched_permutation_indices_inverse(i)) +
               j;
         }
       });
 
-  Kokkos::View<int *, DeviceType> device_permutation_indices(
-      Kokkos::ViewAllocateWithoutInitializing("device_permutation_indices"),
-      permutation_indices.size());
+  auto device_permutation_indices =
+      Kokkos::create_mirror_view(DeviceType(), permutation_indices);
   Kokkos::parallel_for(
-      "invert_permutation",
+      ARBORX_MARK_REGION("invert_permutation"),
       Kokkos::RangePolicy<ExecutionSpace>(0, permutation_indices.size()),
       KOKKOS_LAMBDA(int i) {
         device_permutation_indices(device_permutation_indices_inverse(i)) = i;
       });
-
-  counts.reserve(offsets.size() - 1);
-  for (unsigned int i = 1; i < offsets.size(); ++i)
-    counts.push_back(offsets[i] - offsets[i - 1]);
   Kokkos::deep_copy(permutation_indices, device_permutation_indices);
-  ARBORX_ASSERT(unique_ranks.size() == counts.size());
-  ARBORX_ASSERT(offsets.size() == unique_ranks.size() + 1);
 }
 
 // Computes the array of indices that sort the input array (in reverse order)
