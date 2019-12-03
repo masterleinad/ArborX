@@ -158,30 +158,34 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
             batched_counts(device_batched_permutation_indices_inverse(j));
       });
 
-  auto reordered_batched_counts_host = create_mirror_view_and_copy(
-      Kokkos::HostSpace(), reordered_batched_counts);
-
   ArborX::exclusivePrefixSum(batched_counts, exclusive_sum_batched_offsets);
   Kokkos::View<int *, DeviceType> device_permutation_indices_inverse(
       Kokkos::ViewAllocateWithoutInitializing(
           "device_permutation_indices_inverse"),
       permutation_indices.size());
 
-  int starting_permutation = 0;
-  for (unsigned int i = 0; i < device_batched_permutation_indices.size(); ++i)
-  {
-    int n_batch_entries = reordered_batched_counts_host[i];
-    Kokkos::parallel_for(
-        "set_permutation_indices",
-        Kokkos::RangePolicy<ExecutionSpace>(0, n_batch_entries),
-        KOKKOS_LAMBDA(int j) {
-          device_permutation_indices_inverse(starting_permutation + j) =
+  InputView exclusive_sum_reordered_batched_offsets(
+      Kokkos::ViewAllocateWithoutInitializing(
+          "exclusive_sum_reordered_batched_offsets"),
+      batched_offsets.size());
+  ArborX::exclusivePrefixSum(reordered_batched_counts,
+                             exclusive_sum_reordered_batched_offsets);
+
+  Kokkos::parallel_for(
+      "set_permutation_indices",
+      Kokkos::RangePolicy<ExecutionSpace>(
+          0, device_batched_permutation_indices.size()),
+      KOKKOS_LAMBDA(int i) {
+        int n_batch_entries = reordered_batched_counts[i];
+        for (int j = 0; j < n_batch_entries; ++j)
+        {
+          device_permutation_indices_inverse(
+              exclusive_sum_reordered_batched_offsets(i) + j) =
               exclusive_sum_batched_offsets(
                   device_batched_permutation_indices_inverse(i)) +
               j;
-        });
-    starting_permutation += n_batch_entries;
-  }
+        }
+      });
 
   Kokkos::View<int *, DeviceType> device_permutation_indices(
       Kokkos::ViewAllocateWithoutInitializing("device_permutation_indices"),
