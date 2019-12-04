@@ -292,6 +292,8 @@ public:
     int comm_size;
     MPI_Comm_size(_comm, &comm_size);
 
+    // The next two function calls are the only difference to the other
+    // overload.
     reallocWithoutInitializing(_permute, lastElement(batch_offsets));
     sortAndDetermineBufferLayout(batched_destination_ranks, batch_offsets,
                                  _permute, _destinations, _dest_counts,
@@ -329,6 +331,8 @@ public:
     int comm_size;
     MPI_Comm_size(_comm, &comm_size);
 
+    // The next two function calls are the only difference to the other
+    // overload.
     reallocWithoutInitializing(_permute, destination_ranks.size());
     sortAndDetermineBufferLayout(destination_ranks, _permute, _destinations,
                                  _dest_counts, _dest_offsets);
