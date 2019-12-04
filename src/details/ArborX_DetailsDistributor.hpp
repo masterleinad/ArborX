@@ -13,6 +13,7 @@
 
 #include <ArborX_Config.hpp>
 
+#include <ArborX_DetailsSortUtils.hpp>
 #include <ArborX_DetailsUtils.hpp> // max
 #include <ArborX_Exception.hpp>
 #include <ArborX_Macros.hpp>
@@ -161,14 +162,9 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
 
   InputView reordered_batched_counts(
       Kokkos::ViewAllocateWithoutInitializing("reordered_batched_counts"),
-      batched_offsets.size()); // the last entry is unused
-  Kokkos::parallel_for(
-      ARBORX_MARK_REGION("reorder_batch_counts"),
-      Kokkos::RangePolicy<ExecutionSpace>(0, batched_offsets.size() - 1),
-      KOKKOS_LAMBDA(int j) {
-        reordered_batched_counts(j) =
-            batched_counts(device_batched_permutation_indices_inverse(j));
-      });
+      batched_offsets.size() - 1);
+  ArborX::Details::applyPermutation(device_batched_permutation_indices_inverse,
+                                    batched_counts, reordered_batched_counts);
 
   InputView exclusive_sum_reordered_batched_offsets(
       Kokkos::ViewAllocateWithoutInitializing(

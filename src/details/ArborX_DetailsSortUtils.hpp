@@ -158,21 +158,29 @@ struct CopyOp<DstViewType, SrcViewType, 3>
 };
 } // namespace PermuteHelper
 
-template <typename PermutationView, typename View>
-void applyPermutation(PermutationView const &permutation, View &view)
+template <typename PermutationView, typename InputView, typename OutputView>
+void applyPermutation(PermutationView const &permutation,
+                      InputView const &input_view, OutputView output_view)
 {
   static_assert(std::is_integral<typename PermutationView::value_type>::value,
                 "");
-  ARBORX_ASSERT(permutation.extent(0) == view.extent(0));
-  auto scratch_view = clone(view);
-  Kokkos::parallel_for(
-      ARBORX_MARK_REGION("permute"),
-      Kokkos::RangePolicy<typename View::execution_space>(0, view.extent(0)),
-      KOKKOS_LAMBDA(int i) {
-        PermuteHelper::CopyOp<View, View>::copy(scratch_view, i, view,
-                                                permutation(i));
-      });
-  Kokkos::deep_copy(view, scratch_view);
+  ARBORX_ASSERT(permutation.extent(0) == input_view.extent(0));
+  ARBORX_ASSERT(permutation.extent(0) == output_view.extent(0));
+  auto scratch_view = clone(input_view);
+  Kokkos::parallel_for(ARBORX_MARK_REGION("permute"),
+                       Kokkos::RangePolicy<typename InputView::execution_space>(
+                           0, input_view.extent(0)),
+                       KOKKOS_LAMBDA(int i) {
+                         PermuteHelper::CopyOp<InputView, InputView>::copy(
+                             scratch_view, i, input_view, permutation(i));
+                       });
+  Kokkos::deep_copy(output_view, scratch_view);
+}
+
+template <typename PermutationView, typename View>
+void applyPermutation(PermutationView const &permutation, View &view)
+{
+  applyPermutation(permutation, view, view);
 }
 
 } // namespace Details
