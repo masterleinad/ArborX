@@ -166,21 +166,21 @@ void applyPermutation(PermutationView const &permutation,
                 "");
   ARBORX_ASSERT(permutation.extent(0) == input_view.extent(0));
   ARBORX_ASSERT(permutation.extent(0) == output_view.extent(0));
-  auto scratch_view = clone(input_view);
   Kokkos::parallel_for(ARBORX_MARK_REGION("permute"),
                        Kokkos::RangePolicy<typename InputView::execution_space>(
                            0, input_view.extent(0)),
                        KOKKOS_LAMBDA(int i) {
                          PermuteHelper::CopyOp<InputView, InputView>::copy(
-                             scratch_view, i, input_view, permutation(i));
+                             output_view, i, input_view, permutation(i));
                        });
-  Kokkos::deep_copy(output_view, scratch_view);
 }
 
 template <typename PermutationView, typename View>
-void applyPermutation(PermutationView const &permutation, View &view)
+void applyPermutation(PermutationView const &permutation, View &data)
 {
-  applyPermutation(permutation, view, view);
+  auto scratch_view = cloneWithoutInitializingNorCopying(data);
+  applyPermutation(permutation, data, scratch_view);
+  Kokkos::deep_copy(data, scratch_view);
 }
 
 } // namespace Details
