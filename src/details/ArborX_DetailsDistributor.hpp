@@ -92,22 +92,18 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
   using DeviceType = typename InputView::traits::device_type;
   using ExecutionSpace = typename InputView::traits::execution_space;
 
-  Kokkos::View<int *, DeviceType> device_batched_ranks_duplicate(
-      Kokkos::ViewAllocateWithoutInitializing(batched_ranks.label()),
-      batched_ranks.size());
-  Kokkos::deep_copy(device_batched_ranks_duplicate, batched_ranks);
+  auto device_batched_ranks_duplicate = clone(batched_ranks);
   Kokkos::View<int *, DeviceType> device_batched_permutation_indices(
       Kokkos::ViewAllocateWithoutInitializing("batched_permutation_indices"),
       batched_ranks.size());
 
-  Kokkos::View<int *, DeviceType> batched_counts("batched_counts",
-                                                 batched_offsets.size() - 1);
-  Kokkos::parallel_for(
-      ARBORX_MARK_REGION("compute_batch_counts"),
-      Kokkos::RangePolicy<ExecutionSpace>(0, batched_offsets.size() - 1),
-      KOKKOS_LAMBDA(int i) {
-        batched_counts[i] = batched_offsets[i + 1] - batched_offsets[i];
-      });
+  Kokkos::View<int *, DeviceType> shifted_batched_counts(
+      "batched_counts", batched_offsets.size());
+  ArborX::adjacentDifference(batched_offsets, shifted_batched_counts);
+  // We don't want the differences to have an artificial 0 at the beginning.
+  auto batched_counts =
+      Kokkos::subview(shifted_batched_counts,
+                      std::make_pair(1, shifted_batched_counts.extent_int(0)));
 
   // step 1: compute batch permutation, total unique_ranks, total offsets
   //         and total counts
@@ -177,7 +173,7 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
   InputView exclusive_sum_reordered_batched_offsets(
       Kokkos::ViewAllocateWithoutInitializing(
           "exclusive_sum_reordered_batched_offsets"),
-      batched_offsets.size());
+      batched_offsets.size() - 1);
   ArborX::exclusivePrefixSum(reordered_batched_counts,
                              exclusive_sum_reordered_batched_offsets);
 
