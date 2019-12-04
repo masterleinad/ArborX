@@ -31,6 +31,21 @@ namespace ArborX
 namespace Details
 {
 
+template <typename InputView, typename OutputView>
+void invertPermutation(const InputView &input, OutputView &output)
+{
+  static_assert(std::is_integral<typename InputView::value_type>::value, "");
+  static_assert(std::is_integral<typename OutputView::value_type>::value, "");
+  static_assert(InputView::rank == 1, "");
+  static_assert(OutputView::rank == 1, "");
+  ARBORX_ASSERT(input.size() == output.size());
+
+  Kokkos::parallel_for(
+      ARBORX_MARK_REGION("invert_permutation"),
+      Kokkos::RangePolicy<typename InputView::execution_space>(0, input.size()),
+      KOKKOS_LAMBDA(std::size_t i) { output(input(i)) = i; });
+}
+
 // Used in the batched version of sortAndDetermineBufferLayout
 struct Result
 {
@@ -144,13 +159,9 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
       Kokkos::ViewAllocateWithoutInitializing(
           "batched_permutation_indices_inverse"),
       batched_ranks.size());
-  Kokkos::parallel_for(
-      ARBORX_MARK_REGION("invert_batched_permutation"),
-      Kokkos::RangePolicy<ExecutionSpace>(0, batched_ranks.size()),
-      KOKKOS_LAMBDA(int i) {
-        device_batched_permutation_indices_inverse(
-            device_batched_permutation_indices(i)) = i;
-      });
+  ArborX::Details::invertPermutation(
+      device_batched_permutation_indices,
+      device_batched_permutation_indices_inverse);
 
   InputView reordered_batched_counts(
       Kokkos::ViewAllocateWithoutInitializing("reordered_batched_counts"),
@@ -193,12 +204,8 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
 
   auto device_permutation_indices =
       Kokkos::create_mirror_view(DeviceType(), permutation_indices);
-  Kokkos::parallel_for(
-      ARBORX_MARK_REGION("invert_permutation"),
-      Kokkos::RangePolicy<ExecutionSpace>(0, permutation_indices.size()),
-      KOKKOS_LAMBDA(int i) {
-        device_permutation_indices(device_permutation_indices_inverse(i)) = i;
-      });
+  ArborX::Details::invertPermutation(device_permutation_indices_inverse,
+                                     device_permutation_indices);
   Kokkos::deep_copy(permutation_indices, device_permutation_indices);
 }
 
