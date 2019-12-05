@@ -174,10 +174,8 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
                              exclusive_sum_reordered_batched_offsets);
 
   // step 3: compute the total permutation
-  Kokkos::View<int *, DeviceType> device_permutation_indices_inverse(
-      Kokkos::ViewAllocateWithoutInitializing(
-          "device_permutation_indices_inverse"),
-      permutation_indices.size());
+  auto device_permutation_indices =
+      Kokkos::create_mirror_view(DeviceType(), permutation_indices);
 
   Kokkos::parallel_for(
       ARBORX_MARK_REGION("set_permutation_indices"),
@@ -187,17 +185,12 @@ static void sortAndDetermineBufferLayout(InputView batched_ranks,
         int n_batch_entries = reordered_batched_counts[i];
         for (int j = 0; j < n_batch_entries; ++j)
         {
-          device_permutation_indices_inverse(
-              exclusive_sum_reordered_batched_offsets(i) + j) =
+          device_permutation_indices(
               batched_offsets(device_batched_permutation_indices_inverse(i)) +
-              j;
+              j) = exclusive_sum_reordered_batched_offsets(i) + j;
         }
       });
 
-  auto device_permutation_indices =
-      Kokkos::create_mirror_view(DeviceType(), permutation_indices);
-  ArborX::Details::invertPermutation(device_permutation_indices_inverse,
-                                     device_permutation_indices);
   Kokkos::deep_copy(permutation_indices, device_permutation_indices);
 }
 
