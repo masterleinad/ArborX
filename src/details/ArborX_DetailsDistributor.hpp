@@ -97,7 +97,7 @@ static void sortAndDetermineBufferLayout(InputView ranks,
   for (unsigned int i = 1; i < offsets.size(); ++i)
     counts.push_back(offsets[i] - offsets[i - 1]);
   Kokkos::deep_copy(permutation_indices, device_permutation_indices);
-  assert(offsets.back() == static_cast<int>(ranks.size()));
+  ARBORX_ASSERT(offsets.back() == static_cast<int>(ranks.size()));
 }
 
 template <typename DeviceType>
@@ -120,9 +120,6 @@ public:
     MPI_Comm_rank(_comm, &comm_rank);
     int comm_size;
     MPI_Comm_size(_comm, &comm_size);
-
-    for (unsigned int i = 0; i < destination_ranks.size(); ++i)
-      assert(destination_ranks(i) >= 0 && destnation_ranks(i) <= 1);
 
     reallocWithoutInitializing(_permute, destination_ranks.size());
     sortAndDetermineBufferLayout(destination_ranks, _permute, _destinations,

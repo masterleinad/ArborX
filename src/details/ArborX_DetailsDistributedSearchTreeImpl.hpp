@@ -236,7 +236,7 @@ DistributedSearchTreeImpl<DeviceType>::sendAcrossNetwork(
                Kokkos::MemoryTraits<Kokkos::Unmanaged>>
       import_buffer(imports_host.data(), imports_host.size());
 
- auto reordered_exports =
+  auto reordered_exports =
       distributor.reorderExports(export_buffer, num_packets);
   auto mpi_waits = distributor.doPostsAndWaits(reordered_exports, num_packets,
                                                import_buffer);
@@ -606,7 +606,6 @@ void DistributedSearchTreeImpl<DeviceType>::communicateResultsBack(
                          }
                        });
 
-  // MPI_Barrier(MPI_COMM_WORLD);
   Distributor<DeviceType> distributor(comm);
   int const n_imports = distributor.createFromSends(export_ranks);
 
@@ -638,12 +637,15 @@ void DistributedSearchTreeImpl<DeviceType>::communicateResultsBack(
     Kokkos::View<double *, DeviceType> export_distances = distances;
     Kokkos::View<double *, DeviceType> import_distances(distances.label(),
                                                         n_imports);
-    sendAcrossNetwork(distributor, export_indices, import_indices, export_ranks, import_ranks, export_ids, import_ids, export_distances, import_distances);
+    sendAcrossNetwork(distributor, export_indices, import_indices, export_ranks,
+                      import_ranks, export_ids, import_ids, export_distances,
+                      import_distances);
     distances = import_distances;
   }
   else
   {
-  sendAcrossNetwork(distributor, export_indices, import_indices, export_ranks, import_ranks, export_ids, import_ids);
+    sendAcrossNetwork(distributor, export_indices, import_indices, export_ranks,
+                      import_ranks, export_ids, import_ids);
   }
 
   ids = import_ids;
