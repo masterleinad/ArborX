@@ -638,17 +638,12 @@ void DistributedSearchTreeImpl<DeviceType>::communicateResultsBack(
     Kokkos::View<double *, DeviceType> export_distances = distances;
     Kokkos::View<double *, DeviceType> import_distances(distances.label(),
                                                         n_imports);
-    sendAcrossNetwork(distributor, export_indices, import_indices);
-  sendAcrossNetwork(distributor, export_ranks, import_ranks);
-  sendAcrossNetwork(distributor, export_ids, import_ids);
-    sendAcrossNetwork(distributor, export_distances, import_distances);
+    sendAcrossNetwork(distributor, export_indices, import_indices, export_ranks, import_ranks, export_ids, import_ids, export_distances, import_distances);
     distances = import_distances;
   }
   else
   {
-  sendAcrossNetwork(distributor, export_indices, import_indices);
-  sendAcrossNetwork(distributor, export_ranks, import_ranks);
-  sendAcrossNetwork(distributor, export_ids, import_ids);
+  sendAcrossNetwork(distributor, export_indices, import_indices, export_ranks, import_ranks, export_ids, import_ids);
   }
 
   ids = import_ids;
