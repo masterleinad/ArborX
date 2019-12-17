@@ -243,7 +243,6 @@ DistributedSearchTreeImpl<DeviceType>::sendAcrossNetwork(
   sendAcrossNetwork(distributor, otherviews...);
   if (!mpi_waits.empty())
     MPI_Waitall(mpi_waits.size(), mpi_waits.data(), MPI_STATUSES_IGNORE);
-  //    sendAcrossNetwork(distributor, otherviews...);
 
   Kokkos::deep_copy(imports, imports_host);
 #else
@@ -578,11 +577,6 @@ void DistributedSearchTreeImpl<DeviceType>::forwardQueries(
   Kokkos::View<Query *, DeviceType> imports("queries", n_imports);
   sendAcrossNetwork(distributor, export_ranks, import_ranks, export_ids,
                     import_ids, exports, imports);
-  //  sendAcrossNetwork(distributor, export_ranks, import_ranks);
-  //  sendAcrossNetwork(distributor, export_ids, import_ids, exports, imports);
-
-  for (unsigned int i = 0; i < export_ranks.size(); ++i)
-    assert(export_ranks(i) >= 0 && export_ranks(i) <= 1);
 
   fwd_queries = imports;
   fwd_ids = import_ids;
@@ -637,13 +631,6 @@ void DistributedSearchTreeImpl<DeviceType>::communicateResultsBack(
       Kokkos::ViewAllocateWithoutInitializing(ranks.label()), n_imports);
   Kokkos::View<int *, DeviceType> import_ids(
       Kokkos::ViewAllocateWithoutInitializing(ids.label()), n_imports);
-  sendAcrossNetwork(distributor, export_indices, import_indices);
-  sendAcrossNetwork(distributor, export_ranks, import_ranks);
-  sendAcrossNetwork(distributor, export_ids, import_ids);
-
-  ids = import_ids;
-  ranks = import_ranks;
-  indices = import_indices;
 
   if (distances_ptr)
   {
@@ -651,9 +638,22 @@ void DistributedSearchTreeImpl<DeviceType>::communicateResultsBack(
     Kokkos::View<double *, DeviceType> export_distances = distances;
     Kokkos::View<double *, DeviceType> import_distances(distances.label(),
                                                         n_imports);
+    sendAcrossNetwork(distributor, export_indices, import_indices);
+  sendAcrossNetwork(distributor, export_ranks, import_ranks);
+  sendAcrossNetwork(distributor, export_ids, import_ids);
     sendAcrossNetwork(distributor, export_distances, import_distances);
     distances = import_distances;
   }
+  else
+  {
+  sendAcrossNetwork(distributor, export_indices, import_indices);
+  sendAcrossNetwork(distributor, export_ranks, import_ranks);
+  sendAcrossNetwork(distributor, export_ids, import_ids);
+  }
+
+  ids = import_ids;
+  ranks = import_ranks;
+  indices = import_indices;
 }
 
 template <typename DeviceType>
