@@ -97,7 +97,7 @@ static void sortAndDetermineBufferLayout(InputView ranks,
   for (unsigned int i = 1; i < offsets.size(); ++i)
     counts.push_back(offsets[i] - offsets[i - 1]);
   Kokkos::deep_copy(permutation_indices, device_permutation_indices);
-  ARBORX_ASSERT(offsets.back() == static_cast<int>(ranks.size()));
+  assert(offsets.back() == static_cast<int>(ranks.size()));
 }
 
 template <typename DeviceType>
@@ -120,6 +120,9 @@ public:
     MPI_Comm_rank(_comm, &comm_rank);
     int comm_size;
     MPI_Comm_size(_comm, &comm_size);
+
+    for (unsigned int i=0; i<destination_ranks.size(); ++i)
+	    assert(destination_ranks(i)>=0&& destnation_ranks(i)<=1);
 
     reallocWithoutInitializing(_permute, destination_ranks.size());
     sortAndDetermineBufferLayout(destination_ranks, _permute, _destinations,
@@ -146,12 +149,49 @@ public:
     return _src_offsets.back();
   }
 
+  template <typename View> 
+  View reorderExports(View const &exports, size_t num_packets) const
+  {
+    ARBORX_ASSERT(num_packets * _dest_offsets.back() == exports.size());
+    static_assert(View::rank == 1, "");
+     Kokkos::View<typename View::non_const_value_type *, typename View::traits::device_type> dest_buffer(
+        Kokkos::ViewAllocateWithoutInitializing("destination_buffer"),
+        exports.size());
+         static_assert(
+        std::is_same<typename View::memory_space,
+                     typename decltype(_permute)::memory_space>::value,
+        "");
+#ifndef ARBORX_USE_CUDA_AWARE_MPI
+    static_assert(
+        Kokkos::Impl::MemorySpaceAccess<typename View::memory_space,
+                                        Kokkos::HostSpace>::accessible,
+        "");
+#endif
+
+   // We need to create a local copy to avoid capturing a member variable
+    // (via the 'this' pointer) which we can't do using a KOKKOS_LAMBDA.
+    // Use KOKKOS_CLASS_LAMBDA when we require C++17.
+    auto const permute_copy = _permute;
+
+    Kokkos::parallel_for("copy_destinations_permuted",
+                         Kokkos::RangePolicy<typename View::execution_space>(
+                             0, _dest_offsets.back() * num_packets),
+                         KOKKOS_LAMBDA(int const k) {
+                           int const i = k / num_packets;
+                           int const j = k % num_packets;
+                           dest_buffer(num_packets * permute_copy[i] + j) =
+                               exports[num_packets * i + j];
+                         });
+    return dest_buffer;
+  }
+
   template <typename View>
-  void doPostsAndWaits(typename View::const_type const &exports,
-                       size_t num_packets, View const &imports) const
+  std::vector<MPI_Request>
+  doPostsAndWaits(typename View::const_type const &reordered_exports, size_t num_packets,
+                  View const &imports) const
   {
     ARBORX_ASSERT(num_packets * _src_offsets.back() == imports.size());
-    ARBORX_ASSERT(num_packets * _dest_offsets.back() == exports.size());
+    ARBORX_ASSERT(num_packets * _dest_offsets.back() == reordered_exports.size());
 
     using ValueType = typename View::value_type;
     using ExecutionSpace = typename View::execution_space;
@@ -167,25 +207,6 @@ public:
                                         Kokkos::HostSpace>::accessible,
         "");
 #endif
-
-    Kokkos::View<ValueType *, typename View::traits::device_type> dest_buffer(
-        Kokkos::ViewAllocateWithoutInitializing("destination_buffer"),
-        exports.size());
-
-    // We need to create a local copy to avoid capturing a member variable
-    // (via the 'this' pointer) which we can't do using a KOKKOS_LAMBDA.
-    // Use KOKKOS_CLASS_LAMBDA when we require C++17.
-    auto const permute_copy = _permute;
-
-    Kokkos::parallel_for("copy_destinations_permuted",
-                         Kokkos::RangePolicy<ExecutionSpace>(
-                             0, _dest_offsets.back() * num_packets),
-                         KOKKOS_LAMBDA(int const k) {
-                           int const i = k / num_packets;
-                           int const j = k % num_packets;
-                           dest_buffer(num_packets * permute_copy[i] + j) =
-                               exports[num_packets * i + j];
-                         });
 
     int comm_rank;
     MPI_Comm_rank(_comm, &comm_rank);
@@ -217,7 +238,7 @@ public:
       auto const message_size =
           _dest_counts[i] * num_packets * sizeof(ValueType);
       auto const send_buffer_ptr =
-          dest_buffer.data() + _dest_offsets[i] * num_packets;
+          reordered_exports.data() + _dest_offsets[i] * num_packets;
       if (_destinations[i] == comm_rank)
       {
         auto const it = std::find(_sources.begin(), _sources.end(), comm_rank);
@@ -241,8 +262,7 @@ public:
                   123, _comm, &requests.back());
       }
     }
-    if (!requests.empty())
-      MPI_Waitall(requests.size(), requests.data(), MPI_STATUSES_IGNORE);
+    return requests;
   }
   size_t getTotalReceiveLength() const { return _src_offsets.back(); }
   size_t getTotalSendLength() const { return _dest_offsets.back(); }
