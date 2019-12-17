@@ -121,8 +121,8 @@ public:
     int comm_size;
     MPI_Comm_size(_comm, &comm_size);
 
-    for (unsigned int i=0; i<destination_ranks.size(); ++i)
-	    assert(destination_ranks(i)>=0&& destnation_ranks(i)<=1);
+    for (unsigned int i = 0; i < destination_ranks.size(); ++i)
+      assert(destination_ranks(i) >= 0 && destnation_ranks(i) <= 1);
 
     reallocWithoutInitializing(_permute, destination_ranks.size());
     sortAndDetermineBufferLayout(destination_ranks, _permute, _destinations,
@@ -149,15 +149,17 @@ public:
     return _src_offsets.back();
   }
 
-  template <typename View> 
-  View reorderExports(View const &exports, size_t num_packets) const
+  template <typename View>
+  auto reorderExports(View const &exports, size_t num_packets) const
   {
     ARBORX_ASSERT(num_packets * _dest_offsets.back() == exports.size());
     static_assert(View::rank == 1, "");
-     Kokkos::View<typename View::non_const_value_type *, typename View::traits::device_type> dest_buffer(
-        Kokkos::ViewAllocateWithoutInitializing("destination_buffer"),
-        exports.size());
-         static_assert(
+    Kokkos::View<typename View::non_const_value_type *,
+                 typename View::traits::device_type>
+        dest_buffer(
+            Kokkos::ViewAllocateWithoutInitializing("destination_buffer"),
+            exports.size());
+    static_assert(
         std::is_same<typename View::memory_space,
                      typename decltype(_permute)::memory_space>::value,
         "");
@@ -168,7 +170,7 @@ public:
         "");
 #endif
 
-   // We need to create a local copy to avoid capturing a member variable
+    // We need to create a local copy to avoid capturing a member variable
     // (via the 'this' pointer) which we can't do using a KOKKOS_LAMBDA.
     // Use KOKKOS_CLASS_LAMBDA when we require C++17.
     auto const permute_copy = _permute;
@@ -187,11 +189,12 @@ public:
 
   template <typename View>
   std::vector<MPI_Request>
-  doPostsAndWaits(typename View::const_type const &reordered_exports, size_t num_packets,
-                  View const &imports) const
+  doPostsAndWaits(typename View::const_type const &reordered_exports,
+                  size_t num_packets, View const &imports) const
   {
     ARBORX_ASSERT(num_packets * _src_offsets.back() == imports.size());
-    ARBORX_ASSERT(num_packets * _dest_offsets.back() == reordered_exports.size());
+    ARBORX_ASSERT(num_packets * _dest_offsets.back() ==
+                  reordered_exports.size());
 
     using ValueType = typename View::value_type;
     using ExecutionSpace = typename View::execution_space;

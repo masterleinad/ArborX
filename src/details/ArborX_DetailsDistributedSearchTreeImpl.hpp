@@ -195,7 +195,6 @@ template <typename DeviceType>
 void DistributedSearchTreeImpl<DeviceType>::sendAcrossNetwork(
     Distributor<DeviceType> const &distributor)
 {
-  std::cout << "0 arguments" << std::endl;	
 }
 
 template <typename DeviceType>
@@ -237,20 +236,20 @@ DistributedSearchTreeImpl<DeviceType>::sendAcrossNetwork(
                Kokkos::MemoryTraits<Kokkos::Unmanaged>>
       import_buffer(imports_host.data(), imports_host.size());
 
-  //  sendAcrossNetwork(distributor, otherviews...);
-
-  auto reordered_exports  = distributor.reorderExports(export_buffer, num_packets);
-  auto mpi_waits =
-      distributor.doPostsAndWaits(reordered_exports, num_packets, import_buffer);
+ auto reordered_exports =
+      distributor.reorderExports(export_buffer, num_packets);
+  auto mpi_waits = distributor.doPostsAndWaits(reordered_exports, num_packets,
+                                               import_buffer);
   sendAcrossNetwork(distributor, otherviews...);
   if (!mpi_waits.empty())
     MPI_Waitall(mpi_waits.size(), mpi_waits.data(), MPI_STATUSES_IGNORE);
-//    sendAcrossNetwork(distributor, otherviews...);
+  //    sendAcrossNetwork(distributor, otherviews...);
 
   Kokkos::deep_copy(imports, imports_host);
 #else
-  auto reordered_exports  = distributor.reorderExports(exports, num_packets);
-  auto mpi_waits = distributor.doPostsAndWaits(reordered_exports, num_packets, imports);
+  auto reordered_exports = distributor.reorderExports(exports, num_packets);
+  auto mpi_waits =
+      distributor.doPostsAndWaits(reordered_exports, num_packets, imports);
   sendAcrossNetwork(distributor, otherviews...);
   if (!mpi_waits.empty())
     MPI_Waitall(mpi_waits.size(), mpi_waits.data(), MPI_STATUSES_IGNORE);
@@ -577,13 +576,13 @@ void DistributedSearchTreeImpl<DeviceType>::forwardQueries(
 
   // Send queries across the network
   Kokkos::View<Query *, DeviceType> imports("queries", n_imports);
-  sendAcrossNetwork(distributor, export_ranks, import_ranks, export_ids, import_ids, exports, imports);
-//  sendAcrossNetwork(distributor, export_ranks, import_ranks);
-//  sendAcrossNetwork(distributor, export_ids, import_ids, exports, imports);
+  sendAcrossNetwork(distributor, export_ranks, import_ranks, export_ids,
+                    import_ids, exports, imports);
+  //  sendAcrossNetwork(distributor, export_ranks, import_ranks);
+  //  sendAcrossNetwork(distributor, export_ids, import_ids, exports, imports);
 
-  for (unsigned int i=0; i<export_ranks.size(); ++i)
-    assert(export_ranks(i)>=0&& export_ranks(i)<=1);
-
+  for (unsigned int i = 0; i < export_ranks.size(); ++i)
+    assert(export_ranks(i) >= 0 && export_ranks(i) <= 1);
 
   fwd_queries = imports;
   fwd_ids = import_ids;
@@ -610,11 +609,10 @@ void DistributedSearchTreeImpl<DeviceType>::communicateResultsBack(
                          for (int i = offset(q); i < offset(q + 1); ++i)
                          {
                            export_ranks(i) = ranks(q);
-//			   std::cout << "export_ranks(" << i << ") = " << ranks(q) << std::endl;
                          }
                        });
 
-  //MPI_Barrier(MPI_COMM_WORLD);
+  // MPI_Barrier(MPI_COMM_WORLD);
   Distributor<DeviceType> distributor(comm);
   int const n_imports = distributor.createFromSends(export_ranks);
 
