@@ -62,6 +62,136 @@ struct Result
   }
 };
 
+// Assuming that batched_ranks might contain elements multiply, but duplicates
+// only are not separated by other elements, compute the array of indices that
+// sort the input array (in reverse order) but also return the sorted unique
+// elements in that array with the corresponding element counts and displacement
+// (offsets).
+//  This overload uses batched ranks and offsets.
+template <typename InputView, typename OutputView>
+static void
+DetermineBufferLayout(InputView batched_ranks, InputView batched_offsets,
+                      OutputView permutation_indices,
+                      std::vector<int> &unique_ranks, std::vector<int> &counts,
+                      std::vector<int> &offsets)
+{
+  ARBORX_ASSERT(unique_ranks.empty());
+  ARBORX_ASSERT(offsets.empty());
+  ARBORX_ASSERT(counts.empty());
+  ARBORX_ASSERT(permutation_indices.extent_int(0) ==
+                lastElement(batched_offsets));
+  ARBORX_ASSERT(batched_ranks.size() + 1 == batched_offsets.size());
+  static_assert(
+      std::is_same<typename InputView::non_const_value_type, int>::value, "");
+  static_assert(std::is_same<typename OutputView::value_type, int>::value, "");
+
+  offsets.push_back(0);
+
+  auto const n = batched_ranks.size();
+  if (n == 0 || lastElement(batched_offsets) == 0)
+    return;
+
+  std::cout << "batched_offsets" << std::endl;
+  for (unsigned int i=0; i<batched_offsets.size(); ++i)
+  {
+    std::cout << batched_offsets(i) << ' ';
+  }
+  std::cout << std::endl;
+
+  std::cout << "batched_ranks" << std::endl;
+  for (unsigned int i=0; i<batched_ranks.size(); ++i)
+  {
+    std::cout << batched_ranks(i) << ' ';
+  }
+  std::cout << std::endl;
+
+  using DeviceType = typename InputView::traits::device_type;
+  using ExecutionSpace = typename InputView::traits::execution_space;
+  auto offset_ranks_copy = clone(batched_offsets);
+  auto unique_ranks_copy = clone(batched_ranks);
+  Kokkos::View<int, Kokkos::MemoryTraits<Kokkos::Atomic>> position("position");
+  Kokkos::deep_copy(position, 1);
+
+  Kokkos::parallel_for(
+      ARBORX_MARK_REGION("find_unique_starts"),
+      Kokkos::RangePolicy<ExecutionSpace>(0, batched_ranks.size()+1),
+      KOKKOS_LAMBDA(int i) {
+        if  (i==batched_ranks.size())
+	{
+	    auto const my_position = position()++;
+          std::cout << i << " should be less than " << batched_offsets.size() << std::endl;
+          offset_ranks_copy(my_position) = batched_offsets(i);
+          std::cout << "Done" << std::endl;
+	}
+        else if (i > 0 && batched_ranks(i) != batched_ranks(i - 1))
+        {
+          auto const my_position = position()++;
+          unique_ranks_copy(my_position) = batched_ranks(i);
+	  std::cout << "unique_rank " << batched_ranks(i) << std::endl;
+          offset_ranks_copy(my_position) = batched_offsets(i);
+        }
+      });
+
+  auto const host_position =
+      Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), position);
+  auto sorted_offsets = InputView(
+      offset_ranks_copy, std::make_pair(0, static_cast<int>(host_position())));
+  auto const permutation = ArborX::Details::sortObjects(sorted_offsets);
+  auto sorted_unique_ranks = InputView(
+      unique_ranks_copy, std::make_pair(0, static_cast<int>(host_position())));
+  ArborX::Details::applyPermutation(permutation, sorted_unique_ranks);
+
+  auto const unique_ranks_host = Kokkos::create_mirror_view_and_copy(
+      Kokkos::HostSpace(), sorted_unique_ranks);
+  unique_ranks.reserve(unique_ranks_host.size()-1);
+  std::cout << unique_ranks_host.size() << std::endl;
+  for (unsigned int i = 0; i < unique_ranks_host.size()-1; ++i)
+  {
+    unique_ranks.push_back(unique_ranks_host(i));
+  }
+
+  auto const offsets_host =
+      Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), sorted_offsets);
+  offsets.reserve(sorted_offsets.size());
+  counts.reserve(sorted_offsets.size() - 1);
+  for (unsigned int i = 1; i < sorted_offsets.size(); ++i)
+  {
+    offsets.push_back(offsets_host(i));
+    counts.push_back(offsets_host(i) - offsets_host(i - 1));
+  }
+  assert(offsets[0]==0);
+
+  ArborX::iota(permutation_indices, 0);
+
+/*  std::cout << "permutation_indices" << std::endl;
+  for (unsigned int i=0; i<permutation_indices.size(); ++i)
+  {
+    std::cout << permutation_indices(i) << ' ';
+  }
+  std::cout << std::endl;*/
+
+   std::cout << "offsets" << std::endl;
+  for (unsigned int i=0; i<offsets.size(); ++i)
+  {
+    std::cout << offsets[i] << ' ';
+  }
+  std::cout << std::endl;
+
+   std::cout << "counts" << std::endl;
+  for (unsigned int i=0; i<counts.size(); ++i)
+  {
+    std::cout << counts[i] << ' ';
+  }
+  std::cout << std::endl;
+
+   std::cout << "unique_ranks" << std::endl;
+  for (unsigned int i=0; i<unique_ranks.size(); ++i)
+  {
+    std::cout << unique_ranks[i] << ' ';
+  }
+  std::cout << std::endl;
+}
+
 // Computes the array of indices that sort the input array (in reverse order)
 // but also returns the sorted unique elements in that array with the
 // corresponding element counts and displacement (offsets)
@@ -288,9 +418,8 @@ public:
     // The next two function calls are the only difference to the other
     // overload.
     reallocWithoutInitializing(_permute, lastElement(batch_offsets));
-    sortAndDetermineBufferLayout(batched_destination_ranks, batch_offsets,
-                                 _permute, _destinations, _dest_counts,
-                                 _dest_offsets);
+    DetermineBufferLayout(batched_destination_ranks, batch_offsets, _permute,
+                          _destinations, _dest_counts, _dest_offsets);
 
     std::vector<int> src_counts_dense(comm_size);
     int const dest_size = _destinations.size();
@@ -355,8 +484,8 @@ public:
   void doPostsAndWaits(typename View::const_type const &exports,
                        size_t num_packets, View const &imports) const
   {
-    ARBORX_ASSERT(num_packets * _src_offsets.back() == imports.size());
-    ARBORX_ASSERT(num_packets * _dest_offsets.back() == exports.size());
+    assert(num_packets * _src_offsets.back() == imports.size());
+    assert(num_packets * _dest_offsets.back() == exports.size());
 
     using ValueType = typename View::value_type;
     using ExecutionSpace = typename View::execution_space;
