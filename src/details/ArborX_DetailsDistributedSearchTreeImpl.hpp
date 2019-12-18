@@ -195,7 +195,7 @@ DistributedSearchTreeImpl<DeviceType>::sendAcrossNetwork(
     Distributor<DeviceType> const &distributor, View exports,
     typename View::non_const_type imports)
 {
-  assert((exports.extent(0) == distributor.getTotalSendLength()) &&
+  ARBORX_ASSERT((exports.extent(0) == distributor.getTotalSendLength()) &&
                 (imports.extent(0) == distributor.getTotalReceiveLength()) &&
                 (exports.extent(1) == imports.extent(1)) &&
                 (exports.extent(2) == imports.extent(2)) &&
@@ -538,7 +538,6 @@ void DistributedSearchTreeImpl<DeviceType>::forwardQueries(
       Kokkos::ViewAllocateWithoutInitializing("export_ranks"), n_exports);
   Kokkos::deep_copy(export_ranks, comm_rank);
 
-  std::cout << "n_imports" << std::endl;
   Kokkos::View<int *, DeviceType> import_ranks(
       Kokkos::ViewAllocateWithoutInitializing("import_ranks"), n_imports);
   sendAcrossNetwork(distributor, export_ranks, import_ranks);
