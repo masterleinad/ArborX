@@ -144,11 +144,11 @@ DetermineBufferLayout(InputView batched_ranks, InputView batched_offsets,
   auto const unique_ranks_host = Kokkos::create_mirror_view_and_copy(
       Kokkos::HostSpace(), sorted_unique_ranks);
   unique_ranks.reserve(unique_ranks_host.size()-1);
-  std::cout << unique_ranks_host.size() << std::endl;
+  /*std::cout << unique_ranks_host.size() << std::endl;
   for (unsigned int i = 0; i < unique_ranks_host.size()-1; ++i)
   {
     unique_ranks.push_back(unique_ranks_host(i));
-  }
+  }*/
 
   auto const offsets_host =
       Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), sorted_offsets);
@@ -156,8 +156,13 @@ DetermineBufferLayout(InputView batched_ranks, InputView batched_offsets,
   counts.reserve(sorted_offsets.size() - 1);
   for (unsigned int i = 1; i < sorted_offsets.size(); ++i)
   {
-    offsets.push_back(offsets_host(i));
-    counts.push_back(offsets_host(i) - offsets_host(i - 1));
+    int const count = offsets_host(i) - offsets_host(i - 1);	  
+    if (count >0)
+    {
+      offsets.push_back(offsets_host(i));
+      counts.push_back(count);
+      unique_ranks.push_back(unique_ranks_host(i-1));
+    }
   }
   assert(offsets[0]==0);
 
