@@ -95,19 +95,15 @@ DetermineBufferLayout(InputView batched_ranks, InputView batched_offsets,
   using ExecutionSpace = typename InputView::traits::execution_space;
   auto offset_ranks_copy = clone(batched_offsets);
   auto unique_ranks_copy = clone(batched_ranks);
-  Kokkos::View<int, Kokkos::MemoryTraits<Kokkos::Atomic>> position("position");
+  Kokkos::View<int, DeviceType, Kokkos::MemoryTraits<Kokkos::Atomic>> position(
+      "position");
   Kokkos::deep_copy(position, 1);
 
   Kokkos::parallel_for(
       ARBORX_MARK_REGION("find_unique_starts"),
-      Kokkos::RangePolicy<ExecutionSpace>(0, batched_ranks.size() + 1),
+      Kokkos::RangePolicy<ExecutionSpace>(0, batched_ranks.size()),
       KOKKOS_LAMBDA(int i) {
-        if (i == batched_ranks.size())
-        {
-          auto const my_position = position()++;
-          offset_ranks_copy(my_position) = batched_offsets(i);
-        }
-        else if (i > 0 && batched_ranks(i) != batched_ranks(i - 1))
+        if (i > 0 && batched_ranks(i) != batched_ranks(i - 1))
         {
           auto const my_position = position()++;
           unique_ranks_copy(my_position) = batched_ranks(i);
@@ -141,6 +137,15 @@ DetermineBufferLayout(InputView batched_ranks, InputView batched_offsets,
       counts.push_back(count);
       unique_ranks.push_back(unique_ranks_host(i - 1));
     }
+  }
+  auto const lastoffset = lastElement(batched_offsets);
+  int const count = lastoffset - lastElement(offsets_host);
+
+  if (count > 0)
+  {
+    offsets.push_back(lastoffset);
+    counts.push_back(count);
+    unique_ranks.push_back(lastElement(unique_ranks_host));
   }
 
   ArborX::iota(permutation_indices, 0);
