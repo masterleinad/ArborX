@@ -75,6 +75,16 @@ DetermineBufferLayout(InputView batched_ranks, InputView batched_offsets,
                       std::vector<int> &unique_ranks, std::vector<int> &counts,
                       std::vector<int> &offsets)
 {
+  std::cout << "batched_ranks" << std::endl;
+  for (unsigned int i = 0; i < batched_ranks.size(); ++i)
+    std::cout << batched_ranks[i] << ' ';
+  std::cout << std::endl;
+
+  std::cout << "batched_offsets" << std::endl;
+  for (unsigned int i = 0; i < batched_offsets.size(); ++i)
+    std::cout << batched_offsets[i] << ' ';
+  std::cout << std::endl;
+
   ARBORX_ASSERT(unique_ranks.empty());
   ARBORX_ASSERT(offsets.empty());
   ARBORX_ASSERT(counts.empty());
@@ -93,23 +103,62 @@ DetermineBufferLayout(InputView batched_ranks, InputView batched_offsets,
 
   using DeviceType = typename InputView::traits::device_type;
   using ExecutionSpace = typename InputView::traits::execution_space;
+
   auto offset_ranks_copy = clone(batched_offsets);
   auto unique_ranks_copy = clone(batched_ranks);
   Kokkos::View<int, DeviceType, Kokkos::MemoryTraits<Kokkos::Atomic>> position(
       "position");
-  Kokkos::deep_copy(position, 1);
+  // Kokkos::deep_copy(position, 1);
 
   Kokkos::parallel_for(
       ARBORX_MARK_REGION("find_unique_starts"),
       Kokkos::RangePolicy<ExecutionSpace>(0, batched_ranks.size()),
       KOKKOS_LAMBDA(int i) {
-        if (i > 0 && batched_ranks(i) != batched_ranks(i - 1))
+        // first see if there is a new rank at the position we are looking at
+        if ((i < batched_ranks.size() - 1 &&
+             batched_ranks(i + 1) != batched_ranks(i)) ||
+            i == batched_ranks.size() - 1)
         {
-          auto const my_position = position()++;
-          unique_ranks_copy(my_position) = batched_ranks(i);
-          offset_ranks_copy(my_position) = batched_offsets(i);
+          // next see if the range is empty in fact
+          bool is_empty = true;
+          std::cout << "index " << i << std::endl;
+          for (int j = i; j >= 0 && batched_ranks(j) == batched_ranks(i); --j)
+          {
+            std::cout << "testing batched_offsets(" << i + 1
+                      << ") = " << batched_offsets(i + 1)
+                      << " > batched_offsets(" << j
+                      << ") = " << batched_offsets(j) << std::endl;
+            if (batched_offsets(i + 1) > batched_offsets(j))
+            {
+              is_empty = false;
+              break;
+            }
+          }
+          if (!is_empty)
+          {
+            auto const my_position = position()++;
+            unique_ranks_copy(my_position) = batched_ranks(i);
+            offset_ranks_copy(my_position + 1) = batched_offsets(i + 1);
+            std::cout << "unique_ranks_copy(" << my_position
+                      << ") = " << batched_ranks(i) << std::endl;
+            std::cout << "offset_ranks_copy(" << my_position + 1
+                      << ") = " << batched_offsets(i + 1) << std::endl;
+            ;
+          }
         }
       });
+
+  std::cout << "max " << position() << std::endl;
+
+  std::cout << "offset_ranks_copy" << std::endl;
+  for (unsigned int i = 0; i < position() + 1; ++i)
+    std::cout << offset_ranks_copy[i] << ' ';
+  std::cout << std::endl;
+
+  std::cout << "unique_ranks_copy" << std::endl;
+  for (unsigned int i = 0; i < position(); ++i)
+    std::cout << unique_ranks_copy[i] << ' ';
+  std::cout << std::endl;
 
   auto const host_position =
       Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), position);
@@ -120,9 +169,24 @@ DetermineBufferLayout(InputView batched_ranks, InputView batched_offsets,
       unique_ranks_copy, std::make_pair(0, static_cast<int>(host_position())));
   ArborX::Details::applyPermutation(permutation, sorted_unique_ranks);
 
+  std::cout << "permutation" << std::endl;
+  for (unsigned int i = 0; i < permutation.size(); ++i)
+    std::cout << permutation[i] << ' ';
+  std::cout << std::endl;
+
   auto const unique_ranks_host = Kokkos::create_mirror_view_and_copy(
       Kokkos::HostSpace(), sorted_unique_ranks);
   unique_ranks.reserve(unique_ranks_host.size() - 1);
+
+  std::cout << "sorted_offsets" << std::endl;
+  for (unsigned int i = 0; i < sorted_offsets.size(); ++i)
+    std::cout << sorted_offsets[i] << ' ';
+  std::cout << std::endl;
+
+  std::cout << "sorted_unique_ranks" << std::endl;
+  for (unsigned int i = 0; i < sorted_unique_ranks.size(); ++i)
+    std::cout << sorted_unique_ranks[i] << ' ';
+  std::cout << std::endl;
 
   auto const offsets_host =
       Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace(), sorted_offsets);
@@ -131,11 +195,14 @@ DetermineBufferLayout(InputView batched_ranks, InputView batched_offsets,
   for (unsigned int i = 1; i < sorted_offsets.size(); ++i)
   {
     int const count = offsets_host(i) - offsets_host(i - 1);
+    std::cout << "candidate " << unique_ranks_host(i - 1) << " with " << count
+              << " elements." << std::endl;
     if (count > 0)
     {
       offsets.push_back(offsets_host(i));
       counts.push_back(count);
       unique_ranks.push_back(unique_ranks_host(i - 1));
+      std::cout << "pushing " << unique_ranks_host(i - 1) << std::endl;
     }
   }
   auto const lastoffset = lastElement(batched_offsets);
@@ -147,6 +214,16 @@ DetermineBufferLayout(InputView batched_ranks, InputView batched_offsets,
     counts.push_back(count);
     unique_ranks.push_back(lastElement(unique_ranks_host));
   }
+
+  std::cout << "unique_ranks" << std::endl;
+  for (unsigned int i = 0; i < unique_ranks.size(); ++i)
+    std::cout << unique_ranks[i] << ' ';
+  std::cout << std::endl;
+
+  std::cout << "offsets" << std::endl;
+  for (unsigned int i = 0; i < offsets.size(); ++i)
+    std::cout << offsets[i] << ' ';
+  std::cout << std::endl;
 
   ArborX::iota(permutation_indices, 0);
 }
