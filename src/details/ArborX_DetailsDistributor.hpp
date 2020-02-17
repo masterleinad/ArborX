@@ -278,7 +278,7 @@ public:
                                  exports[num_packets * i + j];
                            });
     }
-    auto copied_dest_buffer = Kokkos::create_mirror_view_and_copy(
+    auto dest_buffer_mirror = Kokkos::create_mirror_view_and_copy(
         typename ImportView::memory_space(), dest_buffer);
 
     int comm_rank;
@@ -313,7 +313,7 @@ public:
           _dest_counts[i] * num_packets * sizeof(ValueType);
       auto const send_buffer_ptr =
           permutation_necessary
-              ? copied_dest_buffer.data() + _dest_offsets[i] * num_packets
+              ? dest_buffer_mirror.data() + _dest_offsets[i] * num_packets
               : exports.data() + _dest_offsets[i] * num_packets;
       if (_destinations[i] == comm_rank)
       {
