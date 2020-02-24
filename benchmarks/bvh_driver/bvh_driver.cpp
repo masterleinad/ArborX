@@ -77,29 +77,51 @@ constructPoints(int n_values, PointCloudType point_cloud_type)
 }
 
 template <typename DeviceType>
-Kokkos::View<ArborX::Nearest<ArborX::Point> *, DeviceType>
-makeNearestQueries(int n_values, int n_queries, int n_neighbors,
-                   PointCloudType target_point_cloud_type)
+struct RadiusSearches
 {
-  Kokkos::View<ArborX::Point *, DeviceType> random_points(
-      Kokkos::ViewAllocateWithoutInitializing("random_points"), n_queries);
-  auto const a = std::cbrt(n_values);
-  generatePointCloud(target_point_cloud_type, a, random_points);
+  Kokkos::View<ArborX::Point *, DeviceType> points;
+  double radius;
+};
 
-  Kokkos::View<ArborX::Nearest<ArborX::Point> *, DeviceType> queries(
-      Kokkos::ViewAllocateWithoutInitializing("queries"), n_queries);
-  using ExecutionSpace = typename DeviceType::execution_space;
-  Kokkos::parallel_for(
-      "bvh_driver:setup_knn_search_queries",
-      Kokkos::RangePolicy<ExecutionSpace>(0, n_queries), KOKKOS_LAMBDA(int i) {
-        queries(i) =
-            ArborX::nearest<ArborX::Point>(random_points(i), n_neighbors);
-      });
-  return queries;
-}
+namespace ArborX
+{
+namespace Traits
+{
+template <typename DeviceType>
+struct Access<RadiusSearches<DeviceType>, PredicatesTag>
+{
+  using memory_space = typename DeviceType::memory_space;
+  static std::size_t size(RadiusSearches<DeviceType> const &pred)
+  {
+    return pred.points.extent(0);
+  }
+  static KOKKOS_FUNCTION auto get(RadiusSearches<DeviceType> const &pred,
+                                  std::size_t i)
+  {
+    return attach(intersects(Sphere{{pred.points(i)}, pred.radius}), i);
+  }
+};
+} // namespace Traits
+} // namespace ArborX
 
 template <typename DeviceType>
-Kokkos::View<decltype(ArborX::intersects(ArborX::Sphere{})) *, DeviceType>
+struct COOCallback
+{
+  using tag = ArborX::Details::InlineCallbackTag;
+
+  Kokkos::View<int *, DeviceType> points;
+
+  template <typename Query, typename Insert>
+  KOKKOS_FUNCTION void operator()(Query const &query, int index,
+                                  Insert const &insert) const
+  {
+    auto data = ArborX::getData(query);
+    insert(std::make_pair(index, data));
+  }
+};
+
+template <typename DeviceType>
+RadiusSearches<DeviceType>
 makeSpatialQueries(int n_values, int n_queries, int n_neighbors,
                    PointCloudType target_point_cloud_type)
 {
@@ -116,13 +138,7 @@ makeSpatialQueries(int n_values, int n_queries, int n_neighbors,
   double const r =
       2. * std::cbrt(static_cast<double>(n_neighbors) * 3. / (4. * M_PI)) -
       (1. + std::sqrt(3.)) / 2.;
-  using ExecutionSpace = typename DeviceType::execution_space;
-  Kokkos::parallel_for(
-      "bvh_driver:setup_radius_search_queries",
-      Kokkos::RangePolicy<ExecutionSpace>(0, n_queries), KOKKOS_LAMBDA(int i) {
-        queries(i) = ArborX::intersects(ArborX::Sphere{random_points(i), r});
-      });
-  return queries;
+  return RadiusSearches<DeviceType>{random_points, r};
 }
 
 template <class TreeType>
@@ -137,35 +153,6 @@ void BM_construction(benchmark::State &state)
   {
     auto const start = std::chrono::high_resolution_clock::now();
     TreeType index(points);
-    auto const end = std::chrono::high_resolution_clock::now();
-    std::chrono::duration<double> elapsed_seconds = end - start;
-    state.SetIterationTime(elapsed_seconds.count());
-  }
-}
-
-template <class TreeType>
-void BM_knn_search(benchmark::State &state)
-{
-  using DeviceType = typename TreeType::device_type;
-  int const n_values = state.range(0);
-  int const n_queries = state.range(1);
-  int const n_neighbors = state.range(2);
-  auto const source_point_cloud_type =
-      static_cast<PointCloudType>(state.range(3));
-  auto const target_point_cloud_type =
-      static_cast<PointCloudType>(state.range(4));
-
-  TreeType index(
-      constructPoints<DeviceType>(n_values, source_point_cloud_type));
-  auto const queries = makeNearestQueries<DeviceType>(
-      n_values, n_queries, n_neighbors, target_point_cloud_type);
-
-  for (auto _ : state)
-  {
-    Kokkos::View<int *, DeviceType> offset("offset", 0);
-    Kokkos::View<int *, DeviceType> indices("indices", 0);
-    auto const start = std::chrono::high_resolution_clock::now();
-    index.query(queries, indices, offset);
     auto const end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds = end - start;
     state.SetIterationTime(elapsed_seconds.count());
@@ -189,13 +176,16 @@ void BM_radius_search(benchmark::State &state)
       constructPoints<DeviceType>(n_values, source_point_cloud_type));
   auto const queries = makeSpatialQueries<DeviceType>(
       n_values, n_queries, n_neighbors, target_point_cloud_type);
+  Kokkos::View<int *, DeviceType> offset("offset", 0);
 
   for (auto _ : state)
   {
     Kokkos::View<int *, DeviceType> offset("offset", 0);
     Kokkos::View<int *, DeviceType> indices("indices", 0);
+    Kokkos::View<std::pair<int, int> *, DeviceType> coo_out("coo_out", 0);
+
     auto const start = std::chrono::high_resolution_clock::now();
-    index.query(queries, indices, offset, buffer_size);
+    index.query(queries, COOCallback<DeviceType>{indices}, coo_out, offset);
     auto const end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds = end - start;
     state.SetIterationTime(elapsed_seconds.count());
@@ -212,11 +202,6 @@ public:
 #define REGISTER_BENCHMARK(TreeType)                                           \
   BENCHMARK_TEMPLATE(BM_construction, TreeType)                                \
       ->Args({n_values, source_point_cloud_type})                              \
-      ->UseManualTime()                                                        \
-      ->Unit(benchmark::kMicrosecond);                                         \
-  BENCHMARK_TEMPLATE(BM_knn_search, TreeType)                                  \
-      ->Args({n_values, n_queries, n_neighbors, source_point_cloud_type,       \
-              target_point_cloud_type})                                        \
       ->UseManualTime()                                                        \
       ->Unit(benchmark::kMicrosecond);                                         \
   BENCHMARK_TEMPLATE(BM_radius_search, TreeType)                               \
@@ -356,10 +341,6 @@ int main(int argc, char *argv[])
 #ifdef KOKKOS_ENABLE_CUDA
   using Cuda = Kokkos::Cuda::device_type;
   REGISTER_BENCHMARK(ArborX::BVH<Cuda>);
-#endif
-
-#if defined(KOKKOS_ENABLE_SERIAL)
-  REGISTER_BENCHMARK(BoostRTree);
 #endif
 
   benchmark::RunSpecifiedBenchmarks();

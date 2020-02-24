@@ -171,12 +171,6 @@ public:
 };
 
 template <typename DeviceType>
-struct NearestNeighborsSearches
-{
-  Kokkos::View<ArborX::Point *, DeviceType> points;
-  int k;
-};
-template <typename DeviceType>
 struct RadiusSearches
 {
   Kokkos::View<ArborX::Point *, DeviceType> points;
@@ -198,25 +192,28 @@ struct Access<RadiusSearches<DeviceType>, PredicatesTag>
   static KOKKOS_FUNCTION auto get(RadiusSearches<DeviceType> const &pred,
                                   std::size_t i)
   {
-    return intersects(Sphere{pred.points(i), pred.radius});
+    return attach(intersects(Sphere{{pred.points(i)}, pred.radius}), i);
   }
 };
-template <typename DeviceType>
-struct Access<NearestNeighborsSearches<DeviceType>, PredicatesTag>
-{
-  using memory_space = typename DeviceType::memory_space;
-  static std::size_t size(NearestNeighborsSearches<DeviceType> const &pred)
-  {
-    return pred.points.extent(0);
-  }
-  static KOKKOS_FUNCTION auto
-  get(NearestNeighborsSearches<DeviceType> const &pred, std::size_t i)
-  {
-    return nearest(pred.points(i), pred.k);
-  }
-};
+
 } // namespace Traits
 } // namespace ArborX
+
+template <typename DeviceType>
+struct COOCallback
+{
+  using tag = ArborX::Details::InlineCallbackTag;
+
+  Kokkos::View<int *, DeviceType> points;
+
+  template <typename Query, typename Insert>
+  KOKKOS_FUNCTION void operator()(Query const &query, int index,
+                                  Insert const &insert) const
+  {
+    auto data = ArborX::getData(query);
+    insert(std::make_pair(index, data));
+  }
+};
 
 namespace bpo = boost::program_options;
 
@@ -378,23 +375,22 @@ int main_(std::vector<std::string> const &args, const MPI_Comm comm)
   if (comm_rank == 0)
     os << "construction done\n";
 
-  if (perform_knn_search)
-  {
-    Kokkos::View<int *, DeviceType> offset("offset", 0);
-    Kokkos::View<int *, DeviceType> indices("indices", 0);
-    Kokkos::View<int *, DeviceType> ranks("ranks", 0);
+  /*  if (perform_knn_search)
+    {
+      Kokkos::View<int *, DeviceType> offset("offset", 0);
+      Kokkos::View<int *, DeviceType> indices("indices", 0);
+      Kokkos::View<int *, DeviceType> ranks("ranks", 0);
 
-    auto knn = time_monitor.getNewTimer("knn");
-    MPI_Barrier(comm);
-    knn->start();
-    distributed_tree.query(
-        NearestNeighborsSearches<DeviceType>{random_points, n_neighbors},
-        indices, offset, ranks);
-    knn->stop();
+      auto knn = time_monitor.getNewTimer("knn");
+      MPI_Barrier(comm);
+      knn->start();
+      distributed_tree.query(
+          RadiusSearches<DeviceType>{random_points, n_neighbors}, indices,
+    offset, ranks); knn->stop();
 
-    if (comm_rank == 0)
-      os << "knn done\n";
-  }
+      if (comm_rank == 0)
+        os << "knn done\n";
+    }*/
 
   if (perform_radius_search)
   {
@@ -406,7 +402,7 @@ int main_(std::vector<std::string> const &args, const MPI_Comm comm)
         2. * std::cbrt(static_cast<double>(n_neighbors) * 3. / (4. * M_PI)) -
         (1. + std::sqrt(3.)) / 2.;
 
-    Kokkos::View<int *, DeviceType> offset("offset", 0);
+    Kokkos::View<std::pair<int, int> *, DeviceType> offset("offset", 0);
     Kokkos::View<int *, DeviceType> indices("indices", 0);
     Kokkos::View<int *, DeviceType> ranks("ranks", 0);
 
@@ -414,7 +410,7 @@ int main_(std::vector<std::string> const &args, const MPI_Comm comm)
     MPI_Barrier(comm);
     radius->start();
     distributed_tree.query(RadiusSearches<DeviceType>{random_points, r},
-                           indices, offset, ranks);
+                           COOCallback<DeviceType>{indices}, offset, ranks);
     radius->stop();
 
     if (comm_rank == 0)
