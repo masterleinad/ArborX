@@ -99,6 +99,39 @@ getGeometry(Intersects<Geometry> const &pred)
   return pred._geometry;
 }
 
+template <typename Predicate>
+struct PredicateWithIndex : Predicate
+{
+  using Base = Predicate;
+  KOKKOS_INLINE_FUNCTION PredicateWithIndex() = default;
+  KOKKOS_INLINE_FUNCTION PredicateWithIndex(Predicate const &pred,
+                                                 int const index)
+      : Predicate{pred}
+      , _index{index}
+  {
+  }
+  KOKKOS_INLINE_FUNCTION PredicateWithIndex(Predicate &&pred, int const index)
+      : Predicate(std::forward<Predicate>(pred))
+      , _index(index)
+  {
+  }
+  int const _index;
+};
+
+template <typename Predicate>
+KOKKOS_INLINE_FUNCTION int
+getIndex(PredicateWithIndex<Predicate> const &pred)
+{
+  return pred._index;
+}
+
+template <typename Predicate>
+KOKKOS_INLINE_FUNCTION constexpr auto attach_index(Predicate &&pred, int const index)
+{
+  return PredicateWithIndex<std::decay_t<Predicate>>{
+      std::forward<Predicate>(pred), index};
+}
+
 template <typename Predicate, typename Data>
 struct PredicateWithAttachment : Predicate
 {

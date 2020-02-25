@@ -98,7 +98,7 @@ struct Access<RadiusSearches<DeviceType>, PredicatesTag>
   static KOKKOS_FUNCTION auto get(RadiusSearches<DeviceType> const &pred,
                                   std::size_t i)
   {
-    return attach(intersects(Sphere{{pred.points(i)}, pred.radius}), i);
+    return /*attach(*/intersects(Sphere{{pred.points(i)}, pred.radius});/*, i);*/
   }
 };
 } // namespace Traits
@@ -115,7 +115,8 @@ struct COOCallback
   KOKKOS_FUNCTION void operator()(Query const &query, int index,
                                   Insert const &insert) const
   {
-    auto data = ArborX::getData(query);
+    //auto data = ArborX::getData(static_cast<typename Query::Base const&>(query));
+    auto data = ArborX::getIndex(query);
     insert(Kokkos::make_pair(index, data));
   }
 };
@@ -185,7 +186,7 @@ void BM_radius_search(benchmark::State &state)
     Kokkos::View<Kokkos::pair<int,int> *, DeviceType> coo_out("coo_out", 0);
 
     auto const start = std::chrono::high_resolution_clock::now();
-    index.query(queries, COOCallback<DeviceType>{indices}, coo_out, offset);
+    index.query(queries, COOCallback<DeviceType>{indices}, coo_out, offset, buffer_size);
     auto const end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds = end - start;
     state.SetIterationTime(elapsed_seconds.count());

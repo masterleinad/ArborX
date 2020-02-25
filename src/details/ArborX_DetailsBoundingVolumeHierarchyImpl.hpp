@@ -274,12 +274,12 @@ BoundingVolumeHierarchyImpl<DeviceType>::queryDispatch(
         KOKKOS_LAMBDA(int i) {
           int count = 0;
           auto const shift = offset(permute(i));
-          auto const &query = queries(i);
+	  auto const query_with_index = ArborX::attach_index(queries(i), i);
           Details::TreeTraversal<DeviceType>::query(
-              bvh, query,
-              [&query, &callback, &out, shift, &count](int index,
+              bvh, query_with_index,
+              [&query_with_index, &callback, &out, shift, &count](int index,
                                                        double distance) {
-                callback(query, index, distance,
+                callback(query_with_index, index, distance,
                          [&out, shift, &count](
                              typename OutputView::value_type const &value) {
                            out(shift + count++) = value;
@@ -304,12 +304,12 @@ BoundingVolumeHierarchyImpl<DeviceType>::queryDispatch(
         KOKKOS_LAMBDA(int i) {
           int count = 0;
           auto const shift = offset(permute(i));
-          auto const &query = queries(i);
+          auto const query_with_index = ArborX::attach_index(queries(i), i);
           Details::TreeTraversal<DeviceType>::query(
-              bvh, query,
-              [&query, &callback, &out, shift, &count](int index,
+              bvh, query_with_index,
+              [&query_with_index, &callback, &out, shift, &count](int index,
                                                        double distance) {
-                callback(query, index, distance,
+                callback(query_with_index, index, distance,
                          [&out, shift, &count](
                              typename OutputView::value_type const &value) {
                            out(shift + count++) = value;
@@ -427,18 +427,18 @@ BoundingVolumeHierarchyImpl<DeviceType>::queryDispatch(
         KOKKOS_LAMBDA(int i) {
           int count = 0;
           auto const shift = permute(i) * buffer_size;
-          auto const &query = queries(i);
+          auto const query_with_index = ArborX::attach_index(queries(i), i);
           Details::TreeTraversal<DeviceType>::query(
-              bvh, query,
-              [&query, &callback, buffer_size, &out, shift, &count](int index) {
+              bvh, query_with_index,
+              [&query_with_index, &callback, buffer_size, &out, shift, &count](int index) {
                 if (count < buffer_size)
-                  callback(query, index,
+                  callback(query_with_index, index,
                            [&count, &out, shift](
                                typename OutputView::value_type const &value) {
                              out(shift + count++) = value;
                            });
                 else
-                  callback(query, index,
+                  callback(query_with_index, index,
                            [&count](typename OutputView::value_type const &) {
                              ++count;
                            });
@@ -454,10 +454,10 @@ BoundingVolumeHierarchyImpl<DeviceType>::queryDispatch(
         Kokkos::RangePolicy<ExecutionSpace>(0, n_queries),
         KOKKOS_LAMBDA(int i) {
           int count = 0;
-          auto const &query = queries(i);
+          auto const query_with_index = ArborX::attach_index(queries(i), i);
           Details::TreeTraversal<DeviceType>::query(
-              bvh, query, [&query, &callback, &count](int index) {
-                callback(query, index,
+              bvh, query_with_index, [&query_with_index, &callback, &count](int index) {
+                callback(query_with_index, index,
                          [&count](typename OutputView::value_type const &) {
                            ++count;
                          });
@@ -509,10 +509,10 @@ BoundingVolumeHierarchyImpl<DeviceType>::queryDispatch(
         KOKKOS_LAMBDA(int i) {
           int count = 0;
           auto const shift = offset(permute(i));
-          auto const &query = queries(i);
+          auto const query_with_index = ArborX::attach_index(queries(i), i);
           Details::TreeTraversal<DeviceType>::query(
-              bvh, query, [&query, &callback, &out, shift, &count](int index) {
-                callback(query, index,
+              bvh, query_with_index, [&query_with_index, &callback, &out, shift, &count](int index) {
+                callback(query_with_index, index,
                          [&count, &out,
                           shift](typename OutputView::value_type const &value) {
                            out(shift + count++) = value;
