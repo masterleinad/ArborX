@@ -116,7 +116,7 @@ struct COOCallback
                                   Insert const &insert) const
   {
     auto data = ArborX::getData(query);
-    insert(std::make_pair(index, data));
+    insert(Kokkos::make_pair(index, data));
   }
 };
 
@@ -182,7 +182,7 @@ void BM_radius_search(benchmark::State &state)
   {
     Kokkos::View<int *, DeviceType> offset("offset", 0);
     Kokkos::View<int *, DeviceType> indices("indices", 0);
-    Kokkos::View<std::pair<int, int> *, DeviceType> coo_out("coo_out", 0);
+    Kokkos::View<Kokkos::pair<int,int> *, DeviceType> coo_out("coo_out", 0);
 
     auto const start = std::chrono::high_resolution_clock::now();
     index.query(queries, COOCallback<DeviceType>{indices}, coo_out, offset);
