@@ -15,7 +15,7 @@ pipeline {
     stages {
         stage('Run CI?') {
             steps {
-                scmSkip(deleteBuild: true, skipPattern:'.*\\[qwert\\].*')
+                scmSkip(deleteBuild: true, skipPattern: '.*\\[(ci skip|skip ci)\\].*')
             }
         }
         stage('Build') {
