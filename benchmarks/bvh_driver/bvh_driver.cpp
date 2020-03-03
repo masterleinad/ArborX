@@ -208,17 +208,30 @@ public:
 
 #define REGISTER_BENCHMARK(TreeType)                                           \
   BENCHMARK_TEMPLATE(BM_construction, TreeType)                                \
-      ->Args({n_values, source_point_cloud_type})                              \
+      ->Args({(int)1e4, 0})                                                    \
+      ->Args({(int)1e5, 0})                                                    \
+      ->Args({(int)1e6, 0})                                                    \
+      ->Args({(int)1e4, 1})                                                    \
+      ->Args({(int)1e5, 1})                                                    \
+      ->Args({(int)1e6, 1})                                                    \
       ->UseManualTime()                                                        \
       ->Unit(benchmark::kMicrosecond);                                         \
   BENCHMARK_TEMPLATE(BM_knn_search, TreeType)                                  \
-      ->Args({n_values, n_queries, n_neighbors, sort_predicates_int,           \
-              source_point_cloud_type, target_point_cloud_type})               \
+      ->Args({(int)1e4, (int)1e4, 10, 1, 0, 2})                                \
+      ->Args({(int)1e5, (int)1e5, 10, 1, 0, 2})                                \
+      ->Args({(int)1e6, (int)1e6, 10, 1, 0, 2})                                \
+      ->Args({(int)1e4, (int)1e4, 10, 1, 1, 3})                                \
+      ->Args({(int)1e5, (int)1e5, 10, 1, 1, 3})                                \
+      ->Args({(int)1e6, (int)1e6, 10, 1, 1, 3})                                \
       ->UseManualTime()                                                        \
       ->Unit(benchmark::kMicrosecond);                                         \
   BENCHMARK_TEMPLATE(BM_radius_search, TreeType)                               \
-      ->Args({n_values, n_queries, n_neighbors, sort_predicates_int,           \
-              buffer_size, source_point_cloud_type, target_point_cloud_type})  \
+      ->Args({(int)1e4, (int)1e4, 10, 1, 0, 0, 2})                             \
+      ->Args({(int)1e5, (int)1e5, 10, 1, 0, 0, 2})                             \
+      ->Args({(int)1e6, (int)1e6, 10, 1, 0, 0, 2})                             \
+      ->Args({(int)1e4, (int)1e4, 10, 1, 0, 1, 3})                             \
+      ->Args({(int)1e5, (int)1e5, 10, 1, 0, 1, 3})                             \
+      ->Args({(int)1e6, (int)1e6, 10, 1, 0, 1, 3})                             \
       ->UseManualTime()                                                        \
       ->Unit(benchmark::kMicrosecond);
 
@@ -357,10 +370,6 @@ int main(int argc, char *argv[])
 #ifdef KOKKOS_ENABLE_CUDA
   using Cuda = Kokkos::Cuda::device_type;
   REGISTER_BENCHMARK(ArborX::BVH<Cuda>);
-#endif
-
-#if defined(KOKKOS_ENABLE_SERIAL)
-  REGISTER_BENCHMARK(BoostRTree);
 #endif
 
   benchmark::RunSpecifiedBenchmarks();
