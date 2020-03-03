@@ -23,6 +23,7 @@
 #include <random>
 
 #include <benchmark/benchmark.h>
+#include <mpi.h>
 #include <point_clouds.hpp>
 
 #if defined(KOKKOS_ENABLE_SERIAL)
@@ -114,8 +115,8 @@ makeSpatialQueries(int n_values, int n_queries, int n_neighbors,
   // NOTE: minus "1+sqrt(3)/2 \approx 1.37" matches the size of the boxes
   // inserted into the tree (mid-point between half-edge and half-diagonal)
   double const r =
-      2. * std::cbrt(static_cast<double>(n_neighbors) * 3. / (4. * M_PI)) -
-      (1. + std::sqrt(3.)) / 2.;
+      2. * std::cbrt(static_cast<double>(n_neighbors) * 3. / (4. * M_PI));
+
   using ExecutionSpace = typename DeviceType::execution_space;
   Kokkos::parallel_for(
       "bvh_driver:setup_radius_search_queries",
@@ -211,17 +212,30 @@ public:
 
 #define REGISTER_BENCHMARK(TreeType)                                           \
   BENCHMARK_TEMPLATE(BM_construction, TreeType)                                \
-      ->Args({n_values, source_point_cloud_type})                              \
+      ->Args({(int)1e4, 0})                                                    \
+      ->Args({(int)1e5, 0})                                                    \
+      ->Args({(int)1e6, 0})                                                    \
+      ->Args({(int)1e4, 1})                                                    \
+      ->Args({(int)1e5, 1})                                                    \
+      ->Args({(int)1e6, 1})                                                    \
       ->UseManualTime()                                                        \
       ->Unit(benchmark::kMicrosecond);                                         \
   BENCHMARK_TEMPLATE(BM_knn_search, TreeType)                                  \
-      ->Args({n_values, n_queries, n_neighbors, source_point_cloud_type,       \
-              target_point_cloud_type})                                        \
+      ->Args({(int)1e4, (int)1e4, 10, 1, 0, 2})                                \
+      ->Args({(int)1e5, (int)1e5, 10, 1, 0, 2})                                \
+      ->Args({(int)1e6, (int)1e6, 10, 1, 0, 2})                                \
+      ->Args({(int)1e4, (int)1e4, 10, 1, 1, 3})                                \
+      ->Args({(int)1e5, (int)1e5, 10, 1, 1, 3})                                \
+      ->Args({(int)1e6, (int)1e6, 10, 1, 1, 3})                                \
       ->UseManualTime()                                                        \
       ->Unit(benchmark::kMicrosecond);                                         \
   BENCHMARK_TEMPLATE(BM_radius_search, TreeType)                               \
-      ->Args({n_values, n_queries, n_neighbors, buffer_size,                   \
-              source_point_cloud_type, target_point_cloud_type})               \
+      ->Args({(int)1e4, (int)1e4, 10, 1, 0, 0, 2})                             \
+      ->Args({(int)1e5, (int)1e5, 10, 1, 0, 0, 2})                             \
+      ->Args({(int)1e6, (int)1e6, 10, 1, 0, 0, 2})                             \
+      ->Args({(int)1e4, (int)1e4, 10, 1, 0, 1, 3})                             \
+      ->Args({(int)1e5, (int)1e5, 10, 1, 0, 1, 3})                             \
+      ->Args({(int)1e6, (int)1e6, 10, 1, 0, 1, 3})                             \
       ->UseManualTime()                                                        \
       ->Unit(benchmark::kMicrosecond);
 
@@ -271,6 +285,12 @@ public:
 
 int main(int argc, char *argv[])
 {
+  // This is necessary on Summit and Ascent
+  int required = MPI_THREAD_SERIALIZED;
+  int provided;
+  MPI_Init_thread(&argc, &argv, required, &provided);
+  assert(provide >= required);
+
   KokkosScopeGuard guard(argc, argv);
 
   namespace bpo = boost::program_options;
@@ -368,6 +388,8 @@ int main(int argc, char *argv[])
 #endif
 
   benchmark::RunSpecifiedBenchmarks();
+
+  MPI_Finalize();
 
   return EXIT_SUCCESS;
 }
