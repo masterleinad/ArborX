@@ -25,46 +25,51 @@ private:
   {
     constexpr Data() noexcept : coords{0.,0.,0.}{}
 
-    constexpr Data(const std::initializer_list<double> vals) noexcept :
+    constexpr Data(const std::initializer_list<float> vals) noexcept :
     coords {vals.begin()[0], vals.begin()[1], vals.begin()[2]}
     {}
 
-    double coords[3];
+    float coords[3];
   } _data = {};
+
+  struct Abomination
+  {
+    double xyz[3];
+  };
 
 public:
   KOKKOS_DEFAULTED_FUNCTION
   constexpr Point() noexcept = default;
 
   KOKKOS_INLINE_FUNCTION
-  constexpr Point(Data data)
-      : _data{std::move(data)}
+  constexpr Point(Abomination data)
+      : Point(data.xyz[0], data.xyz[1], data.xyz[2])
   {
   }
 
   KOKKOS_INLINE_FUNCTION
-  constexpr Point(double x, double y, double z)
+  constexpr Point(float x, float y, float z)
       : _data{{x, y, z}}
   {
   }
 
   KOKKOS_INLINE_FUNCTION
-  constexpr double &operator[](unsigned int i) { return _data.coords[i]; }
+  constexpr float &operator[](unsigned int i) { return _data.coords[i]; }
 
   KOKKOS_INLINE_FUNCTION
-  constexpr const double &operator[](unsigned int i) const
+  constexpr const float &operator[](unsigned int i) const
   {
     return _data.coords[i];
   }
 
   KOKKOS_INLINE_FUNCTION
-  double volatile &operator[](unsigned int i) volatile
+  float volatile &operator[](unsigned int i) volatile
   {
     return _data.coords[i];
   }
 
   KOKKOS_INLINE_FUNCTION
-  double const volatile &operator[](unsigned int i) const volatile
+  float const volatile &operator[](unsigned int i) const volatile
   {
     return _data.coords[i];
   }
