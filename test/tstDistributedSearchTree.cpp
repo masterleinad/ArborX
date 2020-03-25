@@ -300,7 +300,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(do_not_exceed_capacity, DeviceType,
                        });
   ArborX::DistributedSearchTree<DeviceType> tree{comm, points};
   Kokkos::View<decltype(nearest(Point{})) *, DeviceType> queries("queries", 1);
-  Kokkos::deep_copy(queries, nearest(Point{0, 0, 0}, 512));
+  Kokkos::deep_copy(queries, nearest(Point{0., 0., 0.}, 512));
   Kokkos::View<int *, DeviceType> indices("indices", 0);
   Kokkos::View<int *, DeviceType> offset("offset", 0);
   Kokkos::View<int *, DeviceType> ranks("ranks", 0);

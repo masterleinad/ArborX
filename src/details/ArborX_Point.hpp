@@ -23,6 +23,16 @@ class Point
 private:
   struct Data
   {
+    constexpr Data() noexcept
+        : coords{0., 0., 0.}
+    {
+    }
+
+    constexpr Data(const std::initializer_list<float> vals) noexcept
+        : coords{vals.begin()[0], vals.begin()[1], vals.begin()[2]}
+    {
+    }
+
     float coords[3];
   } _data = {};
 
@@ -38,6 +48,13 @@ public:
   KOKKOS_INLINE_FUNCTION
   constexpr Point(Abomination data)
       : Point(data.xyz[0], data.xyz[1], data.xyz[2])
+  {
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  constexpr Point(double x, double y, double z)
+      : _data{static_cast<float>(x), static_cast<float>(y),
+              static_cast<float>(z)}
   {
   }
 
