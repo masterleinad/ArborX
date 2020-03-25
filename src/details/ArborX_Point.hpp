@@ -23,6 +23,12 @@ class Point
 private:
   struct Data
   {
+    constexpr Data() noexcept : coords{0.,0.,0.}{}
+
+    constexpr Data(const std::initializer_list<double> vals) noexcept :
+    coords {vals.begin()[0], vals.begin()[1], vals.begin()[2]}
+    {}
+
     double coords[3];
   } _data = {};
 
@@ -38,7 +44,7 @@ public:
 
   KOKKOS_INLINE_FUNCTION
   constexpr Point(double x, double y, double z)
-      : Point{{x, y, z}}
+      : _data{{x, y, z}}
   {
   }
 

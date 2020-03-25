@@ -78,7 +78,8 @@ double distance(Point const &a, Point const &b)
     double tmp = b[d] - a[d];
     distance_squared += tmp * tmp;
   }
-  return std::sqrt(distance_squared);
+//  using std::sqrt;
+  return sqrt(distance_squared);
 }
 
 // distance point-box

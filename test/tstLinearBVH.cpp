@@ -434,12 +434,18 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(callback, DeviceType, ARBORX_DEVICE_TYPES)
   Kokkos::View<ArborX::Point *, DeviceType> points("points", n);
   Kokkos::View<Kokkos::pair<int, float> *, DeviceType> ref("ref", n);
   ArborX::Point const origin = {{0., 0., 0.}};
+  (void) origin;
   using ExecutionSpace = typename DeviceType::execution_space;
-  Kokkos::parallel_for(
-      Kokkos::RangePolicy<ExecutionSpace>(0, n), KOKKOS_LAMBDA(int i) {
+  Kokkos::RangePolicy<ExecutionSpace> range(0, n);
+  auto lambda = KOKKOS_LAMBDA(int i) {
+        points(i) = ArborX::Point{(double)i, (double)i, (double)i};
+        ref(i) = {i, (float)ArborX::Details::distance(points(i), origin)};
+      };
+  Kokkos::parallel_for(range, lambda);
+      /*Kokkos::RangePolicy<ExecutionSpace>(0, n), KOKKOS_LAMBDA(int i) {
         points(i) = {{(double)i, (double)i, (double)i}};
         ref(i) = {i, (float)ArborX::Details::distance(points(i), origin)};
-      });
+      });*/
   ArborX::BVH<DeviceType> const bvh{points};
   {
     Kokkos::View<Kokkos::pair<int, float> *, DeviceType> custom("custom", 0);
@@ -603,7 +609,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(callback_with_attachment, DeviceType,
   using ExecutionSpace = typename DeviceType::execution_space;
   Kokkos::parallel_for(Kokkos::RangePolicy<ExecutionSpace>(0, n), KOKKOS_LAMBDA(
                                                                       int i) {
-    points(i) = {{(double)i, (double)i, (double)i}};
+    points(i) = ArborX::Point{(double)i, (double)i, (double)i};
     ref(i) = {i, delta + (float)ArborX::Details::distance(points(i), origin)};
   });
   ArborX::BVH<DeviceType> const bvh{points};
@@ -692,8 +698,10 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(miscellaneous, DeviceType, ARBORX_DEVICE_TYPES)
       "empty_buffer", 0);
   Kokkos::parallel_for(
       Kokkos::RangePolicy<ExecutionSpace>(0, 1), KOKKOS_LAMBDA(int) {
-        ArborX::Point p = {{0., 0., 0.}};
+      ArborX::Point p(0., 0., 0.);
         double r = 1.0;
+        (void) p;
+        (void) r;
         // spatial query on empty tree
         zeros(0) = ArborX::Details::TreeTraversal<DeviceType>::query(
             empty_bvh, ArborX::intersects(ArborX::Sphere{p, r}), [](int) {});
@@ -726,7 +734,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(structured_grid, DeviceType, ARBORX_DEVICE_TYPES)
   Kokkos::parallel_for("fill_bounding_boxes",
                        Kokkos::RangePolicy<ExecutionSpace>(0, nx),
                        KOKKOS_LAMBDA(int i) {
-                         [[gnu::unused]] double x, y, z;
+                         double x, y, z;
                          for (int j = 0; j < ny; ++j)
                            for (int k = 0; k < nz; ++k)
                            {
@@ -734,7 +742,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(structured_grid, DeviceType, ARBORX_DEVICE_TYPES)
                              y = j * Ly / (ny - 1);
                              z = k * Lz / (nz - 1);
                              bounding_boxes[i + j * nx + k * (nx * ny)] = {
-                                 {{x, y, z}}, {{x, y, z}}};
+                                 ArborX::Point{x, y, z}, ArborX::Point{x, y, z}};
                            }
                        });
 
@@ -946,13 +954,13 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(structured_grid, DeviceType, ARBORX_DEVICE_TYPES)
 }
 
 std::vector<std::array<double, 3>>
-make_stuctured_cloud(double Lx, double Ly, double Lz, int nx, int ny, int nz)
+make_structured_cloud(double Lx, double Ly, double Lz, int nx, int ny, int nz)
 {
   std::vector<std::array<double, 3>> cloud(nx * ny * nz);
   std::function<int(int, int, int)> ind = [nx, ny](int i, int j, int k) {
     return i + j * nx + k * (nx * ny);
   };
-  double x, y, z;
+   double x, y, z;
   for (int i = 0; i < nx; ++i)
     for (int j = 0; j < ny; ++j)
       for (int k = 0; k < nz; ++k)
@@ -992,7 +1000,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(boost_rtree, DeviceType, ARBORX_DEVICE_TYPES)
   int nx = 11;
   int ny = 11;
   int nz = 11;
-  auto cloud = make_stuctured_cloud(Lx, Ly, Lz, nx, ny, nz);
+  auto cloud = make_structured_cloud(Lx, Ly, Lz, nx, ny, nz);
   int n = cloud.size();
 
   Kokkos::View<ArborX::Box *, DeviceType> bounding_boxes("bounding_boxes", n);
@@ -1059,7 +1067,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(boost_rtree, DeviceType, ARBORX_DEVICE_TYPES)
       "register_nearest_queries",
       Kokkos::RangePolicy<ExecutionSpace>(0, n_points), KOKKOS_LAMBDA(int i) {
         nearest_queries(i) = ArborX::nearest<ArborX::Point>(
-            {{point_coords(i, 0), point_coords(i, 1), point_coords(i, 2)}},
+            ArborX::Point(point_coords(i, 0), point_coords(i, 1), point_coords(i, 2)),
             k(i));
       });
   auto nearest_queries_host = Kokkos::create_mirror_view(nearest_queries);
@@ -1071,7 +1079,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(boost_rtree, DeviceType, ARBORX_DEVICE_TYPES)
       "register_within_queries",
       Kokkos::RangePolicy<ExecutionSpace>(0, n_points), KOKKOS_LAMBDA(int i) {
         within_queries(i) = ArborX::intersects(ArborX::Sphere{
-            {{point_coords(i, 0), point_coords(i, 1), point_coords(i, 2)}},
+            ArborX::Point(point_coords(i, 0), point_coords(i, 1), point_coords(i, 2)),
             radii(i)});
       });
   auto within_queries_host = Kokkos::create_mirror_view(within_queries);
