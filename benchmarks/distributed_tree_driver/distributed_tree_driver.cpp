@@ -517,6 +517,14 @@ int main(int argc, char *argv[])
 #else
       throw std::runtime_error("CUDA node type is disabled");
 #endif
+    else if (node == "cuda")
+    {
+#ifdef KOKKOS_ENABLE_HIP
+      using Node = Kokkos::Device<Kokkos::Experimental::HIP, Kokkos::Experimental::HIPSpace>;
+      main_<Node>(pass_further, comm);
+#else
+      throw std::runtime_error("HIP node type is disabled");
+#endif
     }
     else
     {

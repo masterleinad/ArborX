@@ -358,6 +358,11 @@ int main(int argc, char *argv[])
   REGISTER_BENCHMARK(ArborX::BVH<Cuda>);
 #endif
 
+#ifdef KOKKOS_ENABLE_HIP
+  using HIP = Kokkos::Experimental::HIP::device_type;
+  REGISTER_BENCHMARK(ArborX::BVH<HIP>);
+#endif
+
 #if defined(KOKKOS_ENABLE_SERIAL)
   REGISTER_BENCHMARK(BoostRTree);
 #endif
