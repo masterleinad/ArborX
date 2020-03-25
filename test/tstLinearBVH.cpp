@@ -434,18 +434,11 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(callback, DeviceType, ARBORX_DEVICE_TYPES)
   Kokkos::View<ArborX::Point *, DeviceType> points("points", n);
   Kokkos::View<Kokkos::pair<int, float> *, DeviceType> ref("ref", n);
   ArborX::Point const origin = {{0., 0., 0.}};
-  (void) origin;
   using ExecutionSpace = typename DeviceType::execution_space;
-  Kokkos::RangePolicy<ExecutionSpace> range(0, n);
-  auto lambda = KOKKOS_LAMBDA(int i) {
+  Kokkos::parallel_for(Kokkos::RangePolicy<ExecutionSpace> (0, n), KOKKOS_LAMBDA(int i) {
         points(i) = ArborX::Point{(double)i, (double)i, (double)i};
         ref(i) = {i, (float)ArborX::Details::distance(points(i), origin)};
-      };
-  Kokkos::parallel_for(range, lambda);
-      /*Kokkos::RangePolicy<ExecutionSpace>(0, n), KOKKOS_LAMBDA(int i) {
-        points(i) = {{(double)i, (double)i, (double)i}};
-        ref(i) = {i, (float)ArborX::Details::distance(points(i), origin)};
-      });*/
+      });
   ArborX::BVH<DeviceType> const bvh{points};
   {
     Kokkos::View<Kokkos::pair<int, float> *, DeviceType> custom("custom", 0);
@@ -698,10 +691,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(miscellaneous, DeviceType, ARBORX_DEVICE_TYPES)
       "empty_buffer", 0);
   Kokkos::parallel_for(
       Kokkos::RangePolicy<ExecutionSpace>(0, 1), KOKKOS_LAMBDA(int) {
-      ArborX::Point p(0., 0., 0.);
+      ArborX::Point p{0., 0., 0.};
         double r = 1.0;
-        (void) p;
-        (void) r;
         // spatial query on empty tree
         zeros(0) = ArborX::Details::TreeTraversal<DeviceType>::query(
             empty_bvh, ArborX::intersects(ArborX::Sphere{p, r}), [](int) {});
