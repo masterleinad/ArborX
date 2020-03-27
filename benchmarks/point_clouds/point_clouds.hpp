@@ -29,14 +29,14 @@ enum PointCloudType
 
 template <typename Layout, typename DeviceType>
 void filledBoxCloud(
-    double const half_edge,
+    float const half_edge,
     Kokkos::View<ArborX::Point *, Layout, DeviceType> random_points)
 {
   static_assert(
       Kokkos::Impl::MemorySpaceAccess<
           Kokkos::HostSpace, typename DeviceType::memory_space>::accessible,
       "The View should be accessible on the Host");
-  std::uniform_real_distribution<double> distribution(-half_edge, half_edge);
+  std::uniform_real_distribution<float> distribution(-half_edge, half_edge);
   std::default_random_engine generator;
   auto random = [&distribution, &generator]() {
     return distribution(generator);
@@ -48,14 +48,14 @@ void filledBoxCloud(
 
 template <typename Layout, typename DeviceType>
 void hollowBoxCloud(
-    double const half_edge,
+    float const half_edge,
     Kokkos::View<ArborX::Point *, Layout, DeviceType> random_points)
 {
   static_assert(
       Kokkos::Impl::MemorySpaceAccess<
           Kokkos::HostSpace, typename DeviceType::memory_space>::accessible,
       "The View should be accessible on the Host");
-  std::uniform_real_distribution<double> distribution(-half_edge, half_edge);
+  std::uniform_real_distribution<float> distribution(-half_edge, half_edge);
   std::default_random_engine generator;
   auto random = [&distribution, &generator]() {
     return distribution(generator);
@@ -112,7 +112,7 @@ void hollowBoxCloud(
 
 template <typename Layout, typename DeviceType>
 void filledSphereCloud(
-    double const radius,
+    float const radius,
     Kokkos::View<ArborX::Point *, Layout, DeviceType> random_points)
 {
   static_assert(
@@ -121,7 +121,7 @@ void filledSphereCloud(
       "The View should be accessible on the Host");
   std::default_random_engine generator;
 
-  std::uniform_real_distribution<double> distribution(-radius, radius);
+  std::uniform_real_distribution<float> distribution(-radius, radius);
   auto random = [&distribution, &generator]() {
     return distribution(generator);
   };
@@ -132,9 +132,9 @@ void filledSphereCloud(
     bool point_accepted = false;
     while (!point_accepted)
     {
-      double const x = random();
-      double const y = random();
-      double const z = random();
+      float const x = random();
+      float const y = random();
+      float const z = random();
 
       // Only accept points that are in the sphere
       if (std::sqrt(x * x + y * y + z * z) <= radius)
@@ -148,7 +148,7 @@ void filledSphereCloud(
 
 template <typename Layout, typename DeviceType>
 void hollowSphereCloud(
-    double const radius,
+    float const radius,
     Kokkos::View<ArborX::Point *, Layout, DeviceType> random_points)
 {
   static_assert(
@@ -157,7 +157,7 @@ void hollowSphereCloud(
       "The View should be accessible on the Host");
   std::default_random_engine generator;
 
-  std::uniform_real_distribution<double> distribution(-1., 1.);
+  std::uniform_real_distribution<float> distribution(-1., 1.);
   auto random = [&distribution, &generator]() {
     return distribution(generator);
   };
@@ -165,10 +165,10 @@ void hollowSphereCloud(
   unsigned int const n = random_points.extent(0);
   for (unsigned int i = 0; i < n; ++i)
   {
-    double const x = random();
-    double const y = random();
-    double const z = random();
-    double const norm = std::sqrt(x * x + y * y + z * z);
+    float const x = random();
+    float const y = random();
+    float const z = random();
+    float const norm = std::sqrt(x * x + y * y + z * z);
 
     random_points(i) = {
         {radius * x / norm, radius * y / norm, radius * z / norm}};
@@ -177,7 +177,7 @@ void hollowSphereCloud(
 
 template <typename DeviceType>
 void generatePointCloud(PointCloudType const point_cloud_type,
-                        double const length,
+                        float const length,
                         Kokkos::View<ArborX::Point *, DeviceType> random_points)
 {
   auto random_points_host = Kokkos::create_mirror_view(random_points);

@@ -146,9 +146,9 @@ void expand(Box &box, Sphere const &sphere)
   for (int d = 0; d < 3; ++d)
   {
     box.minCorner()[d] =
-        min(box.minCorner()[d], sphere.centroid()[d] - sphere.radius());
+        min<float>(box.minCorner()[d], sphere.centroid()[d] - sphere.radius());
     box.maxCorner()[d] =
-        max(box.maxCorner()[d], sphere.centroid()[d] + sphere.radius());
+        max<float>(box.maxCorner()[d], sphere.centroid()[d] + sphere.radius());
   }
 }
 
