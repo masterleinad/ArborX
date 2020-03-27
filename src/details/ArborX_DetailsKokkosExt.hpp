@@ -134,6 +134,12 @@ template <typename T>
 struct infinity;
 
 template <>
+struct infinity<float>
+{
+  static constexpr float value = HUGE_VALF;
+};
+
+template <>
 struct infinity<double>
 {
   static constexpr double value = HUGE_VAL;
