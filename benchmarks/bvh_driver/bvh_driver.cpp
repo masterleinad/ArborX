@@ -23,7 +23,6 @@
 #include <random>
 
 #include <benchmark/benchmark.h>
-#include <mpi.h>
 #include <point_clouds.hpp>
 
 #if defined(KOKKOS_ENABLE_SERIAL)
@@ -285,12 +284,6 @@ public:
 
 int main(int argc, char *argv[])
 {
-  // This is necessary on Summit and Ascent
-  int required = MPI_THREAD_SERIALIZED;
-  int provided;
-  MPI_Init_thread(&argc, &argv, required, &provided);
-  assert(provide >= required);
-
   KokkosScopeGuard guard(argc, argv);
 
   namespace bpo = boost::program_options;
@@ -360,8 +353,6 @@ int main(int argc, char *argv[])
   to_point_cloud_enum["hollow_box"] = PointCloudType::hollow_box;
   to_point_cloud_enum["filled_sphere"] = PointCloudType::filled_sphere;
   to_point_cloud_enum["hollow_sphere"] = PointCloudType::hollow_sphere;
-  int source_point_cloud_type = to_point_cloud_enum.at(source_pt_cloud);
-  int target_point_cloud_type = to_point_cloud_enum.at(target_pt_cloud);
 
 #ifdef KOKKOS_ENABLE_SERIAL
   using Serial = Kokkos::Serial::device_type;
@@ -388,8 +379,6 @@ int main(int argc, char *argv[])
 #endif
 
   benchmark::RunSpecifiedBenchmarks();
-
-  MPI_Finalize();
 
   return EXIT_SUCCESS;
 }
