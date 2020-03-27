@@ -44,6 +44,12 @@ public:
 
   KOKKOS_INLINE_FUNCTION
   constexpr Point(double x, double y, double z)
+      : _data{{static_cast<float>(x), static_cast<float>(y), static_cast<float>(z)}}
+  {
+  }
+
+  KOKKOS_INLINE_FUNCTION
+  constexpr Point(float x, float y, float z)
       : _data{{x, y, z}}
   {
   }
