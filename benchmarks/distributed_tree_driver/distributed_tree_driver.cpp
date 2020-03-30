@@ -397,15 +397,15 @@ int main_(std::vector<std::string> const &args, const MPI_Comm comm)
 
   Kokkos::View<ArborX::Box *, DeviceType> bounding_boxes(
       Kokkos::ViewAllocateWithoutInitializing("bounding_boxes"), n_values);
-  Kokkos::parallel_for("bvh_driver:construct_bounding_boxes",
-                       Kokkos::RangePolicy<ExecutionSpace>(0, n_values),
-                       KOKKOS_LAMBDA(int i) {
-                         double const x = random_values(i)[0];
-                         double const y = random_values(i)[1];
-                         double const z = random_values(i)[2];
-                         bounding_boxes(i) = {{{x - 1., y - 1., z - 1.}},
-                                              {{x + 1., y + 1., z + 1.}}};
-                       });
+  Kokkos::parallel_for( 
+      "bvh_driver:construct_bounding_boxes",
+      Kokkos::RangePolicy<ExecutionSpace>(0, n_values), KOKKOS_LAMBDA(int i) {
+        double const x = random_values(i)[0];
+        double const y = random_values(i)[1];
+        double const z = random_values(i)[2];
+        bounding_boxes(i) = ArborX::Box{ArborX::Point{x - 1., y - 1., z - 1.}},
+                                        ArborX::Point{x + 1., y + 1., z + 1.}}};
+      });
 
   auto construction = time_monitor.getNewTimer("construction");
   MPI_Barrier(comm);

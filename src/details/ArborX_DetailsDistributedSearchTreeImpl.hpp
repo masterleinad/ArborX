@@ -36,7 +36,14 @@ namespace Details
 struct CallbackDefaultSpatialPredicateWithRank
 {
   using tag = InlineCallbackTag;
+
   int _rank;
+
+  CallbackDefaultSpatialPredicateWithRank(int rank)
+      : _rank(rank)
+  {
+  }
+
   template <typename Query, typename Insert>
   KOKKOS_FUNCTION void operator()(Query const &, int index,
                                   Insert const &insert) const

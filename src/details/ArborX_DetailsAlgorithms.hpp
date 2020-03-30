@@ -78,6 +78,9 @@ float distance(Point const &a, Point const &b)
     float tmp = b[d] - a[d];
     distance_squared += tmp * tmp;
   }
+#ifndef __HIP_DEVICE_COMPILE__
+  using std::sqrt;
+#endif
   return sqrt(distance_squared);
 }
 

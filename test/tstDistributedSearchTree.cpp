@@ -43,10 +43,10 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(hello_world, DeviceType, ARBORX_DEVICE_TYPES)
   //                                 0   1   2   3   ^   ^   ^   ^
   //                                                 0   1   2   3
   using ExecutionSpace = typename DeviceType::execution_space;
-  Kokkos::parallel_for(Kokkos::RangePolicy<ExecutionSpace>(0, n),
-                       KOKKOS_LAMBDA(int i) {
-                         points(i) = {{(double)i / n + comm_rank, 0., 0.}};
-                       });
+  Kokkos::parallel_for(
+      Kokkos::RangePolicy<ExecutionSpace>(0, n), KOKKOS_LAMBDA(int i) {
+        points(i) = ArborX::Point{(double)i / n + comm_rank, 0., 0.};
+      });
 
   ArborX::DistributedSearchTree<DeviceType> tree(comm, points);
 
@@ -294,10 +294,10 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(do_not_exceed_capacity, DeviceType,
   using ExecutionSpace = typename DeviceType::execution_space;
   MPI_Comm comm = MPI_COMM_WORLD;
   Kokkos::View<Point *, DeviceType> points("points", 512);
-  Kokkos::parallel_for(Kokkos::RangePolicy<ExecutionSpace>(0, 512),
-                       KOKKOS_LAMBDA(int i) {
-                         points(i) = {{(float)i, (float)i, (float)i}};
-                       });
+  Kokkos::parallel_for(
+      Kokkos::RangePolicy<ExecutionSpace>(0, 512), KOKKOS_LAMBDA(int i) {
+        points(i) = ArborX::Point{(float)i, (float)i, (float)i};
+      });
   ArborX::DistributedSearchTree<DeviceType> tree{comm, points};
   Kokkos::View<decltype(nearest(Point{})) *, DeviceType> queries("queries", 1);
   Kokkos::deep_copy(queries, nearest(Point{0., 0., 0.}, 512));
@@ -597,9 +597,10 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(boost_comparison, DeviceType, ARBORX_DEVICE_TYPES)
   Kokkos::parallel_for(
       "register_within_queries",
       Kokkos::RangePolicy<ExecutionSpace>(0, local_n), KOKKOS_LAMBDA(int i) {
-        within_queries(i) = ArborX::intersects(ArborX::Sphere{
-            {{point_coords(i, 0), point_coords(i, 1), point_coords(i, 2)}},
-            radii(i)});
+        within_queries(i) = ArborX::intersects(
+            ArborX::Sphere{ArborX::Point{point_coords(i, 0), point_coords(i, 1),
+                                         point_coords(i, 2)},
+                           radii(i)});
       });
 
   // Perform the search
