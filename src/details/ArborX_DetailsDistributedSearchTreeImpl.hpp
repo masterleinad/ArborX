@@ -40,7 +40,12 @@ namespace Details
 struct CallbackDefaultSpatialPredicateWithRank
 {
   using tag = InlineCallbackTag;
+
   int _rank;
+
+  CallbackDefaultSpatialPredicateWithRank(int rank) : _rank(rank)
+  {}
+
   template <typename Query, typename Insert>
   KOKKOS_FUNCTION void operator()(Query const &, int index,
                                   Insert const &insert) const
@@ -73,7 +78,6 @@ struct DistributedSearchTreeImpl
     auto const n = out.extent(0);
     reallocWithoutInitializing(indices, n);
     reallocWithoutInitializing(ranks, n);
-    using ExecutionSpace = typename DeviceType::execution_space;
     Kokkos::parallel_for(ARBORX_MARK_REGION("split_pairs"),
                          Kokkos::RangePolicy<ExecutionSpace>(0, n),
                          KOKKOS_LAMBDA(int i) {

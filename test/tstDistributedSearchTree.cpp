@@ -45,7 +45,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(hello_world, DeviceType, ARBORX_DEVICE_TYPES)
   using ExecutionSpace = typename DeviceType::execution_space;
   Kokkos::parallel_for(Kokkos::RangePolicy<ExecutionSpace>(0, n),
                        KOKKOS_LAMBDA(int i) {
-                         points(i) = {{(double)i / n + comm_rank, 0., 0.}};
+                         points(i) = ArborX::Point{(double)i / n + comm_rank, 0., 0.};
                        });
 
   ArborX::DistributedSearchTree<DeviceType> tree(comm, points);
@@ -296,7 +296,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(do_not_exceed_capacity, DeviceType,
   Kokkos::View<Point *, DeviceType> points("points", 512);
   Kokkos::parallel_for(Kokkos::RangePolicy<ExecutionSpace>(0, 512),
                        KOKKOS_LAMBDA(int i) {
-                         points(i) = {{(float)i, (float)i, (float)i}};
+                         points(i) = ArborX::Point{(float)i, (float)i, (float)i};
                        });
   ArborX::DistributedSearchTree<DeviceType> tree{comm, points};
   Kokkos::View<decltype(nearest(Point{})) *, DeviceType> queries("queries", 1);
@@ -598,7 +598,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(boost_comparison, DeviceType, ARBORX_DEVICE_TYPES)
       "register_within_queries",
       Kokkos::RangePolicy<ExecutionSpace>(0, local_n), KOKKOS_LAMBDA(int i) {
         within_queries(i) = ArborX::intersects(ArborX::Sphere{
-            {{point_coords(i, 0), point_coords(i, 1), point_coords(i, 2)}},
+            ArborX::Point{point_coords(i, 0), point_coords(i, 1), point_coords(i, 2)},
             radii(i)});
       });
 

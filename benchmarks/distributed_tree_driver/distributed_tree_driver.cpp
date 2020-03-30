@@ -363,8 +363,8 @@ int main_(std::vector<std::string> const &args, const MPI_Comm comm)
                          double const x = random_points(i)[0];
                          double const y = random_points(i)[1];
                          double const z = random_points(i)[2];
-                         bounding_boxes(i) = {{{x - 1., y - 1., z - 1.}},
-                                              {{x + 1., y + 1., z + 1.}}};
+                         bounding_boxes(i) = ArborX::Box{ArborX::Point{x - 1., y - 1., z - 1.},
+                                              ArborX::Point{x + 1., y + 1., z + 1.}};
                        });
 
   auto construction = time_monitor.getNewTimer("construction");
