@@ -23,12 +23,13 @@ class Point
 private:
   struct Data
   {
-    constexpr Data() noexcept
+    KOKKOS_FUNCTION constexpr Data() noexcept
         : coords{0., 0., 0.}
     {
     }
 
-    constexpr Data(const std::initializer_list<float> vals) noexcept
+    KOKKOS_FUNCTION constexpr Data(
+        const std::initializer_list<float> vals) noexcept
         : coords{vals.begin()[0], vals.begin()[1], vals.begin()[2]}
     {
     }
