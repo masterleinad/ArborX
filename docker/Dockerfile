@@ -118,7 +118,7 @@ RUN SCRATCH_DIR=/scratch && mkdir -p ${SCRATCH_DIR} && cd ${SCRATCH_DIR} && \
 ENV LD_LIBRARY_PATH=/usr/local/cuda/targets/x86_64-linux/lib:${LD_LIBRARY_PATH}
 
 # Install Kokkos
-ARG KOKKOS_VERSION=c699b69827d25d43d3c6f43b7f1990c980c88b46
+ARG KOKKOS_VERSION=c06db4e6febefd8e60c3f5b416c19a2dcd9fa32a
 ARG KOKKOS_OPTIONS="-DKokkos_ENABLE_SERIAL=ON -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_CUDA=ON -DKokkos_ENABLE_CUDA_LAMBDA=ON"
 ENV KOKKOS_DIR=/opt/kokkos
 RUN KOKKOS_URL=https://github.com/kokkos/kokkos/archive/${KOKKOS_VERSION}.tar.gz && \
