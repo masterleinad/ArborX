@@ -43,8 +43,8 @@ private:
   };
 
 public:
-  KOKKOS_DEFAULTED_FUNCTION
-  constexpr Point() noexcept = default;
+  KOKKOS_FUNCTION
+  constexpr Point() noexcept {}
 
   KOKKOS_INLINE_FUNCTION
   constexpr Point(Abomination data)
