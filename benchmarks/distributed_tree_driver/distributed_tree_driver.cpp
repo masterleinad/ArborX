@@ -68,7 +68,7 @@ public:
       // operator+= and keep track of how many times the timer was
       // restarted.  To be honest I have not even looked was the original
       // TimeMonitor behavior is :)
-      _entry.second = duration.count();
+      _entry.second += duration.count();
       _started = false;
     }
   };
@@ -299,6 +299,7 @@ int main_(std::vector<std::string> const &args, const MPI_Comm comm)
       Kokkos::ViewAllocateWithoutInitializing("values"), n_values);
   Kokkos::View<ArborX::Point *, DeviceType> random_queries(
       Kokkos::ViewAllocateWithoutInitializing("queries"), n_queries);
+  Kokkos::View<double*, Kokkos::HostSpace> random_numbers_host("random_values", n_values);
   {
     std::uniform_real_distribution<double> distribution(-1., 1.);
     std::default_random_engine generator;
@@ -306,7 +307,7 @@ int main_(std::vector<std::string> const &args, const MPI_Comm comm)
       return distribution(generator);
     };
 
-    double offset_x = 0.;
+/*    double offset_x = 0.;
     double offset_y = 0.;
     double offset_z = 0.;
     int i_max = 0;
@@ -365,9 +366,12 @@ int main_(std::vector<std::string> const &args, const MPI_Comm comm)
       random_points_host(i) = {{a * (offset_x + random()),
                                 a * (offset_y + random()),
                                 a * (offset_z + random())}};
-    Kokkos::deep_copy(random_points, random_points_host);
+    Kokkos::deep_copy(random_points, random_points_host);*/
 
-    Kokkos::deep_copy(
+    for (unsigned int i = 0; i < random_numbers_host.extent(0); ++i)
+     random_numbers_host(i) = random();	  
+
+/*    Kokkos::deep_copy(
         random_values,
         Kokkos::subview(random_points, Kokkos::pair<int, int>(0, n_values)));
 
@@ -392,10 +396,55 @@ int main_(std::vector<std::string> const &args, const MPI_Comm comm)
              a * ((offset_y + random()) / 3 + max_offset / 3),
              a * ((offset_z + random()) / 3 + max_offset / 3)}};
       Kokkos::deep_copy(random_queries, random_queries_host);
-    }
+    }*/
   }
 
-  Kokkos::View<ArborX::Box *, DeviceType> bounding_boxes(
+  auto random_numbers_device = Kokkos::create_mirror_view_and_copy(DeviceType{}, random_numbers_host);
+  auto permutation_vector_device = ArborX::Details::sortObjects(typename DeviceType::execution_space{}, random_numbers_device);
+  auto permutation_vector_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, permutation_vector_device);
+
+  Kokkos::View<double*, Kokkos::HostSpace> dest_buffer_host("dest_buffer_host", n_values);
+  Kokkos::View<double*, DeviceType> dest_buffer_device("dest_buffer_device", n_values);
+
+  auto host_permute = time_monitor.getNewTimer("host_permute");
+
+  for (unsigned int i=0; i<100; ++i)
+  {
+  host_permute->start();
+  Kokkos::parallel_for(ARBORX_MARK_REGION("copy_destinations_permuted_host"),
+                           Kokkos::RangePolicy<Kokkos::DefaultHostExecutionSpace>(
+                               Kokkos::DefaultHostExecutionSpace{}, 0, n_values),
+                           KOKKOS_LAMBDA(int const k) {
+			     const int num_packets = 1;
+                             int const i = k / num_packets;
+                             int const j = k % num_packets;
+                             dest_buffer_host(num_packets * permutation_vector_host[i] + j) =
+                                 random_numbers_host[num_packets * i + j];
+                           });
+  Kokkos::fence();
+  host_permute->stop();
+  }
+
+  auto device_permute = time_monitor.getNewTimer("device_permute");
+
+  for (unsigned int i=0; i<100; ++i)
+  {
+  device_permute->start();
+      Kokkos::parallel_for(ARBORX_MARK_REGION("copy_destinations_permuted_device"),
+                           Kokkos::RangePolicy<typename DeviceType::execution_space>(
+                               typename DeviceType::execution_space{}, 0, n_values),
+                           KOKKOS_LAMBDA(int const k) {
+                             const int num_packets = 1;
+                             int const i = k / num_packets;
+                             int const j = k % num_packets;
+                             dest_buffer_device(num_packets * permutation_vector_device[i] + j) =
+                                 random_numbers_device[num_packets * i + j];
+                           });
+  Kokkos::fence();
+  device_permute->stop();
+  }
+
+/*  Kokkos::View<ArborX::Box *, DeviceType> bounding_boxes(
       Kokkos::ViewAllocateWithoutInitializing("bounding_boxes"), n_values);
   Kokkos::parallel_for("bvh_driver:construct_bounding_boxes",
                        Kokkos::RangePolicy<ExecutionSpace>(0, n_values),
@@ -459,7 +508,7 @@ int main_(std::vector<std::string> const &args, const MPI_Comm comm)
 
     if (comm_rank == 0)
       os << "radius done\n";
-  }
+  }*/
   time_monitor.summarize(comm);
 
   return 0;
