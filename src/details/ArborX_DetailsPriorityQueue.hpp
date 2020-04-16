@@ -66,7 +66,7 @@ public:
   KOKKOS_FUNCTION PriorityQueue(Container const &c)
       : _c(c)
   {
-    assert(_c.empty() || isHeap(_c.data(), _c.data() + _c.size(), _compare));
+    ARBORX_ASSERT_DEVICE(_c.empty() || isHeap(_c.data(), _c.data() + _c.size(), _compare));
   }
 
   // Capacity
@@ -105,7 +105,7 @@ public:
   template <typename... Args>
   KOKKOS_INLINE_FUNCTION void popPush(Args &&... args)
   {
-    assert(_c.size() > 0);
+    ARBORX_ASSERT_DEVICE(_c.size() > 0);
     __bubbleDown(_c.data(), std::ptrdiff_t(0), std::ptrdiff_t(_c.size()),
                  T{std::forward<Args>(args)...}, _compare);
   }

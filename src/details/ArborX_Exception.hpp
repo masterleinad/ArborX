@@ -13,6 +13,8 @@
 
 #include <stdexcept>
 #include <string>
+#include <Kokkos_Core.hpp>
+
 
 namespace ArborX
 {
@@ -29,6 +31,12 @@ public:
 
 #define ARBORX_STRINGIZE_DETAIL(x) #x
 #define ARBORX_STRINGIZE(x) ARBORX_STRINGIZE_DETAIL(x)
+
+#ifdef KOKKOS_ENABLE_HIP
+#define ARBORX_ASSERT_DEVICE(x)
+#else
+#define ARBORX_ASSERT_DEVICE(x) assert(x)
+#endif
 
 // FIXME: Unconditionally assert for now
 // Once moved out, possibly make it conditional

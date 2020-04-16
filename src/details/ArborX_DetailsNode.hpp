@@ -14,6 +14,7 @@
 
 #include <ArborX_Box.hpp>
 
+#include <details/ArborX_Exception.hpp>
 #include <Kokkos_Pair.hpp>
 
 #include <cassert>
@@ -35,7 +36,7 @@ struct Node
   KOKKOS_INLINE_FUNCTION constexpr std::size_t getLeafPermutationIndex() const
       noexcept
   {
-    assert(isLeaf());
+    ARBORX_ASSERT_DEVICE(isLeaf());
     return children.second;
   }
 

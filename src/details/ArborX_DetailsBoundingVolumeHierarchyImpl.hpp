@@ -606,7 +606,7 @@ BoundingVolumeHierarchyImpl<DeviceType>::queryDispatch(
                            out(shift + count++) = value;
                          });
               });
-          assert(offset(permute(i) + 1) - offset(permute(i)) == count);
+          ARBORX_ASSERT_DEVICE(offset(permute(i) + 1) - offset(permute(i)) == count);
         });
 
     Kokkos::Profiling::popRegion();
