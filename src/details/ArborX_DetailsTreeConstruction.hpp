@@ -124,7 +124,7 @@ determineRange(Kokkos::View<unsigned int const *, MortonCodesViewProperties...>
   // determine direction of the range (+1 or -1)
   int direction = sgn(commonPrefix(sorted_morton_codes, i, i + 1) -
                       commonPrefix(sorted_morton_codes, i, i - 1));
-  assert(direction == +1 || direction == -1);
+  ARBORX_ASSERT_DEVICE(direction == +1 || direction == -1);
 
   // compute upper bound for the length of the range
   int max_step = 2;
