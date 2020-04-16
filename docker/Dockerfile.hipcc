@@ -84,7 +84,7 @@ RUN SCRATCH_DIR=/scratch && mkdir -p ${SCRATCH_DIR} && cd ${SCRATCH_DIR} && \
     rm -rf ${SCRATCH_DIR}
 
 # Install Kokkos
-ARG KOKKOS_VERSION=149fb16d70f1fd4181dd57a25d219dba2e986df9
+ARG KOKKOS_VERSION=24c36bd1c055dd0907c4a9a3e99f67854f61c8c1
 ARG KOKKOS_OPTIONS="-DKokkos_ENABLE_HIP=ON -DKokkos_ENABLE_LIBDL=OFF -DKokkos_ENABLE_PROFILING=OFF -DCMAKE_CXX_FLAGS=-amdgpu-target=gfx906"
 ENV KOKKOS_DIR=/opt/kokkos
 RUN KOKKOS_URL=https://github.com/kokkos/kokkos/archive/${KOKKOS_VERSION}.tar.gz && \
