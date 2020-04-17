@@ -432,7 +432,7 @@ struct CustomInlineCallbackSpatialPredicate
   Kokkos::View<ArborX::Point *, DeviceType> points;
   ArborX::Point const origin = {{0., 0., 0.}};
   template <typename Query, typename Insert>
-  KOKKOS_FUNCTION void operator()(Query const &, int index,
+   void operator()(Query const &, int index,
                                   Insert const &insert) const
   {
     float const distance_to_origin =
@@ -474,7 +474,7 @@ struct CustomInlineCallbackNearestPredicate
 {
   using tag = ArborX::Details::InlineCallbackTag;
   template <typename Query, typename Insert>
-  KOKKOS_FUNCTION void operator()(Query const &, int index, float distance,
+   void operator()(Query const &, int index, float distance,
                                   Insert const &insert) const
   {
     insert({index, (float)distance});
@@ -590,7 +590,7 @@ struct CustomInlineCallbackAttachmentSpatialPredicate
   Kokkos::View<ArborX::Point *, DeviceType> points;
   ArborX::Point const origin = {{0., 0., 0.}};
   template <typename Query, typename Insert>
-  KOKKOS_FUNCTION void operator()(Query const &query, int index,
+   void operator()(Query const &query, int index,
                                   Insert const &insert) const
   {
     float const distance_to_origin =
@@ -635,7 +635,7 @@ struct CustomInlineCallbackAttachmentNearestPredicate
 {
   using tag = ArborX::Details::InlineCallbackTag;
   template <typename Query, typename Insert>
-  KOKKOS_FUNCTION void operator()(Query const &query, int index, float distance,
+   void operator()(Query const &query, int index, float distance,
                                   Insert const &insert) const
   {
     auto data = ArborX::getData(query);
