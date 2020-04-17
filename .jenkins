@@ -43,7 +43,8 @@ pipeline {
                                     -D MPIEXEC_PREFLAGS="--allow-run-as-root" \
                                 ..
                             '''
-                            sh 'make -j8 VERBOSE=1'
+                            sh 'make -j8 VERBOSE=1 | tee log.txt'
+                            sh '! grep "warning: " log.txt'
                             sh 'ctest $CTEST_OPTIONS'
                         }
                     }
@@ -99,7 +100,8 @@ pipeline {
                                     -D MPIEXEC_PREFLAGS="--allow-run-as-root" \
                                 ..
                             '''
-                            sh 'make -j8 VERBOSE=1'
+                            sh 'make -j8 VERBOSE=1 | tee log.txt'
+                            sh '! grep "warning: " log.txt'
                             sh 'ctest $CTEST_OPTIONS'
                         }
                     }
@@ -154,7 +156,8 @@ pipeline {
                                     -D ARBORX_ENABLE_MPI=ON -D MPIEXEC_PREFLAGS="--allow-run-as-root" \
                                 ..
                             '''
-                            sh 'make -j8 VERBOSE=1'
+                            sh 'make -j8 VERBOSE=1 | tee log.txt'
+                            sh '! grep "warning: " log.txt'
                             sh 'ctest $CTEST_OPTIONS'
                         }
                     }
@@ -211,7 +214,8 @@ pipeline {
                                     -D MPIEXEC_PREFLAGS="--allow-run-as-root" \
                                 ..
                             '''
-                            sh 'make -j8 VERBOSE=1'
+                            sh 'make -j8 VERBOSE=1 | tee log.txt'
+                            sh '! grep "warning: " log.txt'
                             sh 'ctest $CTEST_OPTIONS'
                         }
                     }
@@ -265,7 +269,8 @@ pipeline {
                                     -D MPIEXEC_PREFLAGS="--allow-run-as-root" \
                                 ..
                             '''
-                            sh 'make -j8 VERBOSE=1'
+                            sh 'make -j8 VERBOSE=1 | tee log.txt'
+                            sh '! grep "warning: " log.txt'
                             sh 'ctest $CTEST_OPTIONS'
                         }
                     }
