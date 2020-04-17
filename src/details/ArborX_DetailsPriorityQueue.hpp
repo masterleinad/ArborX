@@ -66,7 +66,8 @@ public:
   KOKKOS_FUNCTION PriorityQueue(Container const &c)
       : _c(c)
   {
-    ARBORX_ASSERT_DEVICE(_c.empty() || isHeap(_c.data(), _c.data() + _c.size(), _compare));
+    ARBORX_ASSERT_DEVICE(_c.empty() ||
+                         isHeap(_c.data(), _c.data() + _c.size(), _compare));
   }
 
   // Capacity

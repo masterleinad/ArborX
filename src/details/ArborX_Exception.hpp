@@ -11,10 +11,10 @@
 #ifndef ARBORX_SEARCH_EXCEPTION_HPP
 #define ARBORX_SEARCH_EXCEPTION_HPP
 
-#include <stdexcept>
-#include <string>
 #include <Kokkos_Core.hpp>
 
+#include <stdexcept>
+#include <string>
 
 namespace ArborX
 {

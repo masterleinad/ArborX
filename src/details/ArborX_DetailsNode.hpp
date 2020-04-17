@@ -13,8 +13,8 @@
 #define ARBORX_NODE_HPP
 
 #include <ArborX_Box.hpp>
-
 #include <details/ArborX_Exception.hpp>
+
 #include <Kokkos_Pair.hpp>
 
 #include <cassert>
