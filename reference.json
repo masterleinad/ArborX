@@ -1,0 +1,3314 @@
+{
+  "context": {
+    "date": "2020-04-20 21:10:28",
+    "executable": "./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe",
+    "num_cpus": 8,
+    "mhz_per_cpu": 2600,
+    "cpu_scaling_enabled": false,
+    "caches": [
+      {
+        "type": "Data",
+        "level": 1,
+        "size": 32000000,
+        "num_sharing": 2
+      },
+      {
+        "type": "Instruction",
+        "level": 1,
+        "size": 32000000,
+        "num_sharing": 2
+      },
+      {
+        "type": "Unified",
+        "level": 2,
+        "size": 256000000,
+        "num_sharing": 2
+      },
+      {
+        "type": "Unified",
+        "level": 3,
+        "size": 20480000000,
+        "num_sharing": 8
+      }
+    ],
+    "library_build_type": "release"
+  },
+  "benchmarks": [
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/10000/0/manual_time",
+      "iterations": 322,
+      "real_time": 1.8791544596273288e+03,
+      "cpu_time": 1.8798662795031053e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/10000/0/manual_time",
+      "iterations": 322,
+      "real_time": 1.9091452732919238e+03,
+      "cpu_time": 1.8918381086956524e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/10000/0/manual_time",
+      "iterations": 322,
+      "real_time": 1.8743800062111789e+03,
+      "cpu_time": 1.8761740465838504e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/10000/0/manual_time",
+      "iterations": 322,
+      "real_time": 1.9050972639751549e+03,
+      "cpu_time": 1.9061187670807446e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/10000/0/manual_time",
+      "iterations": 322,
+      "real_time": 1.8664595807453411e+03,
+      "cpu_time": 1.8676981583850941e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/10000/0/manual_time",
+      "iterations": 322,
+      "real_time": 1.9194257142857141e+03,
+      "cpu_time": 1.9208185683229815e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/10000/0/manual_time",
+      "iterations": 322,
+      "real_time": 1.8809347422360236e+03,
+      "cpu_time": 1.8813583819875780e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/10000/0/manual_time",
+      "iterations": 322,
+      "real_time": 1.8556972763975152e+03,
+      "cpu_time": 1.8569314254658375e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/10000/0/manual_time",
+      "iterations": 322,
+      "real_time": 1.8585067080745339e+03,
+      "cpu_time": 1.8594702546583824e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/10000/0/manual_time",
+      "iterations": 322,
+      "real_time": 1.9442943944099384e+03,
+      "cpu_time": 1.9458005838509312e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/10000/0/manual_time_mean",
+      "iterations": 322,
+      "real_time": 1.8893095419254657e+03,
+      "cpu_time": 1.8886074574534157e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/10000/0/manual_time_median",
+      "iterations": 322,
+      "real_time": 1.8800446009316763e+03,
+      "cpu_time": 1.8806123307453418e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/10000/0/manual_time_stddev",
+      "iterations": 322,
+      "real_time": 2.9001723977074029e+01,
+      "cpu_time": 2.8281886257479908e+01,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/100000/0/manual_time",
+      "iterations": 27,
+      "real_time": 2.6325279444444441e+04,
+      "cpu_time": 2.6320555407407432e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/100000/0/manual_time",
+      "iterations": 27,
+      "real_time": 2.6075871814814818e+04,
+      "cpu_time": 2.6077072037037047e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/100000/0/manual_time",
+      "iterations": 27,
+      "real_time": 2.6336197592592594e+04,
+      "cpu_time": 2.6336347037037052e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/100000/0/manual_time",
+      "iterations": 27,
+      "real_time": 2.6395658814814811e+04,
+      "cpu_time": 2.6396484111111120e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/100000/0/manual_time",
+      "iterations": 27,
+      "real_time": 2.6386485925925928e+04,
+      "cpu_time": 2.6389098185185212e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/100000/0/manual_time",
+      "iterations": 27,
+      "real_time": 2.6637822148148149e+04,
+      "cpu_time": 2.6637481851851902e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/100000/0/manual_time",
+      "iterations": 27,
+      "real_time": 2.6530890407407405e+04,
+      "cpu_time": 2.6532513111111082e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/100000/0/manual_time",
+      "iterations": 27,
+      "real_time": 2.6623174259259267e+04,
+      "cpu_time": 2.6623791333333353e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/100000/0/manual_time",
+      "iterations": 27,
+      "real_time": 2.6559986074074073e+04,
+      "cpu_time": 2.6561536666666685e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/100000/0/manual_time",
+      "iterations": 27,
+      "real_time": 2.6457505370370371e+04,
+      "cpu_time": 2.6457888518518506e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/100000/0/manual_time_mean",
+      "iterations": 27,
+      "real_time": 2.6432887185185184e+04,
+      "cpu_time": 2.6433276825925943e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/100000/0/manual_time_median",
+      "iterations": 27,
+      "real_time": 2.6426582092592591e+04,
+      "cpu_time": 2.6427186314814815e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/100000/0/manual_time_stddev",
+      "iterations": 27,
+      "real_time": 1.6881930841907376e+02,
+      "cpu_time": 1.6904583289016944e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/1000000/0/manual_time",
+      "iterations": 1,
+      "real_time": 5.3753739800000004e+05,
+      "cpu_time": 5.4635759099999955e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/1000000/0/manual_time",
+      "iterations": 1,
+      "real_time": 5.5603069600000000e+05,
+      "cpu_time": 5.6484836399999948e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/1000000/0/manual_time",
+      "iterations": 1,
+      "real_time": 5.6467587699999998e+05,
+      "cpu_time": 5.7322484899999888e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/1000000/0/manual_time",
+      "iterations": 1,
+      "real_time": 5.7427182700000005e+05,
+      "cpu_time": 5.8238020499999973e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/1000000/0/manual_time",
+      "iterations": 1,
+      "real_time": 5.1784607800000004e+05,
+      "cpu_time": 5.2575495099999965e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/1000000/0/manual_time",
+      "iterations": 1,
+      "real_time": 5.2861273099999991e+05,
+      "cpu_time": 5.3729551800000051e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/1000000/0/manual_time",
+      "iterations": 1,
+      "real_time": 5.2661396600000001e+05,
+      "cpu_time": 5.3467787699999998e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/1000000/0/manual_time",
+      "iterations": 1,
+      "real_time": 5.7835216300000006e+05,
+      "cpu_time": 5.8770681400000060e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/1000000/0/manual_time",
+      "iterations": 1,
+      "real_time": 5.7870086899999995e+05,
+      "cpu_time": 5.8706090299999760e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/1000000/0/manual_time",
+      "iterations": 1,
+      "real_time": 5.7553228000000003e+05,
+      "cpu_time": 5.8473045600000257e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/1000000/0/manual_time_mean",
+      "iterations": 1,
+      "real_time": 5.5381738850000012e+05,
+      "cpu_time": 5.6240375279999990e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/1000000/0/manual_time_median",
+      "iterations": 1,
+      "real_time": 5.6035328650000005e+05,
+      "cpu_time": 5.6903660649999918e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/1000000/0/manual_time_stddev",
+      "iterations": 1,
+      "real_time": 2.3963266000121304e+04,
+      "cpu_time": 2.4195027388062645e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/10000/1/manual_time",
+      "iterations": 360,
+      "real_time": 1.9374688111111118e+03,
+      "cpu_time": 1.9386268666666692e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/10000/1/manual_time",
+      "iterations": 360,
+      "real_time": 1.9386793694444441e+03,
+      "cpu_time": 1.9397245805555624e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/10000/1/manual_time",
+      "iterations": 360,
+      "real_time": 1.9430510249999986e+03,
+      "cpu_time": 1.9445873694444356e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/10000/1/manual_time",
+      "iterations": 360,
+      "real_time": 1.9799247472222216e+03,
+      "cpu_time": 1.9814691138888859e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/10000/1/manual_time",
+      "iterations": 360,
+      "real_time": 1.9392781277777806e+03,
+      "cpu_time": 1.9404801861111091e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/10000/1/manual_time",
+      "iterations": 360,
+      "real_time": 1.9466165527777766e+03,
+      "cpu_time": 1.9479981000000023e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/10000/1/manual_time",
+      "iterations": 360,
+      "real_time": 1.9435292194444451e+03,
+      "cpu_time": 1.9444945499999990e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/10000/1/manual_time",
+      "iterations": 360,
+      "real_time": 1.9450345166666675e+03,
+      "cpu_time": 1.9463422555555492e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/10000/1/manual_time",
+      "iterations": 360,
+      "real_time": 1.9429661861111126e+03,
+      "cpu_time": 1.9413642194444510e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/10000/1/manual_time",
+      "iterations": 360,
+      "real_time": 1.9440166500000005e+03,
+      "cpu_time": 1.9451500527777850e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/10000/1/manual_time_mean",
+      "iterations": 360,
+      "real_time": 1.9460565205555565e+03,
+      "cpu_time": 1.9470237294444453e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/10000/1/manual_time_median",
+      "iterations": 360,
+      "real_time": 1.9432901222222220e+03,
+      "cpu_time": 1.9445409597222172e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/10000/1/manual_time_stddev",
+      "iterations": 360,
+      "real_time": 1.2254994988587640e+01,
+      "cpu_time": 1.2482763533634744e+01,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/100000/1/manual_time",
+      "iterations": 25,
+      "real_time": 2.7632272199999996e+04,
+      "cpu_time": 2.7633648439999946e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/100000/1/manual_time",
+      "iterations": 25,
+      "real_time": 2.7714491560000006e+04,
+      "cpu_time": 2.7712899160000008e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/100000/1/manual_time",
+      "iterations": 25,
+      "real_time": 2.7869559920000007e+04,
+      "cpu_time": 2.7870344480000000e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/100000/1/manual_time",
+      "iterations": 25,
+      "real_time": 2.7788249240000001e+04,
+      "cpu_time": 2.7789526239999985e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/100000/1/manual_time",
+      "iterations": 25,
+      "real_time": 2.8125918719999994e+04,
+      "cpu_time": 2.8126467599999927e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/100000/1/manual_time",
+      "iterations": 25,
+      "real_time": 2.8457985040000007e+04,
+      "cpu_time": 2.8452045159999958e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/100000/1/manual_time",
+      "iterations": 25,
+      "real_time": 2.7956444759999995e+04,
+      "cpu_time": 2.7957702400000100e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/100000/1/manual_time",
+      "iterations": 25,
+      "real_time": 2.7943898239999995e+04,
+      "cpu_time": 2.7945185080000101e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/100000/1/manual_time",
+      "iterations": 25,
+      "real_time": 2.7784487159999997e+04,
+      "cpu_time": 2.7784433520000108e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/100000/1/manual_time",
+      "iterations": 25,
+      "real_time": 2.7813801959999997e+04,
+      "cpu_time": 2.7809088959999997e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/100000/1/manual_time_mean",
+      "iterations": 25,
+      "real_time": 2.7908710880000006e+04,
+      "cpu_time": 2.7908134104000012e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/100000/1/manual_time_median",
+      "iterations": 25,
+      "real_time": 2.7841680940000002e+04,
+      "cpu_time": 2.7839716719999997e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/100000/1/manual_time_stddev",
+      "iterations": 25,
+      "real_time": 2.3735125174668303e+02,
+      "cpu_time": 2.3603325149982803e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/1000000/1/manual_time",
+      "iterations": 2,
+      "real_time": 5.0314824000000005e+05,
+      "cpu_time": 5.1165681850000058e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/1000000/1/manual_time",
+      "iterations": 2,
+      "real_time": 4.6673749399999995e+05,
+      "cpu_time": 4.7487007700000203e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/1000000/1/manual_time",
+      "iterations": 2,
+      "real_time": 4.9636903249999997e+05,
+      "cpu_time": 5.0432255249999970e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/1000000/1/manual_time",
+      "iterations": 2,
+      "real_time": 5.0281017799999996e+05,
+      "cpu_time": 5.1128154299999907e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/1000000/1/manual_time",
+      "iterations": 2,
+      "real_time": 4.8560894249999995e+05,
+      "cpu_time": 4.9352863849999907e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/1000000/1/manual_time",
+      "iterations": 2,
+      "real_time": 4.9932904800000001e+05,
+      "cpu_time": 5.0770352849999868e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/1000000/1/manual_time",
+      "iterations": 2,
+      "real_time": 5.2204625049999997e+05,
+      "cpu_time": 5.3031398799999966e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/1000000/1/manual_time",
+      "iterations": 2,
+      "real_time": 4.9275331550000003e+05,
+      "cpu_time": 5.0072397049999749e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/1000000/1/manual_time",
+      "iterations": 2,
+      "real_time": 4.7397748699999996e+05,
+      "cpu_time": 4.8190072050000052e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/1000000/1/manual_time",
+      "iterations": 2,
+      "real_time": 4.7759337349999999e+05,
+      "cpu_time": 4.8569438950000075e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/1000000/1/manual_time_mean",
+      "iterations": 2,
+      "real_time": 4.9203733614999993e+05,
+      "cpu_time": 5.0019962264999974e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/1000000/1/manual_time_median",
+      "iterations": 2,
+      "real_time": 4.9456117400000000e+05,
+      "cpu_time": 5.0252326149999863e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Serial>>/1000000/1/manual_time_stddev",
+      "iterations": 2,
+      "real_time": 1.6427209791638648e+04,
+      "cpu_time": 1.6552518811481183e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/2/manual_time",
+      "iterations": 18,
+      "real_time": 3.8345093555555562e+04,
+      "cpu_time": 3.8347014777777920e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/2/manual_time",
+      "iterations": 18,
+      "real_time": 3.9637894333333330e+04,
+      "cpu_time": 3.9632854833333418e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/2/manual_time",
+      "iterations": 18,
+      "real_time": 3.9115420888888882e+04,
+      "cpu_time": 3.9119154833333174e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/2/manual_time",
+      "iterations": 18,
+      "real_time": 3.9516169888888886e+04,
+      "cpu_time": 3.9519505777777893e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/2/manual_time",
+      "iterations": 18,
+      "real_time": 3.9433033444444445e+04,
+      "cpu_time": 3.9436020444444213e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/2/manual_time",
+      "iterations": 18,
+      "real_time": 3.9795129388888890e+04,
+      "cpu_time": 3.9798981277777777e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/2/manual_time",
+      "iterations": 18,
+      "real_time": 3.9543158666666670e+04,
+      "cpu_time": 3.9547464555555773e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/2/manual_time",
+      "iterations": 18,
+      "real_time": 3.9834561944444446e+04,
+      "cpu_time": 3.9835609777777769e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/2/manual_time",
+      "iterations": 18,
+      "real_time": 3.9164679444444446e+04,
+      "cpu_time": 3.9170123833333288e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/2/manual_time",
+      "iterations": 18,
+      "real_time": 4.0277144055555553e+04,
+      "cpu_time": 4.0279677888888677e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/2/manual_time_mean",
+      "iterations": 18,
+      "real_time": 3.9466228561111115e+04,
+      "cpu_time": 3.9468640799999994e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/2/manual_time_median",
+      "iterations": 18,
+      "real_time": 3.9529664277777774e+04,
+      "cpu_time": 3.9533485166666833e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/2/manual_time_stddev",
+      "iterations": 18,
+      "real_time": 5.1761785547313855e+02,
+      "cpu_time": 5.1722558394865837e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/2/manual_time",
+      "iterations": 2,
+      "real_time": 4.5875862500000000e+05,
+      "cpu_time": 4.5871907749999961e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/2/manual_time",
+      "iterations": 2,
+      "real_time": 4.4825464849999995e+05,
+      "cpu_time": 4.4816006799999997e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/2/manual_time",
+      "iterations": 2,
+      "real_time": 4.5102394850000000e+05,
+      "cpu_time": 4.5098463000000064e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/2/manual_time",
+      "iterations": 2,
+      "real_time": 4.4744678299999994e+05,
+      "cpu_time": 4.4734527149999794e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/2/manual_time",
+      "iterations": 2,
+      "real_time": 4.4158521049999999e+05,
+      "cpu_time": 4.4154519749999820e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/2/manual_time",
+      "iterations": 2,
+      "real_time": 4.4346127250000002e+05,
+      "cpu_time": 4.4340213050000090e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/2/manual_time",
+      "iterations": 2,
+      "real_time": 4.6801674599999998e+05,
+      "cpu_time": 4.6797215950000036e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/2/manual_time",
+      "iterations": 2,
+      "real_time": 4.4716548749999993e+05,
+      "cpu_time": 4.4712160499999952e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/2/manual_time",
+      "iterations": 2,
+      "real_time": 4.4902349349999998e+05,
+      "cpu_time": 4.4895044249999925e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/2/manual_time",
+      "iterations": 2,
+      "real_time": 4.4674712000000000e+05,
+      "cpu_time": 4.4670793999999959e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/2/manual_time_mean",
+      "iterations": 2,
+      "real_time": 4.5014833350000007e+05,
+      "cpu_time": 4.5009085219999962e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/2/manual_time_median",
+      "iterations": 2,
+      "real_time": 4.4785071574999997e+05,
+      "cpu_time": 4.4775266974999895e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/2/manual_time_stddev",
+      "iterations": 2,
+      "real_time": 7.7806251782867575e+03,
+      "cpu_time": 7.7858894642849291e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/2/manual_time",
+      "iterations": 1,
+      "real_time": 5.3639363600000003e+06,
+      "cpu_time": 5.3687873360000039e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/2/manual_time",
+      "iterations": 1,
+      "real_time": 5.2570057879999997e+06,
+      "cpu_time": 5.2618743299999973e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/2/manual_time",
+      "iterations": 1,
+      "real_time": 5.1642103980000000e+06,
+      "cpu_time": 5.1690778160000117e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/2/manual_time",
+      "iterations": 1,
+      "real_time": 5.3646838350000000e+06,
+      "cpu_time": 5.3703863200000087e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/2/manual_time",
+      "iterations": 1,
+      "real_time": 5.2371036970000006e+06,
+      "cpu_time": 5.2421477590000052e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/2/manual_time",
+      "iterations": 1,
+      "real_time": 5.3284425719999997e+06,
+      "cpu_time": 5.3333035379999960e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/2/manual_time",
+      "iterations": 1,
+      "real_time": 5.2900333499999996e+06,
+      "cpu_time": 5.2960550659999941e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/2/manual_time",
+      "iterations": 1,
+      "real_time": 5.3261444420000007e+06,
+      "cpu_time": 5.3307877430000016e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/2/manual_time",
+      "iterations": 1,
+      "real_time": 5.3379686839999994e+06,
+      "cpu_time": 5.3430645050000008e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/2/manual_time",
+      "iterations": 1,
+      "real_time": 5.3226823969999999e+06,
+      "cpu_time": 5.3281558540000021e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/2/manual_time_mean",
+      "iterations": 1,
+      "real_time": 5.2992211523000002e+06,
+      "cpu_time": 5.3043640267000031e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/2/manual_time_median",
+      "iterations": 1,
+      "real_time": 5.3244134195000008e+06,
+      "cpu_time": 5.3294717985000024e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/2/manual_time_stddev",
+      "iterations": 1,
+      "real_time": 6.3295613127697412e+04,
+      "cpu_time": 6.3382812324674851e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/10000/10000/10/1/1/3/manual_time",
+      "iterations": 17,
+      "real_time": 4.0378741411764706e+04,
+      "cpu_time": 4.0383437764706337e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/10000/10000/10/1/1/3/manual_time",
+      "iterations": 17,
+      "real_time": 4.0664355235294119e+04,
+      "cpu_time": 4.0666950882352387e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/10000/10000/10/1/1/3/manual_time",
+      "iterations": 17,
+      "real_time": 4.0100289823529405e+04,
+      "cpu_time": 4.0103588058823399e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/10000/10000/10/1/1/3/manual_time",
+      "iterations": 17,
+      "real_time": 4.0608532411764711e+04,
+      "cpu_time": 4.0614469058823488e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/10000/10000/10/1/1/3/manual_time",
+      "iterations": 17,
+      "real_time": 4.0565095117647063e+04,
+      "cpu_time": 4.0568450823529063e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/10000/10000/10/1/1/3/manual_time",
+      "iterations": 17,
+      "real_time": 4.0314244352941176e+04,
+      "cpu_time": 4.0319003999999506e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/10000/10000/10/1/1/3/manual_time",
+      "iterations": 17,
+      "real_time": 4.0091491647058829e+04,
+      "cpu_time": 4.0093283941176844e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/10000/10000/10/1/1/3/manual_time",
+      "iterations": 17,
+      "real_time": 4.0253689294117648e+04,
+      "cpu_time": 4.0258073647060111e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/10000/10000/10/1/1/3/manual_time",
+      "iterations": 17,
+      "real_time": 3.9993936470588240e+04,
+      "cpu_time": 3.9998585705882972e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/10000/10000/10/1/1/3/manual_time",
+      "iterations": 17,
+      "real_time": 4.0735428764705881e+04,
+      "cpu_time": 4.0736845294117404e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/10000/10000/10/1/1/3/manual_time_mean",
+      "iterations": 17,
+      "real_time": 4.0370580452941183e+04,
+      "cpu_time": 4.0374268917647147e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/10000/10000/10/1/1/3/manual_time_median",
+      "iterations": 17,
+      "real_time": 4.0346492882352941e+04,
+      "cpu_time": 4.0351220882352922e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/10000/10000/10/1/1/3/manual_time_stddev",
+      "iterations": 17,
+      "real_time": 2.6322512093484409e+02,
+      "cpu_time": 2.6300090015763709e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/100000/100000/10/1/1/3/manual_time",
+      "iterations": 1,
+      "real_time": 5.8851164300000004e+05,
+      "cpu_time": 5.8840887599998841e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/100000/100000/10/1/1/3/manual_time",
+      "iterations": 1,
+      "real_time": 5.8597145999999996e+05,
+      "cpu_time": 5.8591534099997487e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/100000/100000/10/1/1/3/manual_time",
+      "iterations": 1,
+      "real_time": 5.8372700300000003e+05,
+      "cpu_time": 5.8368296099999384e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/100000/100000/10/1/1/3/manual_time",
+      "iterations": 1,
+      "real_time": 5.8613380000000005e+05,
+      "cpu_time": 5.8606972300000850e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/100000/100000/10/1/1/3/manual_time",
+      "iterations": 1,
+      "real_time": 5.8633882999999996e+05,
+      "cpu_time": 5.8626845899999584e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/100000/100000/10/1/1/3/manual_time",
+      "iterations": 1,
+      "real_time": 5.8913272900000005e+05,
+      "cpu_time": 5.8909276099998923e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/100000/100000/10/1/1/3/manual_time",
+      "iterations": 1,
+      "real_time": 5.9005742400000000e+05,
+      "cpu_time": 5.8997201799999748e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/100000/100000/10/1/1/3/manual_time",
+      "iterations": 1,
+      "real_time": 5.8614656400000001e+05,
+      "cpu_time": 5.8609263299999270e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/100000/100000/10/1/1/3/manual_time",
+      "iterations": 1,
+      "real_time": 5.8858274099999992e+05,
+      "cpu_time": 5.8854298599999305e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/100000/100000/10/1/1/3/manual_time",
+      "iterations": 1,
+      "real_time": 5.7870687099999993e+05,
+      "cpu_time": 5.7859446899999515e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/100000/100000/10/1/1/3/manual_time_mean",
+      "iterations": 1,
+      "real_time": 5.8633090649999992e+05,
+      "cpu_time": 5.8626402269999287e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/100000/100000/10/1/1/3/manual_time_median",
+      "iterations": 1,
+      "real_time": 5.8624269699999993e+05,
+      "cpu_time": 5.8618054599999427e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/100000/100000/10/1/1/3/manual_time_stddev",
+      "iterations": 1,
+      "real_time": 3.2773946417175025e+03,
+      "cpu_time": 3.2866348508232750e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/1/3/manual_time",
+      "iterations": 1,
+      "real_time": 8.5381927809999995e+06,
+      "cpu_time": 8.5429670389999896e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/1/3/manual_time",
+      "iterations": 1,
+      "real_time": 8.5020899700000007e+06,
+      "cpu_time": 8.5070303390000109e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/1/3/manual_time",
+      "iterations": 1,
+      "real_time": 8.4855590749999993e+06,
+      "cpu_time": 8.4906846279999968e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/1/3/manual_time",
+      "iterations": 1,
+      "real_time": 8.4490026809999999e+06,
+      "cpu_time": 8.4538461930000037e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/1/3/manual_time",
+      "iterations": 1,
+      "real_time": 8.5639503480000012e+06,
+      "cpu_time": 8.5686199980000034e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/1/3/manual_time",
+      "iterations": 1,
+      "real_time": 8.5643012050000001e+06,
+      "cpu_time": 8.5685755979999956e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/1/3/manual_time",
+      "iterations": 1,
+      "real_time": 8.4501766239999998e+06,
+      "cpu_time": 8.4549274499999862e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/1/3/manual_time",
+      "iterations": 1,
+      "real_time": 8.5551939360000007e+06,
+      "cpu_time": 8.5602844990000054e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/1/3/manual_time",
+      "iterations": 1,
+      "real_time": 8.5061281780000012e+06,
+      "cpu_time": 8.5103542070000060e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/1/3/manual_time",
+      "iterations": 1,
+      "real_time": 8.5213399170000013e+06,
+      "cpu_time": 8.5258035610000044e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/1/3/manual_time_mean",
+      "iterations": 1,
+      "real_time": 8.5135934715000000e+06,
+      "cpu_time": 8.5183093512000013e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/1/3/manual_time_median",
+      "iterations": 1,
+      "real_time": 8.5137340475000013e+06,
+      "cpu_time": 8.5180788840000052e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/1/3/manual_time_stddev",
+      "iterations": 1,
+      "real_time": 4.3038066671155662e+04,
+      "cpu_time": 4.2960349240687363e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/0/2/manual_time",
+      "iterations": 14,
+      "real_time": 4.9276332071428573e+04,
+      "cpu_time": 4.9280416571428585e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/0/2/manual_time",
+      "iterations": 14,
+      "real_time": 4.9512655000000006e+04,
+      "cpu_time": 4.9516039214286218e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/0/2/manual_time",
+      "iterations": 14,
+      "real_time": 4.9593796642857138e+04,
+      "cpu_time": 4.9597901357143666e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/0/2/manual_time",
+      "iterations": 14,
+      "real_time": 4.9360714928571433e+04,
+      "cpu_time": 4.9361951857142521e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/0/2/manual_time",
+      "iterations": 14,
+      "real_time": 4.9571729714285721e+04,
+      "cpu_time": 4.9575591642857420e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/0/2/manual_time",
+      "iterations": 14,
+      "real_time": 4.9542103785714287e+04,
+      "cpu_time": 4.9545368714285185e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/0/2/manual_time",
+      "iterations": 14,
+      "real_time": 4.9518686142857143e+04,
+      "cpu_time": 4.9523430357142825e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/0/2/manual_time",
+      "iterations": 14,
+      "real_time": 4.9677754785714278e+04,
+      "cpu_time": 4.9680748714286383e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/0/2/manual_time",
+      "iterations": 14,
+      "real_time": 4.9825814785714276e+04,
+      "cpu_time": 4.9829940214286638e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/0/2/manual_time",
+      "iterations": 14,
+      "real_time": 4.9978789357142858e+04,
+      "cpu_time": 4.9982817142857726e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/0/2/manual_time_mean",
+      "iterations": 14,
+      "real_time": 4.9585837721428579e+04,
+      "cpu_time": 4.9589420578571728e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/0/2/manual_time_median",
+      "iterations": 14,
+      "real_time": 4.9556916750000011e+04,
+      "cpu_time": 4.9560480178571306e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/0/2/manual_time_stddev",
+      "iterations": 14,
+      "real_time": 2.0519985596634015e+02,
+      "cpu_time": 2.0551294626685817e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/0/2/manual_time",
+      "iterations": 1,
+      "real_time": 5.5564956200000003e+05,
+      "cpu_time": 5.5560746800000512e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/0/2/manual_time",
+      "iterations": 1,
+      "real_time": 5.5163831799999997e+05,
+      "cpu_time": 5.5157026300000213e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/0/2/manual_time",
+      "iterations": 1,
+      "real_time": 5.5499149400000006e+05,
+      "cpu_time": 5.5492977999998059e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/0/2/manual_time",
+      "iterations": 1,
+      "real_time": 5.4914280000000005e+05,
+      "cpu_time": 5.4908796399999456e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/0/2/manual_time",
+      "iterations": 1,
+      "real_time": 5.4972904099999997e+05,
+      "cpu_time": 5.4964186500001233e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/0/2/manual_time",
+      "iterations": 1,
+      "real_time": 5.4982588899999997e+05,
+      "cpu_time": 5.4978758400000061e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/0/2/manual_time",
+      "iterations": 1,
+      "real_time": 5.5080175099999993e+05,
+      "cpu_time": 5.5074560399998515e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/0/2/manual_time",
+      "iterations": 1,
+      "real_time": 5.4788759800000000e+05,
+      "cpu_time": 5.4786702100000181e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/0/2/manual_time",
+      "iterations": 1,
+      "real_time": 5.4779986700000009e+05,
+      "cpu_time": 5.4775252099997830e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/0/2/manual_time",
+      "iterations": 1,
+      "real_time": 5.5136663199999998e+05,
+      "cpu_time": 5.5126185500000697e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/0/2/manual_time_mean",
+      "iterations": 1,
+      "real_time": 5.5088329520000005e+05,
+      "cpu_time": 5.5082519249999686e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/0/2/manual_time_median",
+      "iterations": 1,
+      "real_time": 5.5031381999999995e+05,
+      "cpu_time": 5.5026659399999294e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/0/2/manual_time_stddev",
+      "iterations": 1,
+      "real_time": 2.6742888003123467e+03,
+      "cpu_time": 2.6699330624977842e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/0/2/manual_time",
+      "iterations": 1,
+      "real_time": 6.2190232539999997e+06,
+      "cpu_time": 6.2252697330000047e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/0/2/manual_time",
+      "iterations": 1,
+      "real_time": 6.2168816349999998e+06,
+      "cpu_time": 6.2227084250000073e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/0/2/manual_time",
+      "iterations": 1,
+      "real_time": 6.1606173430000003e+06,
+      "cpu_time": 6.1667407179999715e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/0/2/manual_time",
+      "iterations": 1,
+      "real_time": 6.2133036749999998e+06,
+      "cpu_time": 6.2177815910000047e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/0/2/manual_time",
+      "iterations": 1,
+      "real_time": 6.2290588119999999e+06,
+      "cpu_time": 6.2342145199999660e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/0/2/manual_time",
+      "iterations": 1,
+      "real_time": 6.1825650320000006e+06,
+      "cpu_time": 6.1878429860000210e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/0/2/manual_time",
+      "iterations": 1,
+      "real_time": 6.2213445409999993e+06,
+      "cpu_time": 6.2252716760000335e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/0/2/manual_time",
+      "iterations": 1,
+      "real_time": 6.1464700740000000e+06,
+      "cpu_time": 6.1467537300000004e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/0/2/manual_time",
+      "iterations": 1,
+      "real_time": 6.2327752220000001e+06,
+      "cpu_time": 6.2370663789999979e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/0/2/manual_time",
+      "iterations": 1,
+      "real_time": 6.1644962280000001e+06,
+      "cpu_time": 6.1705137349999864e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/0/2/manual_time_mean",
+      "iterations": 1,
+      "real_time": 6.1986535815999992e+06,
+      "cpu_time": 6.2034163492999990e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/0/2/manual_time_median",
+      "iterations": 1,
+      "real_time": 6.2150926549999993e+06,
+      "cpu_time": 6.2202450080000060e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/0/2/manual_time_stddev",
+      "iterations": 1,
+      "real_time": 3.1904187960008399e+04,
+      "cpu_time": 3.2481598012440882e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/1/3/manual_time",
+      "iterations": 51,
+      "real_time": 1.3516105431372549e+04,
+      "cpu_time": 1.3523578372548720e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/1/3/manual_time",
+      "iterations": 51,
+      "real_time": 1.3420323901960784e+04,
+      "cpu_time": 1.3426262549019693e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/1/3/manual_time",
+      "iterations": 51,
+      "real_time": 1.3599618078431375e+04,
+      "cpu_time": 1.3607636333332783e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/1/3/manual_time",
+      "iterations": 51,
+      "real_time": 1.3742932509803923e+04,
+      "cpu_time": 1.3751800686274388e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/1/3/manual_time",
+      "iterations": 51,
+      "real_time": 1.3462243313725490e+04,
+      "cpu_time": 1.3469937137254901e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/1/3/manual_time",
+      "iterations": 51,
+      "real_time": 1.3514866843137253e+04,
+      "cpu_time": 1.3522946960784018e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/1/3/manual_time",
+      "iterations": 51,
+      "real_time": 1.3546551156862741e+04,
+      "cpu_time": 1.3555122294117245e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/1/3/manual_time",
+      "iterations": 51,
+      "real_time": 1.3385481137254905e+04,
+      "cpu_time": 1.3390803039216031e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/1/3/manual_time",
+      "iterations": 51,
+      "real_time": 1.3366216215686280e+04,
+      "cpu_time": 1.3369767392156980e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/1/3/manual_time",
+      "iterations": 51,
+      "real_time": 1.3446162980392161e+04,
+      "cpu_time": 1.3452766196077811e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/1/3/manual_time_mean",
+      "iterations": 51,
+      "real_time": 1.3500050156862750e+04,
+      "cpu_time": 1.3507062096078260e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/1/3/manual_time_median",
+      "iterations": 51,
+      "real_time": 1.3488555078431373e+04,
+      "cpu_time": 1.3496442049019459e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/10000/10000/10/1/0/1/3/manual_time_stddev",
+      "iterations": 51,
+      "real_time": 1.1218650263888364e+02,
+      "cpu_time": 1.1356248003120821e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/1/3/manual_time",
+      "iterations": 6,
+      "real_time": 1.1300971633333334e+05,
+      "cpu_time": 1.1301968083333236e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/1/3/manual_time",
+      "iterations": 6,
+      "real_time": 1.1409202500000001e+05,
+      "cpu_time": 1.1410331600000254e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/1/3/manual_time",
+      "iterations": 6,
+      "real_time": 1.0999853400000000e+05,
+      "cpu_time": 1.0997816416666713e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/1/3/manual_time",
+      "iterations": 6,
+      "real_time": 1.1191370133333333e+05,
+      "cpu_time": 1.1192443099999613e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/1/3/manual_time",
+      "iterations": 6,
+      "real_time": 1.1173549383333333e+05,
+      "cpu_time": 1.1174008383333481e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/1/3/manual_time",
+      "iterations": 6,
+      "real_time": 1.1214750300000001e+05,
+      "cpu_time": 1.1215776166667033e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/1/3/manual_time",
+      "iterations": 6,
+      "real_time": 1.1058717583333333e+05,
+      "cpu_time": 1.1059686149999948e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/1/3/manual_time",
+      "iterations": 6,
+      "real_time": 1.1074376633333335e+05,
+      "cpu_time": 1.1075372999999899e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/1/3/manual_time",
+      "iterations": 6,
+      "real_time": 1.1267922933333334e+05,
+      "cpu_time": 1.1268986566666210e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/1/3/manual_time",
+      "iterations": 6,
+      "real_time": 1.1422564649999999e+05,
+      "cpu_time": 1.1423536733334079e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/1/3/manual_time_mean",
+      "iterations": 6,
+      "real_time": 1.1211327915000000e+05,
+      "cpu_time": 1.1211992620000047e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/1/3/manual_time_median",
+      "iterations": 6,
+      "real_time": 1.1203060216666666e+05,
+      "cpu_time": 1.1204109633333322e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/100000/100000/10/1/0/1/3/manual_time_stddev",
+      "iterations": 6,
+      "real_time": 1.4283579637640205e+03,
+      "cpu_time": 1.4337444583716144e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/1/3/manual_time",
+      "iterations": 1,
+      "real_time": 1.2933343840000001e+06,
+      "cpu_time": 1.2933320470000354e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/1/3/manual_time",
+      "iterations": 1,
+      "real_time": 1.2497920229999998e+06,
+      "cpu_time": 1.2497210459999905e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/1/3/manual_time",
+      "iterations": 1,
+      "real_time": 1.2463912820000001e+06,
+      "cpu_time": 1.2462960709999606e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/1/3/manual_time",
+      "iterations": 1,
+      "real_time": 1.1355587500000000e+06,
+      "cpu_time": 1.1355095019999908e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/1/3/manual_time",
+      "iterations": 1,
+      "real_time": 1.1986199020000000e+06,
+      "cpu_time": 1.1986052670000049e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/1/3/manual_time",
+      "iterations": 1,
+      "real_time": 1.2617336310000001e+06,
+      "cpu_time": 1.2617323279999937e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/1/3/manual_time",
+      "iterations": 1,
+      "real_time": 1.3023153640000001e+06,
+      "cpu_time": 1.3022917430000121e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/1/3/manual_time",
+      "iterations": 1,
+      "real_time": 1.3071227379999999e+06,
+      "cpu_time": 1.3070230420000257e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/1/3/manual_time",
+      "iterations": 1,
+      "real_time": 1.3048630590000001e+06,
+      "cpu_time": 1.3048385019999954e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/1/3/manual_time",
+      "iterations": 1,
+      "real_time": 1.2884513740000001e+06,
+      "cpu_time": 1.2884468910000350e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/1/3/manual_time_mean",
+      "iterations": 1,
+      "real_time": 1.2588182507000000e+06,
+      "cpu_time": 1.2587796439000044e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/1/3/manual_time_median",
+      "iterations": 1,
+      "real_time": 1.2750925025000002e+06,
+      "cpu_time": 1.2750896095000145e+06,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Serial>>/1000000/1000000/10/1/0/1/3/manual_time_stddev",
+      "iterations": 1,
+      "real_time": 5.5253033766387998e+04,
+      "cpu_time": 5.5256231824810297e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/10000/0/manual_time",
+      "iterations": 786,
+      "real_time": 8.9031573155216256e+02,
+      "cpu_time": 8.9217339821884616e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/10000/0/manual_time",
+      "iterations": 786,
+      "real_time": 9.3428808269720025e+02,
+      "cpu_time": 9.3570838676846188e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/10000/0/manual_time",
+      "iterations": 786,
+      "real_time": 9.3738590966921163e+02,
+      "cpu_time": 9.2043103307891965e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/10000/0/manual_time",
+      "iterations": 786,
+      "real_time": 8.4943463994910940e+02,
+      "cpu_time": 8.5966334223913748e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/10000/0/manual_time",
+      "iterations": 786,
+      "real_time": 8.8048188422391877e+02,
+      "cpu_time": 8.9315453689570529e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/10000/0/manual_time",
+      "iterations": 786,
+      "real_time": 8.5154359414758267e+02,
+      "cpu_time": 8.6350931552156737e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/10000/0/manual_time",
+      "iterations": 786,
+      "real_time": 8.7832744656488660e+02,
+      "cpu_time": 8.6983475190838465e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/10000/0/manual_time",
+      "iterations": 786,
+      "real_time": 8.6136740458015299e+02,
+      "cpu_time": 8.7398761068705960e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/10000/0/manual_time",
+      "iterations": 786,
+      "real_time": 8.4858363104325690e+02,
+      "cpu_time": 8.6094942620858649e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/10000/0/manual_time",
+      "iterations": 786,
+      "real_time": 8.5039201399491151e+02,
+      "cpu_time": 8.6303142875317872e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/10000/0/manual_time_mean",
+      "iterations": 786,
+      "real_time": 8.7821203384223941e+02,
+      "cpu_time": 8.8324432302798482e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/10000/0/manual_time_median",
+      "iterations": 786,
+      "real_time": 8.6984742557251980e+02,
+      "cpu_time": 8.7191118129772212e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/10000/0/manual_time_stddev",
+      "iterations": 786,
+      "real_time": 3.3784640233564737e+01,
+      "cpu_time": 2.6728948367749741e+01,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/100000/0/manual_time",
+      "iterations": 454,
+      "real_time": 1.6749599801762131e+03,
+      "cpu_time": 1.7628059207048573e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/100000/0/manual_time",
+      "iterations": 454,
+      "real_time": 1.5587487885462567e+03,
+      "cpu_time": 1.6888295330396343e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/100000/0/manual_time",
+      "iterations": 454,
+      "real_time": 1.5602098722466962e+03,
+      "cpu_time": 1.6927067114537767e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/100000/0/manual_time",
+      "iterations": 454,
+      "real_time": 1.5436056585903086e+03,
+      "cpu_time": 1.6745373303964575e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/100000/0/manual_time",
+      "iterations": 454,
+      "real_time": 1.5951229118942729e+03,
+      "cpu_time": 1.6838341013215688e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/100000/0/manual_time",
+      "iterations": 454,
+      "real_time": 1.5357002775330391e+03,
+      "cpu_time": 1.6647849449339142e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/100000/0/manual_time",
+      "iterations": 454,
+      "real_time": 1.5333884140969174e+03,
+      "cpu_time": 1.6636876233480550e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/100000/0/manual_time",
+      "iterations": 454,
+      "real_time": 1.5341013127753315e+03,
+      "cpu_time": 1.6609792819383379e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/100000/0/manual_time",
+      "iterations": 454,
+      "real_time": 1.5768604603524250e+03,
+      "cpu_time": 1.6670070066079752e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/100000/0/manual_time",
+      "iterations": 454,
+      "real_time": 1.5306779801762132e+03,
+      "cpu_time": 1.6587118898679005e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/100000/0/manual_time_mean",
+      "iterations": 454,
+      "real_time": 1.5643375656387675e+03,
+      "cpu_time": 1.6817884343612479e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/100000/0/manual_time_median",
+      "iterations": 454,
+      "real_time": 1.5511772235682827e+03,
+      "cpu_time": 1.6707721685022163e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/100000/0/manual_time_stddev",
+      "iterations": 454,
+      "real_time": 4.4278294429305575e+01,
+      "cpu_time": 3.0894405371806279e+01,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/1000000/0/manual_time",
+      "iterations": 158,
+      "real_time": 4.4414173417721513e+03,
+      "cpu_time": 4.6350637468354398e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/1000000/0/manual_time",
+      "iterations": 158,
+      "real_time": 4.5979735443038007e+03,
+      "cpu_time": 4.6699065126583264e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/1000000/0/manual_time",
+      "iterations": 158,
+      "real_time": 4.4693356835443055e+03,
+      "cpu_time": 4.6578767215190583e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/1000000/0/manual_time",
+      "iterations": 158,
+      "real_time": 4.4172220316455678e+03,
+      "cpu_time": 4.6094397911391043e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/1000000/0/manual_time",
+      "iterations": 158,
+      "real_time": 4.4568284430379745e+03,
+      "cpu_time": 4.6533003670883254e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/1000000/0/manual_time",
+      "iterations": 158,
+      "real_time": 4.5770181455696184e+03,
+      "cpu_time": 4.6253503924047818e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/1000000/0/manual_time",
+      "iterations": 158,
+      "real_time": 4.4187185506329115e+03,
+      "cpu_time": 4.6106489367087779e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/1000000/0/manual_time",
+      "iterations": 158,
+      "real_time": 4.4257249430379761e+03,
+      "cpu_time": 4.6180959113923391e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/1000000/0/manual_time",
+      "iterations": 158,
+      "real_time": 4.5346435886075960e+03,
+      "cpu_time": 4.6509541455697781e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/1000000/0/manual_time",
+      "iterations": 158,
+      "real_time": 4.4904550569620260e+03,
+      "cpu_time": 4.6479788164558013e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/1000000/0/manual_time_mean",
+      "iterations": 158,
+      "real_time": 4.4829337329113932e+03,
+      "cpu_time": 4.6378615341771729e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/1000000/0/manual_time_median",
+      "iterations": 158,
+      "real_time": 4.4630820632911400e+03,
+      "cpu_time": 4.6415212816456205e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/1000000/0/manual_time_stddev",
+      "iterations": 158,
+      "real_time": 6.5930081819323263e+01,
+      "cpu_time": 2.1194807724810371e+01,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/10000/1/manual_time",
+      "iterations": 827,
+      "real_time": 8.4702995284159590e+02,
+      "cpu_time": 8.5932667351871567e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/10000/1/manual_time",
+      "iterations": 827,
+      "real_time": 8.4565924183796835e+02,
+      "cpu_time": 8.5800276058035456e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/10000/1/manual_time",
+      "iterations": 827,
+      "real_time": 8.7222665417170538e+02,
+      "cpu_time": 8.6716828415963653e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/10000/1/manual_time",
+      "iterations": 827,
+      "real_time": 8.7123148488512675e+02,
+      "cpu_time": 8.7353626360339251e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/10000/1/manual_time",
+      "iterations": 827,
+      "real_time": 8.4508394679564719e+02,
+      "cpu_time": 8.5746177750907896e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/10000/1/manual_time",
+      "iterations": 827,
+      "real_time": 8.4612705441354251e+02,
+      "cpu_time": 8.5797551632405907e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/10000/1/manual_time",
+      "iterations": 827,
+      "real_time": 8.4783022007255113e+02,
+      "cpu_time": 8.5969048851273067e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/10000/1/manual_time",
+      "iterations": 827,
+      "real_time": 8.9485490084643334e+02,
+      "cpu_time": 8.7167853446190691e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/10000/1/manual_time",
+      "iterations": 827,
+      "real_time": 8.4888725755743815e+02,
+      "cpu_time": 8.6127428899636993e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/10000/1/manual_time",
+      "iterations": 827,
+      "real_time": 8.4765347158403824e+02,
+      "cpu_time": 8.5969773760581518e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/10000/1/manual_time_mean",
+      "iterations": 827,
+      "real_time": 8.5665841850060485e+02,
+      "cpu_time": 8.6258123252720600e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/10000/1/manual_time_median",
+      "iterations": 827,
+      "real_time": 8.4774184582829469e+02,
+      "cpu_time": 8.5969411305927292e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/10000/1/manual_time_stddev",
+      "iterations": 827,
+      "real_time": 1.6969580140154186e+01,
+      "cpu_time": 5.9737360122434966e+00,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/100000/1/manual_time",
+      "iterations": 455,
+      "real_time": 1.5964492241758255e+03,
+      "cpu_time": 1.6858560439560520e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/100000/1/manual_time",
+      "iterations": 455,
+      "real_time": 1.5496759032967027e+03,
+      "cpu_time": 1.6678791252747242e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/100000/1/manual_time",
+      "iterations": 455,
+      "real_time": 1.5298414659340647e+03,
+      "cpu_time": 1.6579071142858152e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/100000/1/manual_time",
+      "iterations": 455,
+      "real_time": 1.5351258593406603e+03,
+      "cpu_time": 1.6652829098901307e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/100000/1/manual_time",
+      "iterations": 455,
+      "real_time": 1.6015274043956042e+03,
+      "cpu_time": 1.6755301450550157e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/100000/1/manual_time",
+      "iterations": 455,
+      "real_time": 1.5325005846153852e+03,
+      "cpu_time": 1.6613982571429615e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/100000/1/manual_time",
+      "iterations": 455,
+      "real_time": 1.5316324791208795e+03,
+      "cpu_time": 1.6597107802196690e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/100000/1/manual_time",
+      "iterations": 455,
+      "real_time": 1.5354176197802219e+03,
+      "cpu_time": 1.6653840681318807e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/100000/1/manual_time",
+      "iterations": 455,
+      "real_time": 1.5979118703296706e+03,
+      "cpu_time": 1.6693796989011139e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/100000/1/manual_time",
+      "iterations": 455,
+      "real_time": 1.5314527692307718e+03,
+      "cpu_time": 1.6598115516483251e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/100000/1/manual_time_mean",
+      "iterations": 455,
+      "real_time": 1.5541535180219789e+03,
+      "cpu_time": 1.6668139694505692e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/100000/1/manual_time_median",
+      "iterations": 455,
+      "real_time": 1.5352717395604409e+03,
+      "cpu_time": 1.6653334890110057e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/100000/1/manual_time_stddev",
+      "iterations": 455,
+      "real_time": 3.1204676586854070e+01,
+      "cpu_time": 8.5558931307882347e+00,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/1000000/1/manual_time",
+      "iterations": 159,
+      "real_time": 4.4133140314465418e+03,
+      "cpu_time": 4.6038500628931488e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/1000000/1/manual_time",
+      "iterations": 159,
+      "real_time": 4.5379890628930843e+03,
+      "cpu_time": 4.5957999496855655e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/1000000/1/manual_time",
+      "iterations": 159,
+      "real_time": 4.3900394716981109e+03,
+      "cpu_time": 4.5770760943394853e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/1000000/1/manual_time",
+      "iterations": 159,
+      "real_time": 4.4025905094339605e+03,
+      "cpu_time": 4.5917738993710445e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/1000000/1/manual_time",
+      "iterations": 159,
+      "real_time": 4.3750939119496852e+03,
+      "cpu_time": 4.5615625911947955e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/1000000/1/manual_time",
+      "iterations": 159,
+      "real_time": 4.5257997924528308e+03,
+      "cpu_time": 4.5825060377358932e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/1000000/1/manual_time",
+      "iterations": 159,
+      "real_time": 4.5575988301886791e+03,
+      "cpu_time": 4.7581235911950971e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/1000000/1/manual_time",
+      "iterations": 159,
+      "real_time": 4.5044555849056605e+03,
+      "cpu_time": 4.7032671761007659e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/1000000/1/manual_time",
+      "iterations": 159,
+      "real_time": 4.5128503773584907e+03,
+      "cpu_time": 4.7063985534590893e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/1000000/1/manual_time",
+      "iterations": 159,
+      "real_time": 4.6940570691823868e+03,
+      "cpu_time": 4.7627566855344148e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/1000000/1/manual_time_mean",
+      "iterations": 159,
+      "real_time": 4.4913788641509427e+03,
+      "cpu_time": 4.6443114641509301e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/1000000/1/manual_time_median",
+      "iterations": 159,
+      "real_time": 4.5086529811320752e+03,
+      "cpu_time": 4.5998250062893567e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_construction<ArborX::BVH<Cuda>>/1000000/1/manual_time_stddev",
+      "iterations": 159,
+      "real_time": 9.8444698939513060e+01,
+      "cpu_time": 7.9058081859086073e+01,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/2/manual_time",
+      "iterations": 611,
+      "real_time": 1.1714627217675948e+03,
+      "cpu_time": 1.2498594042552486e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/2/manual_time",
+      "iterations": 611,
+      "real_time": 1.1197636072013108e+03,
+      "cpu_time": 1.1926517021276845e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/2/manual_time",
+      "iterations": 611,
+      "real_time": 1.1171481211129303e+03,
+      "cpu_time": 1.1902534451719112e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/2/manual_time",
+      "iterations": 611,
+      "real_time": 1.1137202029459902e+03,
+      "cpu_time": 1.1860461145662973e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/2/manual_time",
+      "iterations": 611,
+      "real_time": 1.1119548166939433e+03,
+      "cpu_time": 1.1844066186579175e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/2/manual_time",
+      "iterations": 611,
+      "real_time": 1.1139303289689028e+03,
+      "cpu_time": 1.1861746317511515e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/2/manual_time",
+      "iterations": 611,
+      "real_time": 1.1094775695580997e+03,
+      "cpu_time": 1.1817342913256598e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/2/manual_time",
+      "iterations": 611,
+      "real_time": 1.1147480540098197e+03,
+      "cpu_time": 1.1876313584288509e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/2/manual_time",
+      "iterations": 611,
+      "real_time": 1.1106725793780672e+03,
+      "cpu_time": 1.1829756972176863e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/2/manual_time",
+      "iterations": 611,
+      "real_time": 1.1112695433715216e+03,
+      "cpu_time": 1.1841166366612990e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/2/manual_time_mean",
+      "iterations": 611,
+      "real_time": 1.1194147545008182e+03,
+      "cpu_time": 1.1925849900163707e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/2/manual_time_median",
+      "iterations": 611,
+      "real_time": 1.1138252659574466e+03,
+      "cpu_time": 1.1861103731587245e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/2/manual_time_stddev",
+      "iterations": 611,
+      "real_time": 1.8546349035466271e+01,
+      "cpu_time": 2.0392978274694478e+01,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/2/manual_time",
+      "iterations": 89,
+      "real_time": 7.9750766292134804e+03,
+      "cpu_time": 8.0482515056177508e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/2/manual_time",
+      "iterations": 89,
+      "real_time": 8.1100878988764025e+03,
+      "cpu_time": 8.2461947528094079e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/2/manual_time",
+      "iterations": 89,
+      "real_time": 7.9191825505617971e+03,
+      "cpu_time": 8.1401013258424646e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/2/manual_time",
+      "iterations": 89,
+      "real_time": 7.7987137752808994e+03,
+      "cpu_time": 8.0078469101123846e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/2/manual_time",
+      "iterations": 89,
+      "real_time": 7.7737288314606731e+03,
+      "cpu_time": 7.9849522247192062e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/2/manual_time",
+      "iterations": 89,
+      "real_time": 7.8565917528089867e+03,
+      "cpu_time": 7.9709485505620169e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/2/manual_time",
+      "iterations": 89,
+      "real_time": 7.8049156741573033e+03,
+      "cpu_time": 8.0180581573031714e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/2/manual_time",
+      "iterations": 89,
+      "real_time": 7.8184602359550527e+03,
+      "cpu_time": 8.0311318764049165e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/2/manual_time",
+      "iterations": 89,
+      "real_time": 7.9300459438202224e+03,
+      "cpu_time": 8.1423968089882110e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/2/manual_time",
+      "iterations": 89,
+      "real_time": 8.0533451123595487e+03,
+      "cpu_time": 8.2007006966292793e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/2/manual_time_mean",
+      "iterations": 89,
+      "real_time": 7.9040148404494385e+03,
+      "cpu_time": 8.0790582808988811e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/2/manual_time_median",
+      "iterations": 89,
+      "real_time": 7.8878871516853915e+03,
+      "cpu_time": 8.0396916910113332e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/2/manual_time_stddev",
+      "iterations": 89,
+      "real_time": 1.1458865269022188e+02,
+      "cpu_time": 9.6062037643471726e+01,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/2/manual_time",
+      "iterations": 8,
+      "real_time": 8.4938090875000009e+04,
+      "cpu_time": 8.5184485375002332e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/2/manual_time",
+      "iterations": 8,
+      "real_time": 8.5086218874999991e+04,
+      "cpu_time": 8.5493118625002753e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/2/manual_time",
+      "iterations": 8,
+      "real_time": 8.5001150875000007e+04,
+      "cpu_time": 8.5234025624998816e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/2/manual_time",
+      "iterations": 8,
+      "real_time": 8.5771874750000003e+04,
+      "cpu_time": 8.5605951750004300e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/2/manual_time",
+      "iterations": 8,
+      "real_time": 8.8415373625000022e+04,
+      "cpu_time": 8.7911806874998889e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/2/manual_time",
+      "iterations": 8,
+      "real_time": 8.9093459000000003e+04,
+      "cpu_time": 8.6485687500001513e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/2/manual_time",
+      "iterations": 8,
+      "real_time": 8.9304629375000004e+04,
+      "cpu_time": 8.7958098375004571e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/2/manual_time",
+      "iterations": 8,
+      "real_time": 8.9506082250000007e+04,
+      "cpu_time": 8.8367367624996972e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/2/manual_time",
+      "iterations": 8,
+      "real_time": 9.1011946499999991e+04,
+      "cpu_time": 8.9599891124997550e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/2/manual_time",
+      "iterations": 8,
+      "real_time": 9.3427538375000004e+04,
+      "cpu_time": 9.1599852125000325e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/2/manual_time_mean",
+      "iterations": 8,
+      "real_time": 8.8155636450000005e+04,
+      "cpu_time": 8.7344028500000815e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/2/manual_time_median",
+      "iterations": 8,
+      "real_time": 8.8754416312500005e+04,
+      "cpu_time": 8.7198747187500208e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/2/manual_time_stddev",
+      "iterations": 8,
+      "real_time": 2.8953860423196093e+03,
+      "cpu_time": 2.1407914952955475e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/10000/10000/10/1/1/3/manual_time",
+      "iterations": 496,
+      "real_time": 1.3609040947580661e+03,
+      "cpu_time": 1.4367550624999722e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/10000/10000/10/1/1/3/manual_time",
+      "iterations": 496,
+      "real_time": 1.4175809415322587e+03,
+      "cpu_time": 1.4985266088709823e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/10000/10000/10/1/1/3/manual_time",
+      "iterations": 496,
+      "real_time": 1.4070628387096765e+03,
+      "cpu_time": 1.4863988588709688e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/10000/10000/10/1/1/3/manual_time",
+      "iterations": 496,
+      "real_time": 1.3958267923387100e+03,
+      "cpu_time": 1.4719589173387524e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/10000/10000/10/1/1/3/manual_time",
+      "iterations": 496,
+      "real_time": 1.3847899032258060e+03,
+      "cpu_time": 1.4604330483870804e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/10000/10000/10/1/1/3/manual_time",
+      "iterations": 496,
+      "real_time": 1.3891187681451622e+03,
+      "cpu_time": 1.4677302036290030e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/10000/10000/10/1/1/3/manual_time",
+      "iterations": 496,
+      "real_time": 1.3600163649193560e+03,
+      "cpu_time": 1.4345228790322869e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/10000/10000/10/1/1/3/manual_time",
+      "iterations": 496,
+      "real_time": 1.3956962459677400e+03,
+      "cpu_time": 1.4564390423386947e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/10000/10000/10/1/1/3/manual_time",
+      "iterations": 496,
+      "real_time": 1.3871618286290302e+03,
+      "cpu_time": 1.4640875342742049e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/10000/10000/10/1/1/3/manual_time",
+      "iterations": 496,
+      "real_time": 1.3932286754032259e+03,
+      "cpu_time": 1.4710083346774500e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/10000/10000/10/1/1/3/manual_time_mean",
+      "iterations": 496,
+      "real_time": 1.3891386453629032e+03,
+      "cpu_time": 1.4647860489919397e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/10000/10000/10/1/1/3/manual_time_median",
+      "iterations": 496,
+      "real_time": 1.3911737217741943e+03,
+      "cpu_time": 1.4659088689516038e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/10000/10000/10/1/1/3/manual_time_stddev",
+      "iterations": 496,
+      "real_time": 1.7959273443847096e+01,
+      "cpu_time": 1.9706396521260906e+01,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/100000/100000/10/1/1/3/manual_time",
+      "iterations": 51,
+      "real_time": 1.4058901686274510e+04,
+      "cpu_time": 1.3562488392157025e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/100000/100000/10/1/1/3/manual_time",
+      "iterations": 51,
+      "real_time": 1.4543679588235294e+04,
+      "cpu_time": 1.3516175980391703e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/100000/100000/10/1/1/3/manual_time",
+      "iterations": 51,
+      "real_time": 1.3816800490196079e+04,
+      "cpu_time": 1.3188578254902735e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/100000/100000/10/1/1/3/manual_time",
+      "iterations": 51,
+      "real_time": 1.4104058803921573e+04,
+      "cpu_time": 1.3208117156862090e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/100000/100000/10/1/1/3/manual_time",
+      "iterations": 51,
+      "real_time": 1.3888022039215695e+04,
+      "cpu_time": 1.3109997882353064e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/100000/100000/10/1/1/3/manual_time",
+      "iterations": 51,
+      "real_time": 1.4235960784313729e+04,
+      "cpu_time": 1.3288663431372546e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/100000/100000/10/1/1/3/manual_time",
+      "iterations": 51,
+      "real_time": 1.4131715235294119e+04,
+      "cpu_time": 1.3552593450980361e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/100000/100000/10/1/1/3/manual_time",
+      "iterations": 51,
+      "real_time": 1.4299896137254900e+04,
+      "cpu_time": 1.3603649313725942e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/100000/100000/10/1/1/3/manual_time",
+      "iterations": 51,
+      "real_time": 1.4286269627450980e+04,
+      "cpu_time": 1.3728347882352178e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/100000/100000/10/1/1/3/manual_time",
+      "iterations": 51,
+      "real_time": 1.6681973392156866e+04,
+      "cpu_time": 1.5810855607842803e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/100000/100000/10/1/1/3/manual_time_mean",
+      "iterations": 51,
+      "real_time": 1.4404727778431377e+04,
+      "cpu_time": 1.3656946735294046e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/100000/100000/10/1/1/3/manual_time_median",
+      "iterations": 51,
+      "real_time": 1.4183838009803923e+04,
+      "cpu_time": 1.3534384715686032e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/100000/100000/10/1/1/3/manual_time_stddev",
+      "iterations": 51,
+      "real_time": 8.2703192062926473e+02,
+      "cpu_time": 7.8475001155654900e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/1/3/manual_time",
+      "iterations": 3,
+      "real_time": 2.9893658366666670e+05,
+      "cpu_time": 2.9650393366667535e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/1/3/manual_time",
+      "iterations": 3,
+      "real_time": 2.9678604033333337e+05,
+      "cpu_time": 2.9209013199999841e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/1/3/manual_time",
+      "iterations": 3,
+      "real_time": 3.0042038733333332e+05,
+      "cpu_time": 2.9875238400001079e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/1/3/manual_time",
+      "iterations": 3,
+      "real_time": 2.9934422133333329e+05,
+      "cpu_time": 2.9918876733332430e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/1/3/manual_time",
+      "iterations": 3,
+      "real_time": 3.0085333633333334e+05,
+      "cpu_time": 2.9847675999999029e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/1/3/manual_time",
+      "iterations": 3,
+      "real_time": 3.0004337300000002e+05,
+      "cpu_time": 2.9668616266667412e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/1/3/manual_time",
+      "iterations": 3,
+      "real_time": 3.1300034299999999e+05,
+      "cpu_time": 3.1229870599999762e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/1/3/manual_time",
+      "iterations": 3,
+      "real_time": 7.2074025199999998e+05,
+      "cpu_time": 7.1992190199999104e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/1/3/manual_time",
+      "iterations": 3,
+      "real_time": 8.2693324500000011e+05,
+      "cpu_time": 8.2617889066665387e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/1/3/manual_time",
+      "iterations": 3,
+      "real_time": 8.2932179900000000e+05,
+      "cpu_time": 8.2799674666667508e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/1/3/manual_time_mean",
+      "iterations": 3,
+      "real_time": 4.4863795809999993e+05,
+      "cpu_time": 4.4680943849999917e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/1/3/manual_time_median",
+      "iterations": 3,
+      "real_time": 3.0063686183333333e+05,
+      "cpu_time": 2.9897057566666754e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_knn_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/1/3/manual_time_stddev",
+      "iterations": 3,
+      "real_time": 2.3900533501691170e+05,
+      "cpu_time": 2.3960398902475508e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/0/2/manual_time",
+      "iterations": 139,
+      "real_time": 5.0188115035971223e+03,
+      "cpu_time": 5.1007287266189096e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/0/2/manual_time",
+      "iterations": 139,
+      "real_time": 5.0250721798561135e+03,
+      "cpu_time": 5.1013807985610720e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/0/2/manual_time",
+      "iterations": 139,
+      "real_time": 2.5562192230215828e+03,
+      "cpu_time": 2.6391488633096174e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/0/2/manual_time",
+      "iterations": 139,
+      "real_time": 9.5164666906474815e+02,
+      "cpu_time": 1.0298872805755009e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/0/2/manual_time",
+      "iterations": 139,
+      "real_time": 9.1058964748201447e+02,
+      "cpu_time": 9.8528397122311901e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/0/2/manual_time",
+      "iterations": 139,
+      "real_time": 9.3038444604316555e+02,
+      "cpu_time": 1.0052037841724217e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/0/2/manual_time",
+      "iterations": 139,
+      "real_time": 8.9428205755395686e+02,
+      "cpu_time": 9.6939589208662790e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/0/2/manual_time",
+      "iterations": 139,
+      "real_time": 8.9580852517985647e+02,
+      "cpu_time": 9.7069257553967748e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/0/2/manual_time",
+      "iterations": 139,
+      "real_time": 8.9431546762589915e+02,
+      "cpu_time": 9.6930107913693837e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/0/2/manual_time",
+      "iterations": 139,
+      "real_time": 9.0231571942446010e+02,
+      "cpu_time": 9.7729656834526850e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/0/2/manual_time_mean",
+      "iterations": 139,
+      "real_time": 1.8979445438848920e+03,
+      "cpu_time": 1.9748319539569152e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/0/2/manual_time_median",
+      "iterations": 139,
+      "real_time": 9.2048704676259001e+02,
+      "cpu_time": 9.9524387769777036e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/0/2/manual_time_stddev",
+      "iterations": 139,
+      "real_time": 1.7246174568617043e+03,
+      "cpu_time": 1.7264454958791052e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/0/2/manual_time",
+      "iterations": 99,
+      "real_time": 9.4603066767676755e+03,
+      "cpu_time": 8.5637345858585977e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/0/2/manual_time",
+      "iterations": 99,
+      "real_time": 9.4845899090909115e+03,
+      "cpu_time": 8.8335474343433252e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/0/2/manual_time",
+      "iterations": 99,
+      "real_time": 9.4961601111111195e+03,
+      "cpu_time": 8.6312320404040947e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/0/2/manual_time",
+      "iterations": 99,
+      "real_time": 9.3801799191919217e+03,
+      "cpu_time": 8.6611770707074338e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/0/2/manual_time",
+      "iterations": 99,
+      "real_time": 1.0027212545454544e+04,
+      "cpu_time": 9.1543983131312489e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/0/2/manual_time",
+      "iterations": 99,
+      "real_time": 1.1356498737373740e+04,
+      "cpu_time": 9.3464149999995880e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/0/2/manual_time",
+      "iterations": 99,
+      "real_time": 1.3354108333333330e+04,
+      "cpu_time": 1.0860326363636645e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/0/2/manual_time",
+      "iterations": 99,
+      "real_time": 1.3336360424242430e+04,
+      "cpu_time": 1.0444296292929046e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/0/2/manual_time",
+      "iterations": 99,
+      "real_time": 1.2836393282828280e+04,
+      "cpu_time": 1.0170543060605678e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/0/2/manual_time",
+      "iterations": 99,
+      "real_time": 1.3034593545454538e+04,
+      "cpu_time": 1.0595446777777723e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/0/2/manual_time_mean",
+      "iterations": 99,
+      "real_time": 1.1176640348484847e+04,
+      "cpu_time": 9.5261116939393396e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/0/2/manual_time_median",
+      "iterations": 99,
+      "real_time": 1.0691855641414140e+04,
+      "cpu_time": 9.2504066565654193e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/0/2/manual_time_stddev",
+      "iterations": 99,
+      "real_time": 1.7896672780354559e+03,
+      "cpu_time": 9.0105858968568555e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/0/2/manual_time",
+      "iterations": 8,
+      "real_time": 1.6404385350000000e+05,
+      "cpu_time": 1.6282328212500375e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/0/2/manual_time",
+      "iterations": 8,
+      "real_time": 1.7502516775000002e+05,
+      "cpu_time": 1.7340766075000147e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/0/2/manual_time",
+      "iterations": 8,
+      "real_time": 1.7470817850000001e+05,
+      "cpu_time": 1.7483026525000157e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/0/2/manual_time",
+      "iterations": 8,
+      "real_time": 1.7341436487499997e+05,
+      "cpu_time": 1.7339787825000030e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/0/2/manual_time",
+      "iterations": 8,
+      "real_time": 1.7787236150000003e+05,
+      "cpu_time": 1.7795323662500095e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/0/2/manual_time",
+      "iterations": 8,
+      "real_time": 1.7779186300000001e+05,
+      "cpu_time": 1.7769922200000111e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/0/2/manual_time",
+      "iterations": 8,
+      "real_time": 1.7419934587500000e+05,
+      "cpu_time": 1.7458194687500139e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/0/2/manual_time",
+      "iterations": 8,
+      "real_time": 1.7816163762500003e+05,
+      "cpu_time": 1.7749286875000081e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/0/2/manual_time",
+      "iterations": 8,
+      "real_time": 1.7391463237500002e+05,
+      "cpu_time": 1.7387522712500213e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/0/2/manual_time",
+      "iterations": 8,
+      "real_time": 1.7719568849999999e+05,
+      "cpu_time": 1.7745755087500470e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/0/2/manual_time_mean",
+      "iterations": 8,
+      "real_time": 1.7463270935000002e+05,
+      "cpu_time": 1.7435191386250182e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/0/2/manual_time_median",
+      "iterations": 8,
+      "real_time": 1.7486667312500000e+05,
+      "cpu_time": 1.7470610606250147e+05,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/0/2/manual_time_stddev",
+      "iterations": 8,
+      "real_time": 4.1361439883919256e+03,
+      "cpu_time": 4.4585085869287741e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/1/3/manual_time",
+      "iterations": 818,
+      "real_time": 8.7244053789731004e+02,
+      "cpu_time": 9.4827902811730962e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/1/3/manual_time",
+      "iterations": 818,
+      "real_time": 8.7805052200489115e+02,
+      "cpu_time": 9.5355212958434208e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/1/3/manual_time",
+      "iterations": 818,
+      "real_time": 9.0726184596576957e+02,
+      "cpu_time": 9.8322705012224162e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/1/3/manual_time",
+      "iterations": 818,
+      "real_time": 9.6388266381418032e+02,
+      "cpu_time": 1.0408004474327533e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/1/3/manual_time",
+      "iterations": 818,
+      "real_time": 9.6919196821515891e+02,
+      "cpu_time": 1.0456727029339793e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/1/3/manual_time",
+      "iterations": 818,
+      "real_time": 9.0129571026894848e+02,
+      "cpu_time": 9.7759730929097009e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/1/3/manual_time",
+      "iterations": 818,
+      "real_time": 9.5693486797066078e+02,
+      "cpu_time": 1.0329248826406169e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/1/3/manual_time",
+      "iterations": 818,
+      "real_time": 9.0473710757946117e+02,
+      "cpu_time": 9.8097638753052570e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/1/3/manual_time",
+      "iterations": 818,
+      "real_time": 9.5780443154034117e+02,
+      "cpu_time": 1.0341711454767556e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/1/3/manual_time",
+      "iterations": 818,
+      "real_time": 9.0290387652811683e+02,
+      "cpu_time": 9.7896780806844561e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/1/3/manual_time_mean",
+      "iterations": 818,
+      "real_time": 9.2145035317848385e+02,
+      "cpu_time": 9.9761688911979411e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/1/3/manual_time_median",
+      "iterations": 818,
+      "real_time": 9.0599947677261537e+02,
+      "cpu_time": 9.8210171882638372e+02,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/10000/10000/10/1/0/1/3/manual_time_stddev",
+      "iterations": 818,
+      "real_time": 3.6782948461804750e+01,
+      "cpu_time": 3.7066789771236955e+01,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/1/3/manual_time",
+      "iterations": 268,
+      "real_time": 3.0410414141791052e+03,
+      "cpu_time": 2.7273568507461932e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/1/3/manual_time",
+      "iterations": 268,
+      "real_time": 3.3175859738805962e+03,
+      "cpu_time": 2.8227649328360076e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/1/3/manual_time",
+      "iterations": 268,
+      "real_time": 3.0329522164179102e+03,
+      "cpu_time": 2.7063594738805605e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/1/3/manual_time",
+      "iterations": 268,
+      "real_time": 3.0498210485074633e+03,
+      "cpu_time": 2.7464466641791869e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/1/3/manual_time",
+      "iterations": 268,
+      "real_time": 3.2158121119403013e+03,
+      "cpu_time": 2.7721257089553715e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/1/3/manual_time",
+      "iterations": 268,
+      "real_time": 2.9104942425373138e+03,
+      "cpu_time": 2.6576040932834549e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/1/3/manual_time",
+      "iterations": 268,
+      "real_time": 2.9211759888059701e+03,
+      "cpu_time": 2.6543702126866465e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/1/3/manual_time",
+      "iterations": 268,
+      "real_time": 2.8874189925373130e+03,
+      "cpu_time": 2.6693422052237261e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/1/3/manual_time",
+      "iterations": 268,
+      "real_time": 3.1042027499999990e+03,
+      "cpu_time": 2.6647635671641201e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/1/3/manual_time",
+      "iterations": 268,
+      "real_time": 2.9779136641791019e+03,
+      "cpu_time": 2.6580512686567754e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/1/3/manual_time_mean",
+      "iterations": 268,
+      "real_time": 3.0458418402985076e+03,
+      "cpu_time": 2.7079184977612044e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/1/3/manual_time_median",
+      "iterations": 268,
+      "real_time": 3.0369968152985075e+03,
+      "cpu_time": 2.6878508395521435e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/100000/100000/10/1/0/1/3/manual_time_stddev",
+      "iterations": 268,
+      "real_time": 1.3740385175899584e+02,
+      "cpu_time": 5.8131217851582534e+01,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/1/3/manual_time",
+      "iterations": 40,
+      "real_time": 2.3394999974999992e+04,
+      "cpu_time": 1.8402107699999702e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/1/3/manual_time",
+      "iterations": 40,
+      "real_time": 2.2632423075000006e+04,
+      "cpu_time": 2.0644152750000445e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/1/3/manual_time",
+      "iterations": 40,
+      "real_time": 9.9151491000000005e+03,
+      "cpu_time": 8.4747629000005982e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/1/3/manual_time",
+      "iterations": 40,
+      "real_time": 9.6289755249999998e+03,
+      "cpu_time": 8.6138183749994823e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/1/3/manual_time",
+      "iterations": 40,
+      "real_time": 9.0925831999999991e+03,
+      "cpu_time": 8.3898130249991700e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/1/3/manual_time",
+      "iterations": 40,
+      "real_time": 1.0033381550000002e+04,
+      "cpu_time": 8.5011307249999390e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/1/3/manual_time",
+      "iterations": 40,
+      "real_time": 9.6747327249999980e+03,
+      "cpu_time": 8.3463360750002375e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/1/3/manual_time",
+      "iterations": 40,
+      "real_time": 9.7796175750000039e+03,
+      "cpu_time": 8.6830141500001901e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/1/3/manual_time",
+      "iterations": 40,
+      "real_time": 9.2413212500000027e+03,
+      "cpu_time": 8.4485853499998593e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/1/3/manual_time",
+      "iterations": 40,
+      "real_time": 9.6637927499999987e+03,
+      "cpu_time": 8.5177193749998987e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/1/3/manual_time_mean",
+      "iterations": 40,
+      "real_time": 1.2305697672500002e+04,
+      "cpu_time": 1.0702144042499953e+04,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/1/3/manual_time_median",
+      "iterations": 40,
+      "real_time": 9.7271751499999991e+03,
+      "cpu_time": 8.5094250499999198e+03,
+      "time_unit": "us"
+    },
+    {
+      "name": "BM_radius_search<ArborX::BVH<Cuda>>/1000000/1000000/10/1/0/1/3/manual_time_stddev",
+      "iterations": 40,
+      "real_time": 5.6534561100415367e+03,
+      "cpu_time": 4.6800237093854648e+03,
+      "time_unit": "us"
+    }
+  ]
+}
