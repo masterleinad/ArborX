@@ -61,6 +61,8 @@ pipeline {
                         }
                         success {
                             sh 'cd build && make install'
+                            sh './benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe --benchmark_format=json --no-header --benchmark_repetitions=10 &> arborx.json'
+                            sh './compare_bench.py benchmarks ../reference.json arborx.json'
                             sh 'rm -rf test_install && mkdir -p test_install'
                             dir('test_install') {
                                 sh 'cp -r ../examples .'
