@@ -102,10 +102,12 @@ makeSpatialQueries(int n_values, int n_queries, int n_neighbors,
 
   Kokkos::View<decltype(ArborX::intersects(ArborX::Sphere{})) *, DeviceType>
       queries(Kokkos::ViewAllocateWithoutInitializing("queries"), n_queries);
-  // Radius is computed so that the number of results per query for a uniformly
-  // distributed points in a [-a,a]^3 box is approximately n_neighbors.
-  // Calculation: n_values*(4/3*M_PI*r^3)/(2a)^3 = n_neighbors
-  double const r = std::cbrt(static_cast<double>(n_neighbors) * 6. / M_PI);
+  // radius chosen in order to control the number of results per query
+  // NOTE: minus "1+sqrt(3)/2 \approx 1.37" matches the size of the boxes
+  // inserted into the tree (mid-point between half-edge and half-diagonal)
+  double const r =
+      2. * std::cbrt(static_cast<double>(n_neighbors) * 3. / (4. * M_PI));
+
   using ExecutionSpace = typename DeviceType::execution_space;
   Kokkos::parallel_for(
       "bvh_driver:setup_radius_search_queries",
@@ -208,17 +210,30 @@ public:
 
 #define REGISTER_BENCHMARK(TreeType)                                           \
   BENCHMARK_TEMPLATE(BM_construction, TreeType)                                \
-      ->Args({n_values, source_point_cloud_type})                              \
+      ->Args({(int)1e4, 0})                                                    \
+      ->Args({(int)1e5, 0})                                                    \
+      ->Args({(int)1e6, 0})                                                    \
+      ->Args({(int)1e4, 1})                                                    \
+      ->Args({(int)1e5, 1})                                                    \
+      ->Args({(int)1e6, 1})                                                    \
       ->UseManualTime()                                                        \
       ->Unit(benchmark::kMicrosecond);                                         \
   BENCHMARK_TEMPLATE(BM_knn_search, TreeType)                                  \
-      ->Args({n_values, n_queries, n_neighbors, sort_predicates_int,           \
-              source_point_cloud_type, target_point_cloud_type})               \
+      ->Args({(int)1e4, (int)1e4, 10, 1, 0, 2})                                \
+      ->Args({(int)1e5, (int)1e5, 10, 1, 0, 2})                                \
+      ->Args({(int)1e6, (int)1e6, 10, 1, 0, 2})                                \
+      ->Args({(int)1e4, (int)1e4, 10, 1, 1, 3})                                \
+      ->Args({(int)1e5, (int)1e5, 10, 1, 1, 3})                                \
+      ->Args({(int)1e6, (int)1e6, 10, 1, 1, 3})                                \
       ->UseManualTime()                                                        \
       ->Unit(benchmark::kMicrosecond);                                         \
   BENCHMARK_TEMPLATE(BM_radius_search, TreeType)                               \
-      ->Args({n_values, n_queries, n_neighbors, sort_predicates_int,           \
-              buffer_size, source_point_cloud_type, target_point_cloud_type})  \
+      ->Args({(int)1e4, (int)1e4, 10, 1, 0, 0, 2})                             \
+      ->Args({(int)1e5, (int)1e5, 10, 1, 0, 0, 2})                             \
+      ->Args({(int)1e6, (int)1e6, 10, 1, 0, 0, 2})                             \
+      ->Args({(int)1e4, (int)1e4, 10, 1, 0, 1, 3})                             \
+      ->Args({(int)1e5, (int)1e5, 10, 1, 0, 1, 3})                             \
+      ->Args({(int)1e6, (int)1e6, 10, 1, 0, 1, 3})                             \
       ->UseManualTime()                                                        \
       ->Unit(benchmark::kMicrosecond);
 
@@ -255,7 +270,7 @@ public:
 
   ~CmdLineArgs()
   {
-    for (auto *p : _owner_ptrs)
+    for (auto p : _owner_ptrs)
     {
       delete[] p;
     }
@@ -357,10 +372,6 @@ int main(int argc, char *argv[])
 #ifdef KOKKOS_ENABLE_CUDA
   using Cuda = Kokkos::Cuda::device_type;
   REGISTER_BENCHMARK(ArborX::BVH<Cuda>);
-#endif
-
-#if defined(KOKKOS_ENABLE_SERIAL)
-  REGISTER_BENCHMARK(BoostRTree);
 #endif
 
   benchmark::RunSpecifiedBenchmarks();
