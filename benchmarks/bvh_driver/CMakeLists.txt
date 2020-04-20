@@ -16,4 +16,4 @@ add_test(NAME ArborX_BoundingVolumeHierarchy_Benchmark COMMAND ./ArborX_Bounding
 add_executable(ArborX_BoundingVolumeHierarchyRegression.exe bvh_driver_regression.cpp)
 target_link_libraries(ArborX_BoundingVolumeHierarchyRegression.exe ${ArborX_TARGET} benchmark::benchmark Boost::program_options Threads::Threads)
 target_include_directories(ArborX_BoundingVolumeHierarchyRegression.exe PRIVATE ${POINT_CLOUDS_INCLUDE_DIR} ${UNIT_TESTS_INCLUDE_DIR})
-add_test(NAME ArborX_BoundingVolumeHierarchyRegression_Benchmark COMMAND ./ArborX_BoundingVolumeHierarchyRegression.exe --buffer=0 --benchmark_color=true)
+#add_test(NAME ArborX_BoundingVolumeHierarchyRegression_Benchmark COMMAND ./ArborX_BoundingVolumeHierarchyRegression.exe --buffer=0 --benchmark_color=true)
