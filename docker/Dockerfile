@@ -19,6 +19,7 @@ RUN apt-get update && apt-get install -y \
         libicu-dev \
         python-dev \
         autotools-dev \
+        python \
         && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
