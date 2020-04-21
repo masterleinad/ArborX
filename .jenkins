@@ -63,7 +63,7 @@ pipeline {
                             sh 'cd build && make install'
                             sh 'pip install scipy'
                             sh './benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe --benchmark_format=json --no-header --benchmark_repetitions=10 &> arborx.json'
-                            sh '../tools/compare.py benchmarks ../reference.json arborx.json'
+                            sh '../benchmarks/tools/compare.py benchmarks ../reference.json arborx.json'
                             sh 'rm -rf test_install && mkdir -p test_install'
                             dir('test_install') {
                                 sh 'cp -r ../examples .'
