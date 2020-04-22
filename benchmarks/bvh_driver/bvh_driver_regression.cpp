@@ -360,13 +360,13 @@ int main(int argc, char *argv[])
   int target_point_cloud_type = to_point_cloud_enum.at(target_pt_cloud);
 
 #ifdef KOKKOS_ENABLE_SERIAL
-  using Serial = Kokkos::Serial::device_type;
-  REGISTER_BENCHMARK(ArborX::BVH<Serial>);
+//  using Serial = Kokkos::Serial::device_type;
+//  REGISTER_BENCHMARK(ArborX::BVH<Serial>);
 #endif
 
 #ifdef KOKKOS_ENABLE_OPENMP
-  using OpenMP = Kokkos::OpenMP::device_type;
-  REGISTER_BENCHMARK(ArborX::BVH<OpenMP>);
+//  using OpenMP = Kokkos::OpenMP::device_type;
+//  REGISTER_BENCHMARK(ArborX::BVH<OpenMP>);
 #endif
 
 #ifdef KOKKOS_ENABLE_CUDA
