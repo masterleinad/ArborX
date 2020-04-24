@@ -13,7 +13,7 @@
 
 #include <ArborX_Exception.hpp>
 #include <ArborX_Macros.hpp>
-#include <ArborX_Traits.hpp>
+#include <ArborX_AccessTraits.hpp>
 
 #include <Kokkos_Core.hpp>
 
