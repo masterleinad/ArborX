@@ -208,32 +208,32 @@ public:
   ~KokkosScopeGuard() { Kokkos::finalize(); }
 };
 
-#define REGISTER_BENCHMARK(TreeType)                                           \
+#define REGISTER_BENCHMARK(TreeType, r1, r2, r3)                               \
   BENCHMARK_TEMPLATE(BM_construction, TreeType)                                \
-      ->Args({(int)1e4, 0})                                                    \
-      ->Args({(int)1e5, 0})                                                    \
-      ->Args({(int)1e6, 0})                                                    \
-      ->Args({(int)1e4, 1})                                                    \
-      ->Args({(int)1e5, 1})                                                    \
-      ->Args({(int)1e6, 1})                                                    \
+      ->Args({(int)r1, 0})                                                     \
+      ->Args({(int)r2, 0})                                                     \
+      ->Args({(int)r3, 0})                                                     \
+      ->Args({(int)r1, 1})                                                     \
+      ->Args({(int)r2, 1})                                                     \
+      ->Args({(int)r3, 1})                                                     \
       ->UseManualTime()                                                        \
       ->Unit(benchmark::kMicrosecond);                                         \
   BENCHMARK_TEMPLATE(BM_knn_search, TreeType)                                  \
-      ->Args({(int)1e4, (int)1e4, 10, 1, 0, 2})                                \
-      ->Args({(int)1e5, (int)1e5, 10, 1, 0, 2})                                \
-      ->Args({(int)1e6, (int)1e6, 10, 1, 0, 2})                                \
-      ->Args({(int)1e4, (int)1e4, 10, 1, 1, 3})                                \
-      ->Args({(int)1e5, (int)1e5, 10, 1, 1, 3})                                \
-      ->Args({(int)1e6, (int)1e6, 10, 1, 1, 3})                                \
+      ->Args({(int)r1, (int)r1, 10, 1, 0, 2})                                  \
+      ->Args({(int)r2, (int)r2, 10, 1, 0, 2})                                  \
+      ->Args({(int)r3, (int)r3, 10, 1, 0, 2})                                  \
+      ->Args({(int)r1, (int)r1, 10, 1, 1, 3})                                  \
+      ->Args({(int)r2, (int)r2, 10, 1, 1, 3})                                  \
+      ->Args({(int)r3, (int)r3, 10, 1, 1, 3})                                  \
       ->UseManualTime()                                                        \
       ->Unit(benchmark::kMicrosecond);                                         \
   BENCHMARK_TEMPLATE(BM_radius_search, TreeType)                               \
-      ->Args({(int)1e4, (int)1e4, 10, 1, 0, 0, 2})                             \
-      ->Args({(int)1e5, (int)1e5, 10, 1, 0, 0, 2})                             \
-      ->Args({(int)1e6, (int)1e6, 10, 1, 0, 0, 2})                             \
-      ->Args({(int)1e4, (int)1e4, 10, 1, 0, 1, 3})                             \
-      ->Args({(int)1e5, (int)1e5, 10, 1, 0, 1, 3})                             \
-      ->Args({(int)1e6, (int)1e6, 10, 1, 0, 1, 3})                             \
+      ->Args({(int)r1, (int)r1, 10, 1, 0, 0, 2})                               \
+      ->Args({(int)r2, (int)r2, 10, 1, 0, 0, 2})                               \
+      ->Args({(int)r3, (int)r3, 10, 1, 0, 0, 2})                               \
+      ->Args({(int)r1, (int)r1, 10, 1, 0, 1, 3})                               \
+      ->Args({(int)r2, (int)r2, 10, 1, 0, 1, 3})                               \
+      ->Args({(int)r3, (int)r3, 10, 1, 0, 1, 3})                               \
       ->UseManualTime()                                                        \
       ->Unit(benchmark::kMicrosecond);
 
@@ -360,18 +360,18 @@ int main(int argc, char *argv[])
   int target_point_cloud_type = to_point_cloud_enum.at(target_pt_cloud);
 
 #ifdef KOKKOS_ENABLE_SERIAL
-//  using Serial = Kokkos::Serial::device_type;
-//  REGISTER_BENCHMARK(ArborX::BVH<Serial>);
+  using Serial = Kokkos::Serial::device_type;
+  REGISTER_BENCHMARK(ArborX::BVH<Serial>, 1e3, 1e4, 1e5);
 #endif
 
 #ifdef KOKKOS_ENABLE_OPENMP
-//  using OpenMP = Kokkos::OpenMP::device_type;
-//  REGISTER_BENCHMARK(ArborX::BVH<OpenMP>);
+  using OpenMP = Kokkos::OpenMP::device_type;
+  REGISTER_BENCHMARK(ArborX::BVH<OpenMP>, 1e3, 1e4, 1e5);
 #endif
 
 #ifdef KOKKOS_ENABLE_CUDA
   using Cuda = Kokkos::Cuda::device_type;
-  REGISTER_BENCHMARK(ArborX::BVH<Cuda>);
+  REGISTER_BENCHMARK(ArborX::BVH<Cuda>, 1e4, 1e5, 1e6);
 #endif
 
   benchmark::RunSpecifiedBenchmarks();
