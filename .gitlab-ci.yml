@@ -81,7 +81,7 @@ BuildArborX:
     - module load cmake
     - ls  
     - mkdir build && cd build &&
-      cmake -DCMAKE_PREFIX_PATH=${CI_PROJECT_DIR}/kokkos.install;${CI_PROJECT_DIR}/benchmark.install;${CI_PROJECT_DIR}/boost.install -DARBORX_ENABLE_BENCHMARKS=ON -DCMAKE_CXX_COMPILER=${CI_PROJECT_DIR}/kokkos/bin/nvcc_wrapper .. &&
+      cmake -DCMAKE_PREFIX_PATH="${CI_PROJECT_DIR}/kokkos.install;${CI_PROJECT_DIR}/benchmark.install;${CI_PROJECT_DIR}/boost.install" -DARBORX_ENABLE_BENCHMARKS=ON -DCMAKE_CXX_COMPILER=${CI_PROJECT_DIR}/kokkos/bin/nvcc_wrapper .. &&
       make -j VERBOSE=1 
     - OMP_PROC_BIND=spread OMP_PLACES=threads ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe --benchmark_format=json --no-header --benchmark_repetitions=1 | tee arborx.json
   tags:
