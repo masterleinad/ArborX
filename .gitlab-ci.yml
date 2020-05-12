@@ -16,6 +16,7 @@ BuildKokkos:
   script:
     - module load cmake
     - git clone --depth=1 --branch 3.1.00 https://github.com/kokkos/kokkos.git &&
+      cd kokkos
       mkdir build &&
       cd build &&
       cmake -DCMAKE_INSTALL_PREFIX=${CI_PROJECT_DIR}/kokkos.install -DCMAKE_CXX_COMPILER=${CI_PROJECT_DIR}/kokkos/bin/nvcc_wrapper -DCMAKE_CXX_EXTENSIONS=OFF -DKokkos_ENABLE_SERIAL=ON -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_CUDA=ON -DKokkos_ENABLE_CUDA_LAMBDA=ON -DKokkos_ARCH_SNB=ON -DKokkos_ARCH_VOLTA70=ON .. &&
