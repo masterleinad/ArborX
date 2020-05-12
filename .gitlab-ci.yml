@@ -77,7 +77,7 @@ BuildArborX:
   stage: build
   before_script:
     - module load gcc/6.4.0
-      module load cuda
+    - module load cuda
   script:
     - module load cmake
     - ls  
