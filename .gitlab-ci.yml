@@ -4,13 +4,11 @@ variables:
   SCHEDULER_PARAMETERS: "-J ArborX_CI -W 0:05 -nnodes 1 -P CSC333"
 
 stages:
-  - buildBoost
-  - buildBenchmark
-  - buildKokkos
+  - buildDependencies
   - build
 
 BuildBoost:
-  stage: buildBoost
+  stage: buildDependencies
   before_script:
     - module load gcc/6.4.0
     - module load git
@@ -36,7 +34,7 @@ BuildBoost:
       - boost.install/
 
 BuildBenchmark:
-  stage: buildBenchmark
+  stage: buildDependencies
   before_script:
     - module load gcc/6.4.0
     - module load git
@@ -55,7 +53,7 @@ BuildBenchmark:
       - benchmark.install/
 
 BuildKokkos:
-  stage: buildKokkos
+  stage: buildDependencies
   before_script:
     - module load gcc/6.4.0
     - module load cuda  
