@@ -80,7 +80,7 @@ BuildArborX:
   before_script:
     - module load gcc/6.4.0
   script:
-    - module load cmaike
+    - module load cmake
     - ls  
     - mkdir build && cd build &&
       cmake -DCMAKE_PREFIX_PATH=${CI_PROJECT_DIR}/kokkos.install;${CI_PROJECT_DIR}/benchmark.install;${CI_PROJECT_DIR}/boost.install -DARBORX_ENABLE_BENCHMARKS=ON -DCMAKE_CXX_COMPILER=${CI_PROJECT_DIR}/kokkos/bin/nvcc_wrapper .. &&
