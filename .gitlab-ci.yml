@@ -4,8 +4,59 @@ variables:
   SCHEDULER_PARAMETERS: "-J ArborX_CI -W 0:05 -nnodes 1 -P CSC333"
 
 stages:
+  - buildBoost
+  - buildBenchmark
   - buildKokkos
   - build
+
+BuildBoost:
+  stage: buildBoost
+  before_script:
+    - module load gcc/6.4.0
+    - module load git
+  script:
+    - module load cmake
+    - BOOST_VERSION=1.67.0 &&
+      BOOST_VERSION_UNDERSCORE=$(echo "$BOOST_VERSION" | sed -e "s/\./_/g") &&
+      BOOST_KEY=379CE192D401AB61 &&
+      BOOST_URL=https://dl.bintray.com/boostorg/release/${BOOST_VERSION}/source &&
+      BOOST_ARCHIVE=boost_${BOOST_VERSION_UNDERSCORE}.tar.bz2 &&
+      wget --quiet ${BOOST_URL}/${BOOST_ARCHIVE} &&
+      wget --quiet ${BOOST_URL}/${BOOST_ARCHIVE}.asc &&
+      wget --quiet ${BOOST_URL}/${BOOST_ARCHIVE}.json &&
+      wget --quiet ${BOOST_URL}/${BOOST_ARCHIVE}.json.asc &&
+      gpg --verify ${BOOST_ARCHIVE}.json.asc ${BOOST_ARCHIVE}.json &&
+      gpg --verify ${BOOST_ARCHIVE}.asc ${BOOST_ARCHIVE} &&
+      cat ${BOOST_ARCHIVE}.json | jq -r '. | .sha256 + "  " + .file' | sha256sum --check &&
+      mkdir -p boost &&
+      tar -xf ${BOOST_ARCHIVE} -C boost --strip-components=1 &&
+      cd boost &&
+      ./bootstrap.sh --prefix=${CI_PROJECT_DIR}/boost.install &&
+      ./b2 -j8 hardcode-dll-paths=true dll-path=${CI_PROJECT_DIR}/boost.install link=shared variant=release cxxflags=-w install 
+  tags:
+    - nobatch
+  artifacts:
+    paths:
+      - boost.install/
+
+BuildBenchmark:
+  stage: buildBenchmark
+  before_script:
+    - module load gcc/6.4.0
+    - module load git
+  script:
+    - module load cmake
+    - git clone https://github.com/google/benchmark.git -b v1.4.1 &&
+      cd benchmark &&
+      git clone https://github.com/google/googletest.git -b release-1.8.1 &&
+      mkdir build && cd build &&
+      cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$CI_PROJECT_DIR}/benchmark.install .. &&
+      make && make install
+  tags:
+    - nobatch
+  artifacts:
+    paths:
+      - benchmark.install/
 
 BuildKokkos:
   stage: buildKokkos
@@ -34,11 +85,10 @@ BuildArborX:
     - module load gcc/6.4.0
   script:
     - module load cmake
-    - for i in ${BACKENDS}; do CMAKE_OPTS+=( -DCabana_REQUIRE_${i}=ON ); done
-    - j="$(grep -c processor /proc/cpuinfo 2>/dev/null)" || j=0; ((j++))
     - mkdir build && cd build &&
-      cmake -DCMAKE_PREFIX_PATH=${CI_PROJECT_DIR}/kokkos.install -DARBORX_ENABLE_BENCHMARKS=ON -DCMAKE_CXX_COMPILER=${CI_PROJECT_DIR}/kokkos/bin/nvcc_wrapper .. &&
+      cmake -DCMAKE_PREFIX_PATH=${CI_PROJECT_DIR}/kokkos.install;${CI_PROJECT_DIR}/benchmark.install;${CI_PROJECT_DIR}/boost.install -DARBORX_ENABLE_BENCHMARKS=ON -DCMAKE_CXX_COMPILER=${CI_PROJECT_DIR}/kokkos/bin/nvcc_wrapper .. &&
       make -j VERBOSE=1 && OMP_PROC_BIND=spread OMP_PLACES=threads ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe --benchmark_format=json --no-header --benchmark_repetitions=30 | tee arborx.json
   tags:
-    - batch
+    - nobatch
+
 
