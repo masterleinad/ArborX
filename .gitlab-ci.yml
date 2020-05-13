@@ -64,7 +64,7 @@ BuildKokkos:
       cd kokkos &&
       mkdir build &&
       cd build &&
-      cmake -DCMAKE_INSTALL_PREFIX=${CI_PROJECT_DIR}/kokkos.install -DCMAKE_CXX_COMPILER=${CI_PROJECT_DIR}/kokkos/bin/nvcc_wrapper -DCMAKE_CXX_EXTENSIONS=OFF -DKokkos_ENABLE_SERIAL=ON -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_CUDA=OFF -DKokkos_ENABLE_CUDA_LAMBDA=OFF -DKokkos_ARCH_POWER9=ON -DKokkos_ARCH_VOLTA70=OFF .. &&
+      cmake -DCMAKE_INSTALL_PREFIX=${CI_PROJECT_DIR}/kokkos.install -DCMAKE_CXX_COMPILER=g++ -DCMAKE_CXX_EXTENSIONS=OFF -DKokkos_ENABLE_SERIAL=ON -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_CUDA=OFF -DKokkos_ENABLE_CUDA_LAMBDA=OFF -DKokkos_ARCH_POWER9=ON -DKokkos_ARCH_VOLTA70=OFF .. &&
       make &&
       make install
   tags:
@@ -82,7 +82,7 @@ BuildArborX:
     - module load cmake
     - ls  
     - mkdir build && cd build &&
-      cmake -DCMAKE_PREFIX_PATH="${CI_PROJECT_DIR}/kokkos.install;${CI_PROJECT_DIR}/benchmark.install;${CI_PROJECT_DIR}/boost.install" -DARBORX_ENABLE_TESTS=ON -DARBORX_ENABLE_BENCHMARKS=ON -DCMAKE_CXX_COMPILER=${CI_PROJECT_DIR}/kokkos.install/bin/nvcc_wrapper .. &&
+      cmake -DCMAKE_PREFIX_PATH="${CI_PROJECT_DIR}/kokkos.install;${CI_PROJECT_DIR}/benchmark.install;${CI_PROJECT_DIR}/boost.install" -DARBORX_ENABLE_TESTS=ON -DARBORX_ENABLE_BENCHMARKS=ON -DCMAKE_CXX_COMPILER=g++ .. &&
       make -j VERBOSE=1 
     - make test
     - ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe
