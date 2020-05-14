@@ -25,7 +25,7 @@ template <typename T, typename Tag>
 struct Access<std::vector<T>, Tag>
 {
   static std::size_t size(std::vector<T> const &v) { return v.size(); }
-  KOKKOS_FUNCTION static T const &get(std::vector<T> const &v, std::size_t i)
+  static T const &get(std::vector<T> const &v, std::size_t i)
   {
     return v[i];
   }

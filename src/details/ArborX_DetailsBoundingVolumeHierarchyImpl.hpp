@@ -102,7 +102,13 @@ struct BVHParallelTreeTraversal
   void launch(ExecutionSpace const &space, Predicates const predicates,
               InsertGenerator const &insert_generator) const
   {
-    traverse(space, _bvh, predicates, insert_generator);
+    static_assert(std::is_same<SpatialPredicateTag,
+                              typename Traits::Helper<Traits::Access<
+                                  Predicates, Traits::PredicatesTag>>::tag>::value || std::is_same<NearestPredicateTag,
+                              typename Traits::Helper<Traits::Access<
+                                  Predicates, Traits::PredicatesTag>>::tag>::value, "");
+    traverse(space, _bvh, predicates, insert_generator, typename Traits::Helper<Traits::Access<
+                                  Predicates, Traits::PredicatesTag>>::tag{});
   }
 };
 

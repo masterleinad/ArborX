@@ -29,7 +29,7 @@ template <typename BVH, typename Predicates, typename Callback,
           typename Enable = void>
 struct TreeTraversal;
 
-template <typename ExecutionSpace, typename BVH, typename Predicates,
+/*template <typename ExecutionSpace, typename BVH, typename Predicates,
           typename Callback>
 std::enable_if_t<std::is_same<SpatialPredicateTag,
                               typename Traits::Helper<Traits::Access<
@@ -38,9 +38,24 @@ traverse(ExecutionSpace const &space, BVH const &bvh,
          Predicates const &predicates, Callback const &callback)
 {
   TreeTraversal<BVH, Predicates, Callback>(space, bvh, predicates, callback);
-}
+}*/
 
 template <typename ExecutionSpace, typename BVH, typename Predicates,
+          typename Callback>
+void
+traverse(ExecutionSpace const &space, BVH const &bvh,
+         Predicates const &predicates, Callback const &callback, SpatialPredicateTag)
+{}
+
+
+template <typename ExecutionSpace, typename BVH, typename Predicates,
+          typename Callback>
+void
+traverse(ExecutionSpace const &space, BVH const &bvh,
+         Predicates const &predicates, Callback const &callback, NearestPredicateTag)
+{}
+
+/*template <typename ExecutionSpace, typename BVH, typename Predicates,
           typename Callback>
 std::enable_if_t<std::is_same<NearestPredicateTag,
                               typename Traits::Helper<Traits::Access<
@@ -82,7 +97,7 @@ traverse(ExecutionSpace const &space, BVH const &bvh,
 
   TreeTraversal<BVH, Predicates, std::tuple<Callback, BufferProvider>>(
       space, bvh, predicates, callback, BufferProvider{buffer, offset});
-}
+}*/
 
 template <typename BVH, typename Predicates, typename Callback>
 struct TreeTraversal<
