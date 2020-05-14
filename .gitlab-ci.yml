@@ -74,7 +74,7 @@ BuildKokkos:
     paths:
       - kokkos.install/
 
-.BuildArborX:
+BuildArborX:
   stage: buildArborX
   before_script:
     - module load gcc/7.4.0
@@ -107,7 +107,7 @@ BuildArborXMaster:
     - git branch
     - git fetch
     - git branch
-    - git worktree add ${CI_PROJECT_DIR}/arborx-master master-ci
+    - git worktree add -f ${CI_PROJECT_DIR}/arborx-master master-ci
     - cd ${CI_PROJECiT_DIR}/arborx-master
     - git log
     - mkdir build_master && cd build_master &&
