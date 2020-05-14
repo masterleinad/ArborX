@@ -6,6 +6,7 @@ variables:
 stages:
   - buildDependencies
   - buildArborX
+  - buildArborXMaster
 
 BuildBoost:
   stage: buildDependencies
@@ -89,8 +90,28 @@ BuildArborX:
     - ls ../benchmarks/tools/compare.py
     - ls ../reference.json
     - ls arborx.json
-    - sh '../benchmarks/tools/compare.py benchmarks ../reference.json arborx.json'
+    - ../benchmarks/tools/compare.py benchmarks ../reference.json arborx.json
   tags:
     - nobatch
 
+BuildArborXMaster:
+  stage: buildArborX
+  before_script:
+    - module load gcc/7.4.0
+    - module load cuda
+  script:
+    - module load cmake
+    - module load python
+    - ls
+    - git checkout master
+    - mkdir build_master && cd build_master &&
+      cmake -DCMAKE_PREFIX_PATH="${CI_PROJECT_DIR}/kokkos.install;${CI_PROJECT_DIR}/benchmark.install;${CI_PROJECT_DIR}/boost.install" -DARBORX_ENABLE_TESTS=ON -DARBORX_ENABLE_BENCHMARKS=ON -DCMAKE_CXX_COMPILER=${CI_PROJECT_DIR}/kokkos.install/bin/nvcc_wrapper .. &&
+      make -j VERBOSE=1
+    - OMP_PROC_BIND=spread OMP_PLACES=threads ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe --benchmark_format=json --no-header --benchmark_repetitions=1 | tee arborx.json
+    - ls ../benchmarks/tools/compare.py
+    - ls ../reference.json
+    - ls arborx.json
+    - ../benchmarks/tools/compare.py benchmarks ../reference.json arborx.json
+  tags:
+    - nobatch
 
