@@ -102,6 +102,7 @@ BuildArborXMaster:
   script:
     - module load cmake
     - module load python
+    - module load git
     - ls
     - git branch
     - git fetch
