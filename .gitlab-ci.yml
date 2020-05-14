@@ -100,6 +100,8 @@ RunArborX:
     - module load python
     - cd build
     - OMP_PROC_BIND=spread OMP_PLACES=threads ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe --benchmark_format=json --no-header --benchmark_repetitions=1 | tee arborx.json
+  dependencies:
+    - BuildArborX
   tags:
     - batch
 
@@ -135,10 +137,12 @@ RunArborXMaster:
     - module load python
     - cd ${CI_PROJECT_DIR}/arborx-master/build
     - OMP_PROC_BIND=spread OMP_PLACES=threads ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe --benchmark_format=json --no-header --benchmark_repetitions=1 | tee arborx.json
+  dependencies:
+    - BuildArborXMaster
   tags:
     - batch
 
-RunArborX:
+CompareResults:
   stage: compare
   before_script:
     - module load gcc/7.4.0
