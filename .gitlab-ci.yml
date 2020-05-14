@@ -91,7 +91,7 @@ BuildArborX:
     - export OMP_PLACES=threads
     - which jsrun
     - which ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe
-    - jsrun --np 1 ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe --benchmark_format=json --no-header --benchmark_repetitions=1
+    - jsrun --np 1 ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchy.exe --benchmark_format=json --no-header --benchmark_repetitions=1
   tags:
     - batch
 
@@ -116,7 +116,7 @@ BuildArborXMaster:
       make VERBOSE=1
     - export OMP_PROC_BIND=spread 
     - export OMP_PLACES=threads
-    - ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe --benchmark_format=json --no-header --benchmark_repetitions=1 | tee arborx.json
+    - jsrun --np 1 ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchy.exe --benchmark_format=json --no-header --benchmark_repetitions=1 | tee arborx.json
   tags:
     - batch
 
