@@ -114,7 +114,7 @@ BuildArborXMaster:
       make VERBOSE=1
     - export OMP_PROC_BIND=spread 
     - export OMP_PLACES=threads
-    - jsrun --np 1 ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe --benchmark_format=json --no-header --benchmark_repetitions=1 | tee arborx.json
+    - ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe --benchmark_format=json --no-header --benchmark_repetitions=1 | tee arborx.json
   tags:
     - batch
 
