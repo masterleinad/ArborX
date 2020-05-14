@@ -19,6 +19,7 @@
 #include <ArborX_Exception.hpp>
 #include <ArborX_Macros.hpp>
 #include <ArborX_Predicates.hpp>
+#include <ArborX_DetailsTreeTraversal.hpp>
 
 namespace ArborX
 {
@@ -27,84 +28,15 @@ namespace Details
 
 template <typename BVH, typename Predicates, typename Callback,
           typename Enable = void>
-struct TreeTraversal;
-
-/*template <typename ExecutionSpace, typename BVH, typename Predicates,
-          typename Callback>
-std::enable_if_t<std::is_same<SpatialPredicateTag,
-                              typename Traits::Helper<Traits::Access<
-                                  Predicates, Traits::PredicatesTag>>::tag>{}>
-traverse(ExecutionSpace const &space, BVH const &bvh,
-         Predicates const &predicates, Callback const &callback)
-{
-  TreeTraversal<BVH, Predicates, Callback>(space, bvh, predicates, callback);
-}*/
-
-template <typename ExecutionSpace, typename BVH, typename Predicates,
-          typename Callback>
-void
-traverse(ExecutionSpace const &space, BVH const &bvh,
-         Predicates const &predicates, Callback const &callback, SpatialPredicateTag)
-{}
-
-
-template <typename ExecutionSpace, typename BVH, typename Predicates,
-          typename Callback>
-void
-traverse(ExecutionSpace const &space, BVH const &bvh,
-         Predicates const &predicates, Callback const &callback, NearestPredicateTag)
-{}
-
-/*template <typename ExecutionSpace, typename BVH, typename Predicates,
-          typename Callback>
-std::enable_if_t<std::is_same<NearestPredicateTag,
-                              typename Traits::Helper<Traits::Access<
-                                  Predicates, Traits::PredicatesTag>>::tag>{}>
-traverse(ExecutionSpace const &space, BVH const &bvh,
-         Predicates const &predicates, Callback const &callback)
-{
-  using Access = Traits::Access<Predicates, Traits::PredicatesTag>;
-  auto const n_queries = Access::size(predicates);
-
-  using Offset = Kokkos::View<int *, ExecutionSpace>;
-  Offset offset(Kokkos::ViewAllocateWithoutInitializing("offset"),
-                n_queries + 1);
-  Kokkos::parallel_for(
-      ARBORX_MARK_REGION("scan_queries_for_numbers_of_nearest_neighbors"),
-      Kokkos::RangePolicy<ExecutionSpace>(space, 0, n_queries),
-      KOKKOS_LAMBDA(int i) { offset(i) = getK(Access::get(predicates, i)); });
-  exclusivePrefixSum(space, offset);
-  int const buffer_size = lastElement(offset);
-  // Allocate buffer over which to perform heap operations in
-  // TreeTraversal::nearestQuery() to store nearest leaf nodes found so far.
-  // It is not possible to anticipate how much memory to allocate since the
-  // number of nearest neighbors k is only known at runtime.
-  using Buffer = Kokkos::View<Kokkos::pair<int, float> *, ExecutionSpace>;
-  Buffer buffer(Kokkos::ViewAllocateWithoutInitializing("buffer"), buffer_size);
-
-  struct BufferProvider
-  {
-    Buffer buffer_;
-    Offset offset_;
-
-    KOKKOS_FUNCTION auto operator()(int i) const
-    {
-      auto const *offset_ptr = &offset_(i);
-      return Kokkos::subview(buffer_,
-                             Kokkos::make_pair(*offset_ptr, *(offset_ptr + 1)));
-    }
-  };
-
-  TreeTraversal<BVH, Predicates, std::tuple<Callback, BufferProvider>>(
-      space, bvh, predicates, callback, BufferProvider{buffer, offset});
-}*/
+struct TreeTraversal
+{};
 
 template <typename BVH, typename Predicates, typename Callback>
-struct TreeTraversal<
+struct SpatialTreeTraversal/*<
     BVH, Predicates, Callback,
     std::enable_if_t<std::is_same<
         SpatialPredicateTag, typename Traits::Helper<Traits::Access<
-                                 Predicates, Traits::PredicatesTag>>::tag>{}>>
+                                 Predicates, Traits::PredicatesTag>>::tag>{}>>*/
 {
   BVH bvh_;
   Predicates predicates_;
@@ -113,7 +45,7 @@ struct TreeTraversal<
   using Access = Traits::Access<Predicates, Traits::PredicatesTag>;
 
   template <typename ExecutionSpace>
-  TreeTraversal(ExecutionSpace const &space, BVH const &bvh,
+  SpatialTreeTraversal(ExecutionSpace const &space, BVH const &bvh,
                 Predicates const &predicates, Callback const &callback)
       : bvh_{bvh}
       , predicates_{predicates}
@@ -190,11 +122,11 @@ struct TreeTraversal<
 // Error: class template partial specialization contains a template parameter
 // that cannot be deduced
 template <typename BVH, typename Predicates, typename Tuple>
-struct TreeTraversal<
+struct NearestTreeTraversal/*<
     BVH, Predicates, Tuple,
     std::enable_if_t<std::is_same<
         NearestPredicateTag, typename Traits::Helper<Traits::Access<
-                                 Predicates, Traits::PredicatesTag>>::tag>{}>>
+                                 Predicates, Traits::PredicatesTag>>::tag>{}>>*/
 {
   BVH bvh_;
   Predicates predicates_;
@@ -206,7 +138,7 @@ struct TreeTraversal<
   using Access = Traits::Access<Predicates, Traits::PredicatesTag>;
 
   template <typename ExecutionSpace>
-  TreeTraversal(ExecutionSpace const &space, BVH const &bvh,
+  NearestTreeTraversal(ExecutionSpace const &space, BVH const &bvh,
                 Predicates const &predicates, Callback const &callback,
                 Buffer const &buffer)
       : bvh_{bvh}
@@ -569,6 +501,66 @@ struct TreeTraversal<BVH, void, void, void>
     return heap.size();
   }
 };
+
+template <typename ExecutionSpace, typename BVH, typename Predicates,
+          typename Callback>
+void
+traverse(ExecutionSpace const &space, BVH const &bvh,
+         Predicates const &predicates, Callback const &callback, SpatialPredicateTag)
+{
+  SpatialTreeTraversal<BVH, Predicates, Callback>(space, bvh, predicates, callback);
+
+
+/*  void ArborX::Details::traverse(const ExecutionSpace &, const BVH &, const Predicates &, const Callback &, ArborX::Details::SpatialPredicateTag) [with ExecutionSpace=Kokkos::HostSpace::execution_space, 
+       
+       BVH=ArborX::BoundingVolumeHierarchy<Kokkos::HostSpace::memory_space, void>, 
+       Predicates=ArborX::Details::PermutedPredicates<Kokkos::View<ArborX::Intersects<ArborX::Box> *, Kokkos::Serial::device_type>, Kokkos::View<unsigned int *, Kokkos::Device<Kokkos::HostSpace::execution_space, Kokkos::HostSpace::memory_space>>>, 
+       Callback=ArborX::Details::InsertGenerator<ArborX::Details::FirstPassTag, ArborX::Details::PermutedPredicates<Kokkos::View<ArborX::Intersects<ArborX::Box> *, Kokkos::Serial::device_type>, Kokkos::View<unsigned int *, Kokkos::Device<Kokkos::HostSpace::execution_space, Kokkos::HostSpace::memory_space>>>, ArborX::Details::CallbackDefaultSpatialPredicate, Kokkos::View<int *, Kokkos::Device<Kokkos::HostSpace::execution_space, Kokkos::HostSpace::memory_space>>, Kokkos::View<int *, Kokkos::Device<Kokkos::HostSpace::execution_space, Kokkos::HostSpace::memory_space>>, Kokkos::View<int *, Kokkos::Device<Kokkos::HostSpace::execution_space, Kokkos::HostSpace::memory_space>>, Kokkos::View<unsigned int *, Kokkos::Device<Kokkos::HostSpace::execution_space, Kokkos::HostSpace::memory_space>>>]"*/
+
+}
+
+
+template <typename ExecutionSpace, typename BVH, typename Predicates,
+          typename Callback>
+void
+traverse(ExecutionSpace const &space, BVH const &bvh,
+         Predicates const &predicates, Callback const &callback, NearestPredicateTag)
+{
+  using Access = Traits::Access<Predicates, Traits::PredicatesTag>;
+  auto const n_queries = Access::size(predicates);
+
+  using Offset = Kokkos::View<int *, ExecutionSpace>;
+  Offset offset(Kokkos::ViewAllocateWithoutInitializing("offset"),
+                n_queries + 1);
+  Kokkos::parallel_for(
+      ARBORX_MARK_REGION("scan_queries_for_numbers_of_nearest_neighbors"),
+      Kokkos::RangePolicy<ExecutionSpace>(space, 0, n_queries),
+      KOKKOS_LAMBDA(int i) { offset(i) = getK(Access::get(predicates, i)); });
+  exclusivePrefixSum(space, offset);
+  int const buffer_size = lastElement(offset);
+  // Allocate buffer over which to perform heap operations in
+  // TreeTraversal::nearestQuery() to store nearest leaf nodes found so far.
+  // It is not possible to anticipate how much memory to allocate since the
+  // number of nearest neighbors k is only known at runtime.
+  using Buffer = Kokkos::View<Kokkos::pair<int, float> *, ExecutionSpace>;
+  Buffer buffer(Kokkos::ViewAllocateWithoutInitializing("buffer"), buffer_size);
+
+  struct BufferProvider
+  {
+    Buffer buffer_;
+    Offset offset_;
+
+    KOKKOS_FUNCTION auto operator()(int i) const
+    {
+      auto const *offset_ptr = &offset_(i);
+      return Kokkos::subview(buffer_,
+                             Kokkos::make_pair(*offset_ptr, *(offset_ptr + 1)));
+    }
+  };
+
+  /*eeTraversal<BVH, Predicates, std::tuple<Callback, BufferProvider>>(
+      space, bvh, predicates, callback, BufferProvider{buffer, offset});*/
+}
 
 } // namespace Details
 } // namespace ArborX

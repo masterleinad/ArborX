@@ -82,6 +82,10 @@ private:
   template <typename BVH, typename Predicates, typename Callback,
             typename /*Enable*/>
   friend struct Details::TreeTraversal;
+  template <typename BVH, typename Predicates, typename Callback>
+  friend struct Details::SpatialTreeTraversal;
+  template <typename BVH, typename Predicates, typename Callback>
+  friend struct Details::NearestTreeTraversal;
   template <typename DeviceType>
   friend struct Details::TreeVisualization;
   using Node = Details::Node;
