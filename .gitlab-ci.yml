@@ -125,7 +125,7 @@ BuildArborXMaster:
     - batch
   artifacts:
     paths:
-      - arborx-master/build/arborx-master.json
+      - arborx-master/build_master/arborx-master.json
 
 CompareResults:
   stage: compare
@@ -136,6 +136,6 @@ CompareResults:
     - module load cmake
     - module load python
     - ls
-    - benchmarks/tools/compare.py benchmarks arborx-master.json arborx-branch.json
+    - benchmarks/tools/compare.py benchmarks arborx-master/build_master/arborx-master.json build/arborx-branch.json
   tags:
     - nobatch
