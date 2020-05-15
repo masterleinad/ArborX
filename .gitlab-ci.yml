@@ -92,9 +92,12 @@ BuildArborX:
     - export OMP_PLACES=threads
     - which jsrun
     - which ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe
-    - ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe --benchmark_format=json --no-header --benchmark_repetitions=1 | tee arborx.json
+    - ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe --benchmark_format=json --no-header --benchmark_repetitions=1 | tee arborx-branch.json
   tags:
     - batch
+  artifacts:
+    paths:
+      - arborx-branch.json
 
 BuildArborXMaster:
   stage: buildArborXMaster
@@ -117,9 +120,12 @@ BuildArborXMaster:
       make VERBOSE=1
     - export OMP_PROC_BIND=spread 
     - export OMP_PLACES=threads
-    - ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe --benchmark_format=json --no-header --benchmark_repetitions=1 | tee arborx.json
+    - ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe --benchmark_format=json --no-header --benchmark_repetitions=1 | tee arborx-master.json
   tags:
     - batch
+  artifacts:
+    paths:
+      - arborx-master.json
 
 CompareResults:
   stage: compare
@@ -129,6 +135,7 @@ CompareResults:
   script:
     - module load cmake
     - module load python
-    - benchmarks/tools/compare.py benchmarks ${CI_PROJECT_DIR}/arborx-master/build/arborx.json build/arborx.json
+    - ls
+    - benchmarks/tools/compare.py benchmarks arborx-master.json arborx-branch.json
   tags:
     - nobatch
