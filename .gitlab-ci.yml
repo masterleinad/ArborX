@@ -97,7 +97,7 @@ BuildArborX:
     - batch
   artifacts:
     paths:
-      - arborx-branch.json
+      - build/arborx-branch.json
 
 BuildArborXMaster:
   stage: buildArborXMaster
@@ -125,7 +125,7 @@ BuildArborXMaster:
     - batch
   artifacts:
     paths:
-      - arborx-master.json
+      - arborx-master/build/arborx-master.json
 
 CompareResults:
   stage: compare
