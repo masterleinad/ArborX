@@ -122,7 +122,7 @@ BuildArborXMaster:
     - export OMP_PROC_BIND=spread 
     - export OMP_PLACES=threads
     - jsrun --np 1 ls
-    - jsrun --np 1 `which ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe` --benchmark_format=json --no-header --benchmark_repetitions=1 | tee arborx-master.json
+    - mpiexec -np 1 ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe --benchmark_format=json --no-header --benchmark_repetitions=1 | tee arborx-master.json
   tags:
     - batch
   artifacts:
