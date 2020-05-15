@@ -19,6 +19,8 @@
 #include <Kokkos_Core.hpp>
 #include <Kokkos_Sort.hpp> // min_max_functor
 
+#include <numeric>
+
 // clang-format off
 #if defined(KOKKOS_ENABLE_CUDA)
 #  if defined(KOKKOS_COMPILER_CLANG)
@@ -58,6 +60,19 @@ namespace ArborX
 
 namespace Details
 {
+
+template <typename ExecutionSpace, typename PermutationView, typename InputView,
+          typename OutputView>
+void applyPermutation(ExecutionSpace const &space,
+                      PermutationView const &permutation,
+                      InputView const &input_view,
+                      OutputView const &output_view);
+
+template <typename ExecutionSpace, typename PermutationView, typename View>
+void applyPermutation(ExecutionSpace const &space,
+                      PermutationView const &permutation, View &view);
+
+
 
 // NOTE returns the permutation indices **and** sorts the input view
 template <typename ExecutionSpace, typename ViewType,
@@ -100,6 +115,26 @@ Kokkos::View<SizeType *, typename ViewType::device_type>
 sortObjects(Kokkos::Cuda const &space, ViewType &view)
 {
   int const n = view.extent(0);
+
+  // We measured that copying to the host is faster for less than 1000 values
+  if (true)
+  {
+    auto view_host = Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, view);
+
+    Kokkos::View<SizeType *, Kokkos::HostSpace> permute(
+        Kokkos::ViewAllocateWithoutInitializing("permute"), n);
+    std::iota(permute.data(), permute.data()+n, 0);
+
+    std::sort(permute.data(), permute.data() + n,
+              [&view_host](SizeType const a, SizeType const b) {
+                return view_host(a) < view_host(b);
+              });
+
+    auto permute_device = Kokkos::create_mirror_view_and_copy(space, permute);
+    applyPermutation(space, permute_device, view);
+
+    return permute_device;    
+  }
 
   using ValueType = typename ViewType::value_type;
   static_assert(
