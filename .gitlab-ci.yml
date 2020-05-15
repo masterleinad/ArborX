@@ -90,10 +90,9 @@ BuildArborX:
       make VERBOSE=1 
     - export OMP_PROC_BIND=spread 
     - export OMP_PLACES=threads
-    - which jsrun
-    - which ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe
-    - jsrun --np 1 ls
-    - jsrun --np 1 `which ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe` --benchmark_format=json --no-header --benchmark_repetitions=1 | tee arborx-branch.json
+    - cp ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyRegressionBranch.exe
+    - jsrun --np 1 /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyRegressionBranch.exe --benchmark_format=json --no-header --benchmark_repetitions=1 | tee arborx-branch.json
+    - cp /ccsopen/proj/csc333/arborx-branch.json .
   tags:
     - batch
   artifacts:
@@ -121,10 +120,9 @@ BuildArborXMaster:
       make VERBOSE=1
     - export OMP_PROC_BIND=spread 
     - export OMP_PLACES=threads
-    - hostname
-    - jsrun --np 1 hostname
-    - mpiexec -np 1 hostname
-    - mpiexec -np 1 ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe --benchmark_format=json --no-header --benchmark_repetitions=1 | tee arborx-master.json
+    - cp ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyRegressionMaster.exe
+    - jsrun --np 1 /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyRegressionMaster.exe --benchmark_format=json --no-header --benchmark_repetitions=1 | tee arborx-master.json
+    - cp /ccsopen/proj/csc333/arborx-master.json .
   tags:
     - batch
   artifacts:
