@@ -123,6 +123,7 @@ BuildArborXMaster:
     - export OMP_PLACES=threads
     - hostname
     - jsrun --np 1 hostname
+    - mpiexec -np 1 hostname
     - mpiexec -np 1 ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe --benchmark_format=json --no-header --benchmark_repetitions=1 | tee arborx-master.json
   tags:
     - batch
