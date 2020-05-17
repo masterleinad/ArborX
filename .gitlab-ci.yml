@@ -29,7 +29,7 @@ BuildBoost:
       tar -xf ${BOOST_ARCHIVE} -C boost --strip-components=1 &&
       cd boost &&
       ./bootstrap.sh --prefix=${CI_PROJECT_DIR}/boost.install &&
-      ./b2 -j8 hardcode-dll-paths=true dll-path=${CI_PROJECT_DIR}/boost.install link=shared variant=release cxxflags=-w install 
+      ./b2 -j8 hardcode-dll-paths=true dll-path=${CI_PROJECT_DIR}/boost.install link=static variant=release cxxflags=-w install
   tags:
     - nobatch
   artifacts:
