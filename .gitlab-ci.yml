@@ -87,7 +87,7 @@ BuildArborX:
     - module load cuda
     - git branch
     - mkdir build && cd build &&
-      cmake -DCMAKE_PREFIX_PATH="${CI_PROJECT_DIR}/kokkos.install;${CI_PROJECT_DIR}/benchmark.install;${CI_PROJECT_DIR}/boost.install" -DARBORX_ENABLE_TESTS=OFF -DARBORX_ENABLE_BENCHMARKS=ON -DCMAKE_CXX_COMPILER=${CI_PROJECT_DIR}/kokkos.install/bin/nvcc_wrapper .. &&
+      cmake -DCMAKE_PREFIX_PATH="${CI_PROJECT_DIR}/kokkos.install;${CI_PROJECT_DIR}/benchmark.install;${CI_PROJECT_DIR}/boost.install" -DARBORX_ENABLE_MPI=ON -DARBORX_ENABLE_TESTS=OFF -DARBORX_ENABLE_BENCHMARKS=ON -DCMAKE_CXX_COMPILER=${CI_PROJECT_DIR}/kokkos.install/bin/nvcc_wrapper .. &&
       make VERBOSE=1 
     - export OMP_PROC_BIND=spread 
     - export OMP_PLACES=threads
@@ -118,7 +118,7 @@ BuildArborXMaster:
     - cd ${CI_PROJECT_DIR}/arborx-master
     - git log
     - mkdir build_master && cd build_master &&
-      cmake -DCMAKE_PREFIX_PATH="${CI_PROJECT_DIR}/kokkos.install;${CI_PROJECT_DIR}/benchmark.install;${CI_PROJECT_DIR}/boost.install" -DARBORX_ENABLE_TESTS=OFF -DARBORX_ENABLE_BENCHMARKS=ON -DCMAKE_CXX_COMPILER=${CI_PROJECT_DIR}/kokkos.install/bin/nvcc_wrapper .. &&
+      cmake -DCMAKE_PREFIX_PATH="${CI_PROJECT_DIR}/kokkos.install;${CI_PROJECT_DIR}/benchmark.install;${CI_PROJECT_DIR}/boost.install" -DARBORX_ENABLE_MPI=ON -DARBORX_ENABLE_TESTS=OFF -DARBORX_ENABLE_BENCHMARKS=ON -DCMAKE_CXX_COMPILER=${CI_PROJECT_DIR}/kokkos.install/bin/nvcc_wrapper .. &&
       make VERBOSE=1
     - export OMP_PROC_BIND=spread 
     - export OMP_PLACES=threads
