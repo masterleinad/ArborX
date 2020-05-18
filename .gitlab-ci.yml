@@ -114,7 +114,8 @@ BuildArborXMaster:
     - git branch
     - git fetch
     - git branch
-    - git worktree add -f ${CI_PROJECT_DIR}/arborx-master master-ci
+    - rm -f ${CI_PROJECT_DIR}/arborx-master
+    - git worktree add ${CI_PROJECT_DIR}/arborx-master master-ci
     - cd ${CI_PROJECT_DIR}/arborx-master
     - git log
     - mkdir build_master && cd build_master &&
