@@ -29,9 +29,9 @@ BuildBoost:
       ./b2 -j8 hardcode-dll-paths=true dll-path=${CI_PROJECT_DIR}/boost.install link=static variant=release cxxflags=-w install
   tags:
     - nobatch
-      #artifacts:
-      #paths:
-      #- boost.install/
+  artifacts:
+    paths:
+      - boost.install/
 
 BuildBenchmark:
   stage: buildDependencies
@@ -45,9 +45,9 @@ BuildBenchmark:
       make && make install
   tags:
     - nobatch
-      #artifacts:
-      #paths:
-      #- benchmark.install/
+  artifacts:
+    paths:
+      - benchmark.install/
 
 BuildKokkos:
   stage: buildDependencies
@@ -62,9 +62,9 @@ BuildKokkos:
       make install
   tags:
     - nobatch
-      #artifacts:
-      #paths:
-      #- kokkos.install/
+  artifacts:
+    paths:
+      - kokkos.install/
 
 BuildArborX:
   stage: buildArborX
@@ -81,9 +81,9 @@ BuildArborX:
     - cp /ccsopen/proj/csc333/arborx-branch.json .
   tags:
     - batch
-      #artifacts:
-      #paths:
-      #- build/arborx-branch.json
+  artifacts:
+    paths:
+      - build/arborx-branch.json
 
 BuildArborXMaster:
   stage: buildArborXMaster
@@ -103,9 +103,9 @@ BuildArborXMaster:
     - cp /ccsopen/proj/csc333/arborx-master.json .
   tags:
     - batch
-      #artifacts:
-      #paths:
-      #- arborx-master/build_master/arborx-master.json
+  artifacts:
+    paths:
+      - arborx-master/build_master/arborx-master.json
 
 CompareResults:
   stage: compare
