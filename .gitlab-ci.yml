@@ -111,6 +111,6 @@ CompareResults:
   stage: compare
   script:
     - module load python
-    - benchmarks/tools/compare.py benchmarks arborx-master/build_master/arborx-master.json build/arborx-branch.json | grep median
+    - benchmarks/tools/compare.py benchmarks arborx-master/build_master/arborx-master.json build/arborx-branch.json | grep "median\|mean"
   tags:
     - nobatch
