@@ -102,7 +102,7 @@ BuildArborX:
       - build/arborx-branch.json
 
 BuildArborXMaster:
-  istage: buildArborXMaster
+  stage: buildArborXMaster
   before_script:
     - module load gcc/7.4.0
     - module load cuda
