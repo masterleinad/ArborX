@@ -283,7 +283,8 @@ public:
 
 int main(int argc, char *argv[])
 {
-  KokkosScopeGuard guard(argc, argv);
+  MPI_Init(&argc, &argv);
+  Kokkos::initialize(argc, argv);
 
   namespace bpo = boost::program_options;
   bpo::options_description desc("Allowed options");
@@ -375,6 +376,9 @@ int main(int argc, char *argv[])
 #endif
 
   benchmark::RunSpecifiedBenchmarks();
+
+  Kokkos::finalize();
+  MPI_Finalize();
 
   return EXIT_SUCCESS;
 }
