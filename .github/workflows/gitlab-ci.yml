@@ -9,6 +9,7 @@ jobs:
     - name: trigger Job
       uses: appleboy/gitlab-ci-action@master
       with:
-        url: "https://code.ornl.gov"
+        host: "https://code.ornl.gov"
         token: ${{ secrets.TOKEN }}
         project_id: 6927
+        debug: true
