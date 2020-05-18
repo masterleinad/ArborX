@@ -91,6 +91,7 @@ BuildArborX:
     - export OMP_PROC_BIND=spread 
     - export OMP_PLACES=threads
     - cp ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyRegressionBranch.exe
+    - jsrun --np 1 nvidia-smi
     - jsrun --np 1 /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyRegressionBranch.exe --benchmark_format=json --no-header --benchmark_repetitions=1 | tee arborx-branch.json
     - cp /ccsopen/proj/csc333/arborx-branch.json .
   tags:
@@ -121,6 +122,7 @@ BuildArborXMaster:
     - export OMP_PROC_BIND=spread 
     - export OMP_PLACES=threads
     - cp ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyRegressionMaster.exe
+    - jsrun --np 1 nvidia-smi
     - jsrun --np 1 /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyRegressionMaster.exe --benchmark_format=json --no-header --benchmark_repetitions=1 | tee arborx-master.json
     - cp /ccsopen/proj/csc333/arborx-master.json .
   tags:
