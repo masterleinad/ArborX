@@ -96,8 +96,8 @@ RunMaster:
   stage: runBenchmarks
   script:
     - module load gcc/7.4.0 cuda cmake git
-    - jsrun --smpiargs="-gpu" --nrs 1 --gpu_per_rs 6 --rs_per_host 1 --np 1 --latency_priority CPU-CPU --launch_distribution packed --bind packed:1 /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyRegressionBranch.exe --benchmark_format=json --no-header --benchmark_repetitions=20 | tee /ccsopen/proj/csc333/arborx-branch.json
-    - jsrun --smpiargs="-gpu" --nrs 1 --gpu_per_rs 6 --rs_per_host 1 --np 1 --latency_priority CPU-CPU --launch_distribution packed --bind packed:1 /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyRegressionMaster.exe --benchmark_format=json --no-header --benchmark_repetitions=20 | tee /ccsopen/proj/csc333/arborx-master.json
+    - jsrun --smpiargs="-gpu" --nrs 1 --gpu_per_rs 6 --rs_per_host 1 --np 1 --latency_priority CPU-CPU --launch_distribution packed --bind packed:1 /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyRegressionBranch.exe --benchmark_format=json --no-header --benchmark_repetitions=10 | tee /ccsopen/proj/csc333/arborx-branch.json
+    - jsrun --smpiargs="-gpu" --nrs 1 --gpu_per_rs 6 --rs_per_host 1 --np 1 --latency_priority CPU-CPU --launch_distribution packed --bind packed:1 /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyRegressionMaster.exe --benchmark_format=json --no-header --benchmark_repetitions=10 | tee /ccsopen/proj/csc333/arborx-master.json
   tags:
     - batch
 
