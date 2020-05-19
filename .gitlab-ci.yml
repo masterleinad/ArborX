@@ -103,6 +103,6 @@ CompareResults:
   stage: compare
   script:
     - module load python
-    - benchmarks/tools/compare.py benchmarks /ccsopen/proj/csc333/arborx-master.json /ccsopen/proj/csc333/arborx-branch.json | grep "median\|mean"
+    - /ccsopen/proj/csc333/tools/compare.py benchmarks /ccsopen/proj/csc333/arborx-master.json /ccsopen/proj/csc333/arborx-branch.json | grep "median\|mean"
   tags:
     - nobatch
