@@ -69,8 +69,6 @@ BuildArborX:
     - mkdir build && cd build &&
       cmake -DCMAKE_PREFIX_PATH="${CI_PROJECT_DIR}/kokkos.install;${CI_PROJECT_DIR}/benchmark.install;${CI_PROJECT_DIR}/boost.install" -DARBORX_ENABLE_MPI=ON -DARBORX_ENABLE_TESTS=OFF -DARBORX_ENABLE_BENCHMARKS=ON -DCMAKE_CXX_COMPILER=${CI_PROJECT_DIR}/kokkos.install/bin/nvcc_wrapper .. &&
       make VERBOSE=1 ArborX_BoundingVolumeHierarchyRegression.exe
-    - export OMP_PROC_BIND=spread 
-    - export OMP_PLACES=threads
     - cp ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyRegressionBranch.exe
   tags:
     - nobatch
@@ -86,8 +84,6 @@ BuildArborXMaster:
     - mkdir build_master && cd build_master &&
       cmake -DCMAKE_PREFIX_PATH="${CI_PROJECT_DIR}/kokkos.install;${CI_PROJECT_DIR}/benchmark.install;${CI_PROJECT_DIR}/boost.install" -DARBORX_ENABLE_MPI=ON -DARBORX_ENABLE_TESTS=OFF -DARBORX_ENABLE_BENCHMARKS=ON -DCMAKE_CXX_COMPILER=${CI_PROJECT_DIR}/kokkos.install/bin/nvcc_wrapper .. &&
       make VERBOSE=1 ArborX_BoundingVolumeHierarchyRegression.exe
-    - export OMP_PROC_BIND=spread 
-    - export OMP_PLACES=threads
     - cp ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyRegressionMaster.exe
   tags:
     - nobatch
@@ -95,6 +91,8 @@ BuildArborXMaster:
 RunMaster:
   stage: runBenchmarks
   script:
+    - export OMP_PROC_BIND=spread
+    - export OMP_PLACES=threads
     - module load gcc/7.4.0 cuda cmake git
     - jsrun --smpiargs="-gpu" --nrs 1 --gpu_per_rs 6 --rs_per_host 1 --np 1 /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyRegressionBranch.exe --benchmark_format=json --no-header --benchmark_repetitions=10 | tee /ccsopen/proj/csc333/arborx-branch.json
     - jsrun --smpiargs="-gpu" --nrs 1 --gpu_per_rs 6 --rs_per_host 1 --np 1 /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyRegressionMaster.exe --benchmark_format=json --no-header --benchmark_repetitions=10 | tee /ccsopen/proj/csc333/arborx-master.json
