@@ -6,8 +6,7 @@ variables:
 stages:
   - buildDependencies
   - buildArborX
-  - runBenchmarkBranch
-  - runBenchmarkMaster
+  - runBenchmarks
   - compare
 
 BuildBoost:
@@ -38,7 +37,7 @@ BuildBenchmark:
       cd benchmark &&
       git clone https://github.com/google/googletest.git -b release-1.8.1 &&
       mkdir build && cd build &&
-      cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_CXX_COMPILER=g++ -DCMAKE_INSTALL_PREFIX=${CI_PROJECT_DIR}/benchmark.install .. &&
+      cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=g++ -DCMAKE_INSTALL_PREFIX=${CI_PROJECT_DIR}/benchmark.install .. &&
       make && make install
   tags:
     - nobatch
@@ -54,7 +53,7 @@ BuildKokkos:
       cd kokkos &&
       mkdir build &&
       cd build &&
-      cmake -DCMAKE_INSTALL_PREFIX=${CI_PROJECT_DIR}/kokkos.install -DCMAKE_CXX_COMPILER=${CI_PROJECT_DIR}/kokkos/bin/nvcc_wrapper -DCMAKE_CXX_EXTENSIONS=OFF -DKokkos_ENABLE_SERIAL=ON -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_CUDA=ON -DKokkos_ENABLE_CUDA_LAMBDA=ON -DKokkos_ARCH_POWER9=ON -DKokkos_ARCH_VOLTA70=ON .. &&
+      cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=${CI_PROJECT_DIR}/kokkos.install -DCMAKE_CXX_COMPILER=${CI_PROJECT_DIR}/kokkos/bin/nvcc_wrapper -DCMAKE_CXX_EXTENSIONS=OFF -DKokkos_ENABLE_SERIAL=ON -DKokkos_ENABLE_OPENMP=ON -DKokkos_ENABLE_CUDA=ON -DKokkos_ENABLE_CUDA_LAMBDA=ON -DKokkos_ARCH_POWER9=ON -DKokkos_ARCH_VOLTA70=ON .. &&
       make &&
       make install
   tags:
@@ -76,14 +75,6 @@ BuildArborX:
   tags:
     - nobatch
 
-RunBranch:
-  stage: runBenchmarkBranch
-  script:
-    - module load gcc/7.4.0 cuda cmake git
-    - jsrun --smpiargs="-gpu" --nrs 1 --gpu_per_rs 6 --rs_per_host 1 --np 1 --latency_priority CPU-CPU --launch_distribution packed --bind packed:1 /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyRegressionBranch.exe --benchmark_format=json --no-header --benchmark_repetitions=20 | tee /ccsopen/proj/csc333/arborx-branch.json
-  tags:
-    - batch
-
 BuildArborXMaster:
   stage: buildArborX
   script:
@@ -102,9 +93,10 @@ BuildArborXMaster:
     - nobatch
 
 RunMaster:
-  stage: runBenchmarkMaster
+  stage: runBenchmarks
   script:
     - module load gcc/7.4.0 cuda cmake git
+    - jsrun --smpiargs="-gpu" --nrs 1 --gpu_per_rs 6 --rs_per_host 1 --np 1 --latency_priority CPU-CPU --launch_distribution packed --bind packed:1 /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyRegressionBranch.exe --benchmark_format=json --no-header --benchmark_repetitions=20 | tee /ccsopen/proj/csc333/arborx-branch.json
     - jsrun --smpiargs="-gpu" --nrs 1 --gpu_per_rs 6 --rs_per_host 1 --np 1 --latency_priority CPU-CPU --launch_distribution packed --bind packed:1 /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyRegressionMaster.exe --benchmark_format=json --no-header --benchmark_repetitions=20 | tee /ccsopen/proj/csc333/arborx-master.json
   tags:
     - batch
