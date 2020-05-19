@@ -18,6 +18,7 @@ BuildBoost:
       BOOST_VERSION_UNDERSCORE=$(echo "$BOOST_VERSION" | sed -e "s/\./_/g") &&
       BOOST_URL=https://dl.bintray.com/boostorg/release/${BOOST_VERSION}/source &&
       BOOST_ARCHIVE=boost_${BOOST_VERSION_UNDERSCORE}.tar.bz2 &&
+      wget --quiet ${BOOST_URL}/${BOOST_ARCHIVE} &&
       mkdir -p boost &&
       tar -xf ${BOOST_ARCHIVE} -C boost --strip-components=1 &&
       cd boost &&
