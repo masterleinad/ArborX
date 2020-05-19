@@ -101,6 +101,8 @@ BuildArborXMaster:
     - export OMP_PROC_BIND=spread 
     - export OMP_PLACES=threads
     - cp ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyRegressionMaster.exe
+  tags:
+    - nobatch
 
 RunMaster:
   stage: runBenchmarkMaster
