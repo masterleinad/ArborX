@@ -81,12 +81,8 @@ RunBranch:
   script:
     - module load gcc/7.4.0 cuda cmake git
     - jsrun --smpiargs="-gpu" --nrs 1 --gpu_per_rs 6 --rs_per_host 1 --np 1 --latency_priority CPU-CPU --launch_distribution packed --bind packed:1 /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyRegressionBranch.exe --benchmark_format=json --no-header --benchmark_repetitions=20 | tee /ccsopen/proj/csc333/arborx-branch.json
-    - cp /ccsopen/proj/csc333/arborx-branch.json .
   tags:
     - batch
-  artifacts:
-    paths:
-      - build/arborx-branch.json
 
 BuildArborXMaster:
   stage: buildArborX
@@ -110,17 +106,13 @@ RunMaster:
   script:
     - module load gcc/7.4.0 cuda cmake git
     - jsrun --smpiargs="-gpu" --nrs 1 --gpu_per_rs 6 --rs_per_host 1 --np 1 --latency_priority CPU-CPU --launch_distribution packed --bind packed:1 /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyRegressionMaster.exe --benchmark_format=json --no-header --benchmark_repetitions=20 | tee /ccsopen/proj/csc333/arborx-master.json
-    - cp /ccsopen/proj/csc333/arborx-master.json .
   tags:
     - batch
-  artifacts:
-    paths:
-      - arborx-master/build_master/arborx-master.json
 
 CompareResults:
   stage: compare
   script:
     - module load python
-    - benchmarks/tools/compare.py benchmarks arborx-master/build_master/arborx-master.json build/arborx-branch.json | grep "median\|mean"
+    - benchmarks/tools/compare.py benchmarks /ccsopen/proj/csc333/arborx-master.json /ccsopen/proj/csc333/arborx-branch.json | grep "median\|mean"
   tags:
     - nobatch
