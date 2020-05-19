@@ -12,7 +12,7 @@ stages:
 BuildBoost:
   stage: buildDependencies
   script:
-    - module load gcc/7.4.0 cuda cmake git
+    - module load gcc/7.4.0 cuda/10.1.243 cmake/3.15.2 git/2.20.1 spectrum-mpi/10.3.1.2-20200121
     - BOOST_VERSION=1.67.0 &&
       BOOST_VERSION_UNDERSCORE=$(echo "$BOOST_VERSION" | sed -e "s/\./_/g") &&
       BOOST_URL=https://dl.bintray.com/boostorg/release/${BOOST_VERSION}/source &&
@@ -32,7 +32,7 @@ BuildBoost:
 BuildBenchmark:
   stage: buildDependencies
   script:
-    - module load gcc/7.4.0 cuda cmake git
+    - module load gcc/7.4.0 cuda/10.1.243 cmake/3.15.2 git/2.20.1 spectrum-mpi/10.3.1.2-20200121
     - git clone https://github.com/google/benchmark.git -b v1.4.1 &&
       cd benchmark &&
       git clone https://github.com/google/googletest.git -b release-1.8.1 &&
@@ -48,7 +48,7 @@ BuildBenchmark:
 BuildKokkos:
   stage: buildDependencies
   script:
-    - module load gcc/7.4.0 cuda cmake git
+    - module load gcc/7.4.0 cuda/10.1.243 cmake/3.15.2 git/2.20.1 spectrum-mpi/10.3.1.2-20200121
     - git clone --depth=1 --branch 3.1.00 https://github.com/kokkos/kokkos.git &&
       cd kokkos &&
       mkdir build &&
@@ -65,7 +65,7 @@ BuildKokkos:
 BuildArborX:
   stage: buildArborX
   script:
-    - module load gcc/7.4.0 cuda cmake git
+    - module gcc/7.4.0 cuda/10.1.243 cmake/3.15.2 git/2.20.1 spectrum-mpi/10.3.1.2-20200121
     - mkdir build && cd build &&
       cmake -DCMAKE_PREFIX_PATH="${CI_PROJECT_DIR}/kokkos.install;${CI_PROJECT_DIR}/benchmark.install;${CI_PROJECT_DIR}/boost.install" -DARBORX_ENABLE_MPI=ON -DARBORX_ENABLE_TESTS=OFF -DARBORX_ENABLE_BENCHMARKS=ON -DCMAKE_CXX_COMPILER=${CI_PROJECT_DIR}/kokkos.install/bin/nvcc_wrapper .. &&
       make VERBOSE=1 ArborX_BoundingVolumeHierarchyRegression.exe
@@ -76,7 +76,7 @@ BuildArborX:
 BuildArborXMaster:
   stage: buildArborX
   script:
-    - module load gcc/7.4.0 cuda cmake git
+    - module load gcc/7.4.0 cuda/10.1.243 cmake/3.15.2 git/2.20.1 spectrum-mpi/10.3.1.2-20200121
     - git fetch
     - git worktree remove ${CI_PROJECT_DIR}/arborx-master
     - git worktree add ${CI_PROJECT_DIR}/arborx-master origin/master-ci 
@@ -93,7 +93,7 @@ RunMaster:
   script:
     - export OMP_PROC_BIND=spread
     - export OMP_PLACES=threads
-    - module load gcc/7.4.0 cuda cmake git
+    - module load gcc/7.4.0 cuda/10.1.243 cmake/3.15.2 git/2.20.1 spectrum-mpi/10.3.1.2-20200121
     - jsrun --smpiargs="-gpu" --nrs 1 --gpu_per_rs 6 --rs_per_host 1 --np 1 /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyRegressionBranch.exe --benchmark_format=json --no-header --benchmark_repetitions=10 | tee /ccsopen/proj/csc333/arborx-branch.json
     - jsrun --smpiargs="-gpu" --nrs 1 --gpu_per_rs 6 --rs_per_host 1 --np 1 /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyRegressionMaster.exe --benchmark_format=json --no-header --benchmark_repetitions=10 | tee /ccsopen/proj/csc333/arborx-master.json
   tags:
@@ -102,7 +102,7 @@ RunMaster:
 CompareResults:
   stage: compare
   script:
-    - module load python
+    - module load python/3.6.6-anaconda3-5.3.0
     - /ccsopen/proj/csc333/tools/compare.py benchmarks /ccsopen/proj/csc333/arborx-master.json /ccsopen/proj/csc333/arborx-branch.json | grep "median\|mean"
   tags:
     - nobatch
