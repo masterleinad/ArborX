@@ -94,7 +94,7 @@ BuildArborXMaster:
             -DARBORX_ENABLE_TESTS=OFF
             -DARBORX_ENABLE_BENCHMARKS=ON
             -DARBORX_PERFORMANCE_TESTING=ON .. &&
-      makee
+      make ArborX_BoundingVolumeHierarchy.exe
     - cp ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchy.exe /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyMaster.exe
   tags:
     - nobatch
