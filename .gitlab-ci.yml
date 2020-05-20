@@ -9,10 +9,14 @@ stages:
   - runBenchmarks
   - compare
 
-BuildBoost:
-  stage: buildDependencies
+.LoadModules:
   script:
     - module load gcc/7.4.0 cuda/10.1.243 cmake/3.15.2 git/2.20.1 spectrum-mpi/10.3.1.2-20200121
+
+BuildBoost:
+  extends: .LoadModules      
+  stage: buildDependencies
+  script:
     - BOOST_VERSION=1.67.0 &&
       BOOST_VERSION_UNDERSCORE=$(echo "$BOOST_VERSION" | sed -e "s/\./_/g") &&
       BOOST_URL=https://dl.bintray.com/boostorg/release/${BOOST_VERSION}/source &&
@@ -30,9 +34,9 @@ BuildBoost:
       - boost.install/
 
 BuildBenchmark:
+  extends: .LoadModules
   stage: buildDependencies
   script:
-    - module load gcc/7.4.0 cuda/10.1.243 cmake/3.15.2 git/2.20.1 spectrum-mpi/10.3.1.2-20200121
     - git clone https://github.com/google/benchmark.git -b v1.4.1 &&
       cd benchmark &&
       git clone https://github.com/google/googletest.git -b release-1.8.1 &&
@@ -46,9 +50,9 @@ BuildBenchmark:
       - benchmark.install/
 
 BuildKokkos:
+  extends: .LoadModules
   stage: buildDependencies
   script:
-    - module load gcc/7.4.0 cuda/10.1.243 cmake/3.15.2 git/2.20.1 spectrum-mpi/10.3.1.2-20200121
     - git clone --depth=1 --branch 3.1.00 https://github.com/kokkos/kokkos.git &&
       cd kokkos &&
       mkdir build &&
@@ -63,9 +67,9 @@ BuildKokkos:
       - kokkos.install/
 
 BuildArborXBranch:
+  extends: .LoadModules
   stage: buildArborX
   script:
-    - module load gcc/7.4.0 cuda/10.1.243 cmake/3.15.2 git/2.20.1 spectrum-mpi/10.3.1.2-20200121
     - git merge origin/master
     - mkdir build && cd build &&
       cmake -DCMAKE_PREFIX_PATH="${CI_PROJECT_DIR}/kokkos.install;${CI_PROJECT_DIR}/benchmark.install;${CI_PROJECT_DIR}/boost.install"
@@ -80,9 +84,9 @@ BuildArborXBranch:
     - nobatch
 
 BuildArborXMaster:
+  extends: .LoadModules
   stage: buildArborX
   script:
-    - module load gcc/7.4.0 cuda/10.1.243 cmake/3.15.2 git/2.20.1 spectrum-mpi/10.3.1.2-20200121
     - git fetch
     - git worktree remove ${CI_PROJECT_DIR}/arborx-master
     - git worktree add ${CI_PROJECT_DIR}/arborx-master origin/master-ci 
@@ -100,11 +104,11 @@ BuildArborXMaster:
     - nobatch
 
 RunBenchmarks:
+  extends: .LoadModules
   stage: runBenchmarks
   script:
     - export OMP_PROC_BIND=spread
     - export OMP_PLACES=threads
-    - module load gcc/7.4.0 cuda/10.1.243 cmake/3.15.2 git/2.20.1 spectrum-mpi/10.3.1.2-20200121
     - jsrun --smpiargs="-gpu" --nrs 1 --gpu_per_rs 6 --rs_per_host 1 --np 1 /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyBranch.exe --benchmark_format=json --no-header --benchmark_repetitions=10 | tee /ccsopen/proj/csc333/arborx-branch.json
     - jsrun --smpiargs="-gpu" --nrs 1 --gpu_per_rs 6 --rs_per_host 1 --np 1 /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyMaster.exe --benchmark_format=json --no-header --benchmark_repetitions=10 | tee /ccsopen/proj/csc333/arborx-master.json
   tags:
