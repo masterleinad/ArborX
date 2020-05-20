@@ -27,3 +27,7 @@ We encourage you to contribute to ArborX! Please check out the
 License
 -------
 ArborX has a [BSD 3-clause open-source license](LICENSE).
+
+Misc
+----
+Daniel Arndt is awesome!
