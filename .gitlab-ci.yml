@@ -67,9 +67,9 @@ BuildArborX:
   script:
     - module gcc/7.4.0 cuda/10.1.243 cmake/3.15.2 git/2.20.1 spectrum-mpi/10.3.1.2-20200121
     - mkdir build && cd build &&
-      cmake -DCMAKE_PREFIX_PATH="${CI_PROJECT_DIR}/kokkos.install;${CI_PROJECT_DIR}/benchmark.install;${CI_PROJECT_DIR}/boost.install" -DARBORX_ENABLE_MPI=ON -DARBORX_ENABLE_TESTS=OFF -DARBORX_ENABLE_BENCHMARKS=ON -DCMAKE_CXX_COMPILER=${CI_PROJECT_DIR}/kokkos.install/bin/nvcc_wrapper .. &&
-      make ArborX_BoundingVolumeHierarchyRegression.exe
-    - cp ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyRegressionBranch.exe
+      cmake -DCMAKE_PREFIX_PATH="${CI_PROJECT_DIR}/kokkos.install;${CI_PROJECT_DIR}/benchmark.install;${CI_PROJECT_DIR}/boost.install" -DARBORX_ENABLE_MPI=ON -DARBORX_ENABLE_TESTS=OFF -DARBORX_ENABLE_BENCHMARKS=ON -DCMAKE_CXX_COMPILER=${CI_PROJECT_DIR}/kokkos.install/bin/nvcc_wrapper -DARBORX_PERFORMANCE_TESTING .. &&
+      make ArborX_BoundingVolumeHierarchy.exe
+    - cp ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchy.exe /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyBranch.exe
   tags:
     - nobatch
 
@@ -82,9 +82,9 @@ BuildArborXMaster:
     - git worktree add ${CI_PROJECT_DIR}/arborx-master origin/master-ci 
     - cd ${CI_PROJECT_DIR}/arborx-master
     - mkdir build_master && cd build_master &&
-      cmake -DCMAKE_PREFIX_PATH="${CI_PROJECT_DIR}/kokkos.install;${CI_PROJECT_DIR}/benchmark.install;${CI_PROJECT_DIR}/boost.install" -DARBORX_ENABLE_MPI=ON -DARBORX_ENABLE_TESTS=OFF -DARBORX_ENABLE_BENCHMARKS=ON -DCMAKE_CXX_COMPILER=${CI_PROJECT_DIR}/kokkos.install/bin/nvcc_wrapper .. &&
-      make ArborX_BoundingVolumeHierarchyRegression.exe
-    - cp ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchyRegression.exe /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyRegressionMaster.exe
+      cmake -DCMAKE_PREFIX_PATH="${CI_PROJECT_DIR}/kokkos.install;${CI_PROJECT_DIR}/benchmark.install;${CI_PROJECT_DIR}/boost.install" -DARBORX_ENABLE_MPI=ON -DARBORX_ENABLE_TESTS=OFF -DARBORX_ENABLE_BENCHMARKS=ON -DCMAKE_CXX_COMPILER=${CI_PROJECT_DIR}/kokkos.install/bin/nvcc_wrapper -DARBORX_PERFORMANCE_TESTING=ON .. &&
+      make ArborX_BoundingVolumeHierarchy.exe
+    - cp ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchy.exe /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyMaster.exe
   tags:
     - nobatch
 
@@ -94,8 +94,8 @@ RunMaster:
     - export OMP_PROC_BIND=spread
     - export OMP_PLACES=threads
     - module load gcc/7.4.0 cuda/10.1.243 cmake/3.15.2 git/2.20.1 spectrum-mpi/10.3.1.2-20200121
-    - jsrun --smpiargs="-gpu" --nrs 1 --gpu_per_rs 6 --rs_per_host 1 --np 1 /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyRegressionBranch.exe --benchmark_format=json --no-header --benchmark_repetitions=10 | tee /ccsopen/proj/csc333/arborx-branch.json
-    - jsrun --smpiargs="-gpu" --nrs 1 --gpu_per_rs 6 --rs_per_host 1 --np 1 /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyRegressionMaster.exe --benchmark_format=json --no-header --benchmark_repetitions=10 | tee /ccsopen/proj/csc333/arborx-master.json
+    - jsrun --smpiargs="-gpu" --nrs 1 --gpu_per_rs 6 --rs_per_host 1 --np 1 /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyBranch.exe --benchmark_format=json --no-header --benchmark_repetitions=10 | tee /ccsopen/proj/csc333/arborx-branch.json
+    - jsrun --smpiargs="-gpu" --nrs 1 --gpu_per_rs 6 --rs_per_host 1 --np 1 /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyMaster.exe --benchmark_format=json --no-header --benchmark_repetitions=10 | tee /ccsopen/proj/csc333/arborx-master.json
   tags:
     - batch
 
