@@ -10,7 +10,7 @@ stages:
   - compare
 
 .LoadModules:
-  script:
+  before_script:
     - module load gcc/7.4.0 cuda/10.1.243 cmake/3.15.2 git/2.20.1 spectrum-mpi/10.3.1.2-20200121
 
 BuildBoost:
