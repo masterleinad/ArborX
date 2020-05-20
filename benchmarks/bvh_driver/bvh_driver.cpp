@@ -381,7 +381,7 @@ int main(int argc, char *argv[])
 
 #ifdef KOKKOS_ENABLE_SERIAL
   using Serial = Kokkos::Serial::device_type;
-  REGISTER_BENCHMARK(ArborX::BVH<Serial>, 1e2, 1e4, 1e5);
+  REGISTER_BENCHMARK(ArborX::BVH<Serial>, 1e3, 1e4, 1e5);
 #endif
 
 #ifdef KOKKOS_ENABLE_OPENMP
