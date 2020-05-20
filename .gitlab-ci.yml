@@ -73,7 +73,7 @@ BuildArborXBranch:
             -DARBORX_ENABLE_MPI=ON
             -DARBORX_ENABLE_TESTS=OFF
             -DARBORX_ENABLE_BENCHMARKS=ON
-            -DARBORX_PERFORMANCE_TESTING .. &&
+            -DARBORX_PERFORMANCE_TESTING=ON .. &&
       make ArborX_BoundingVolumeHierarchy.exe
     - cp ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchy.exe /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyBranch.exe
   tags:
@@ -93,7 +93,7 @@ BuildArborXMaster:
             -DARBORX_ENABLE_MPI=ON
             -DARBORX_ENABLE_TESTS=OFF
             -DARBORX_ENABLE_BENCHMARKS=ON
-            -DARBORX_PERFORMANCE_TESTING .. &&
+            -DARBORX_PERFORMANCE_TESTING=ON .. &&
       makee
     - cp ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchy.exe /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyMaster.exe
   tags:
