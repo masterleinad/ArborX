@@ -22,7 +22,6 @@
 #include <ArborX_Predicates.hpp>
 
 #include <Kokkos_Core.hpp>
-#include <Kokkos_UnorderedMap.hpp>	
 
 namespace ArborX
 {
