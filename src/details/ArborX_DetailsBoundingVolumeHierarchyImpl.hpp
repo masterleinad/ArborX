@@ -22,6 +22,7 @@
 #include <ArborX_Predicates.hpp>
 
 #include <Kokkos_Core.hpp>
+#include <Kokkos_UnorderedMap.hpp>	
 
 namespace ArborX
 {
@@ -167,9 +168,10 @@ queryDispatch(SpatialPredicateTag, BVH const &bvh, ExecutionSpace const &space,
   }
   else
   {
-    Iota permute;
+    abort();
+    /*Iota permute;
     queryImpl(space, BVHParallelTreeTraversal<BVH>{bvh}, predicates, callback,
-              out, offset, permute, toBufferStatus(policy._buffer_size));
+              out, offset, permute, toBufferStatus(policy._buffer_size));*/
   }
 
   Kokkos::Profiling::popRegion();
