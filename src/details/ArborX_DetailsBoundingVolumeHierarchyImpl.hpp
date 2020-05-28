@@ -167,10 +167,9 @@ queryDispatch(SpatialPredicateTag, BVH const &bvh, ExecutionSpace const &space,
   }
   else
   {
-    abort();
-    /*Iota permute;
+    Iota permute;
     queryImpl(space, BVHParallelTreeTraversal<BVH>{bvh}, predicates, callback,
-              out, offset, permute, toBufferStatus(policy._buffer_size));*/
+              out, offset, permute, toBufferStatus(policy._buffer_size));
   }
 
   Kokkos::Profiling::popRegion();
