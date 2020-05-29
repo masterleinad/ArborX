@@ -8,7 +8,7 @@ build_script:
   - cmd: set KOKKOS_OPTIONS="-DKokkos_ENABLE_SERIAL=ON -DKokkos_ENABLE_LIBDL=OFF -DKokkos_ENABLE_PROFILING=OFF"
   - cmd: set KOKKOS_DIR=c:\projects\source\kokkos-install
   - cmd: set KOKKOS_URL=https://github.com/kokkos/kokkos/archive/%KOKKOS_VERSION%.zip
-  - cmd: set KOKKOS_ARCHIVE=kokkos-%KOKKOS_HASH%.zip
+  - cmd: set KOKKOS_ARCHIVE=kokkos-%KOKKOS_VERSION%.zip
   - cmd: curl -fsSL -o %KOKKOS_ARCHIVE% %KOKKOS_URL%
   - cmd: mkdir kokkos
   - cmd: echo %KOKKOS_ARCHIVE%
