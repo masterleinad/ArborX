@@ -149,10 +149,10 @@ struct InsertGenerator
     // cache lines.
     _callback(Access::get(_permuted_predicates, predicate_index),
               primitive_index, [&](ValueType const &value) {
-                _out(Kokkos::atomic_fetch_add(&offset, 1)) = value;
-                /* _out.insert(
+                //_out(Kokkos::atomic_fetch_add(&offset, 1)) = value;
+                 _out.insert(
                     Kokkos::pair<int, int>{predicate_index, Kokkos::atomic_fetch_add(&offset, 1)},
-                    value);*/
+                    value);
               });
   }
 
@@ -170,10 +170,10 @@ struct InsertGenerator
     // cache lines.
     _callback(Access::get(_permuted_predicates, predicate_index),
               primitive_index, distance, [&](ValueType const &value) {
-                _out(Kokkos::atomic_fetch_add(&offset, 1)) = value;
-                /* _out.insert(
+                //_out(Kokkos::atomic_fetch_add(&offset, 1)) = value;
+                 _out.insert(
                     Kokkos::pair<int, int>{predicate_index, Kokkos::atomic_fetch_add(&offset, 1)},
-                    value);*/
+                    value);
               });
   }
 };
@@ -228,10 +228,10 @@ void queryImpl(ExecutionSpace const &space, TreeTraversal const &tree_traversal,
   // pre-condition: offset and out are preallocated. If buffer_size > 0, offset
   // is pre-initialized
 
-  using MapType = OutputView;
-/*      Kokkos::UnorderedMap<Kokkos::pair<int, int>,
+  using MapType = /*OutputView;*/
+      Kokkos::UnorderedMap<Kokkos::pair<int, int>,
                            typename OutputView::value_type, ExecutionSpace>;
-  MapType unordered_map(1000000);*/
+  MapType unordered_map(1000000);
 
   static_assert(Kokkos::is_execution_space<ExecutionSpace>{}, "");
 
@@ -254,7 +254,7 @@ void queryImpl(ExecutionSpace const &space, TreeTraversal const &tree_traversal,
                     Callback, MapType, CountView, OffsetView, PermuteType>
         insert_generator{permuted_predicates,
                          callback,
-                         out,
+                         unordered_map,
                          counts,
                          offset,
                          permute};
@@ -316,17 +316,17 @@ void queryImpl(ExecutionSpace const &space, TreeTraversal const &tree_traversal,
         space, permuted_predicates,
         InsertGenerator<SecondPassTag, PermutedPredicates, Callback, MapType,
                         CountView, OffsetView, PermuteType>{
-            permuted_predicates, callback, out, counts, offset,
+            permuted_predicates, callback, unordered_map, counts, offset,
             permute});
 
     // fill the output view from the unordered_map
-    /* Kokkos::parallel_for(unordered_map.capacity(), KOKKOS_LAMBDA (uint32_t i) {
+    Kokkos::parallel_for(unordered_map.capacity(), KOKKOS_LAMBDA (uint32_t i) {
     if( unordered_map.valid_at(i) ) {
     auto key   = unordered_map.key_at(i);
     auto value = unordered_map.value_at(i);
-    out(offset(key.first)+key.second) = value;
+    out(/*offset(key.first)+*/key.second) = value;
      }
-});*/
+});
 
 
     Kokkos::Profiling::popRegion();
