@@ -303,10 +303,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(example_tree_construction, DeviceType,
     else
     {
       os << "I" << node - internal_nodes.data();
-      for (Node const *child : {getNodePtr(node->children.first),
-                                getNodePtr(node->children.second)})
-        traverseRecursive(child, os);
-    }
+      traverseRecursive(getNodePtr(node->children.first), os);
+      traverseRecursive(getNodePtr(node->children.second), os);
   };
 
   Kokkos::View<int *, DeviceType> parents("parents", 2 * n + 1);
