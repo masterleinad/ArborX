@@ -5,7 +5,6 @@ clone_folder: c:\projects\source
 build_script:
   - cmd: set KOKKOS_VERSION=3.1.00
   - cmd: echo %KOKKOS_VERSION%
-  - cmd: set KOKKOS_OPTIONS="-DKokkos_ENABLE_SERIAL=ON -DKokkos_ENABLE_LIBDL=OFF -DKokkos_ENABLE_PROFILING=OFF"
   - cmd: set KOKKOS_DIR=c:\projects\source\kokkos-install
   - cmd: set KOKKOS_URL=https://github.com/kokkos/kokkos/archive/%KOKKOS_VERSION%.zip
   - cmd: set KOKKOS_ARCHIVE=kokkos-%KOKKOS_VERSION%.zip
@@ -16,15 +15,20 @@ build_script:
   - cmd: cd kokkos && mkdir build && cd build
   - cmd: ls ..
   - cmd: echo %KOKKOS_OPTIONS%
-  - cmd: cmake -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=%KOKKOS_DIR% %KOKKOS_OPTIONS% ..
+  - cmd: cmake -D CMAKE_BUILD_TYPE=Release
+               -D CMAKE_INSTALL_PREFIX=%KOKKOS_DIR%
+               -D Kokkos_ENABLE_SERIAL=ON
+               -D Kokkos_ENABLE_LIBDL=OFF
+               -D Kokkos_ENABLE_PROFILING=OFF
+               ..
   - cmd: cmake --build . --target install
   - cmd: cd c:\projects\source && mkdir build && cd build
-  - cmd: cmake -D CMAKE_BUILD_TYPE=Debug \
-           -D CMAKE_CXX_EXTENSIONS=OFF \
-           -D CMAKE_PREFIX_PATH="%KOKKOS_DIR%" \
-           -D ARBORX_ENABLE_MPI=OFF \
-           -D ARBORX_ENABLE_TESTS=ON \
-           -D ARBORX_ENABLE_EXAMPLES=ON \
-           -D ARBORX_ENABLE_BENCHMARKS=ON \
+  - cmd: cmake -D CMAKE_BUILD_TYPE=Debug
+           -D CMAKE_CXX_EXTENSIONS=OFF
+           -D CMAKE_PREFIX_PATH="%KOKKOS_DIR%"
+           -D ARBORX_ENABLE_MPI=OFF
+           -D ARBORX_ENABLE_TESTS=ON
+           -D ARBORX_ENABLE_EXAMPLES=ON
+           -D ARBORX_ENABLE_BENCHMARKS=ON
            ..
   - cmd: cmake --build . --target install && ctest -C Debug -V
