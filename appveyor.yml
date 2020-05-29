@@ -25,7 +25,7 @@ build_script:
   - cmd: cd c:\projects\source && mkdir build && cd build
   - cmd: cmake -D CMAKE_BUILD_TYPE=Debug
            -D CMAKE_CXX_EXTENSIONS=OFF
-           -D CMAKE_PREFIX_PATH="%KOKKOS_DIR%;C:\Libraries\boost_1_73_0"
+           -D CMAKE_PREFIX_PATH="%KOKKOS_DIR%"
            -D ARBORX_ENABLE_MPI=OFF
            -D ARBORX_ENABLE_TESTS=OFF
            -D ARBORX_ENABLE_EXAMPLES=ON
