@@ -150,7 +150,7 @@ struct InsertGenerator
     _callback(Access::get(_permuted_predicates, predicate_index),
               primitive_index, [&](ValueType const &value) {
                 _out.insert(
-                    Kokkos::pair<int, int>{predicate_index, primitive_index},
+                    Kokkos::pair<int, int>{predicate_index, Kokkos::atomic_fetch_add(&offset, 1)},
                     value);
               });
   }
@@ -170,7 +170,7 @@ struct InsertGenerator
     _callback(Access::get(_permuted_predicates, predicate_index),
               primitive_index, distance, [&](ValueType const &value) {
                 _out.insert(
-                    Kokkos::pair<int, int>{predicate_index, primitive_index},
+                    Kokkos::pair<int, int>{predicate_index, Kokkos::atomic_fetch_add(&offset, 1)},
                     value);
               });
   }
@@ -288,7 +288,7 @@ void queryImpl(ExecutionSpace const &space, TreeTraversal const &tree_traversal,
     // Exit early if either no results were found for any of the queries, or
     // nothing was inserted inside a callback for found results. This check
     // guarantees that the second pass will not be executed.
-    // Kokkos::resize(out, 0);
+    Kokkos::resize(out, 0);
     // FIXME: do we need to reset offset if it was preallocated here?
     Kokkos::Profiling::popRegion();
     return;
@@ -316,6 +316,16 @@ void queryImpl(ExecutionSpace const &space, TreeTraversal const &tree_traversal,
                         CountView, OffsetView, PermuteType>{
             permuted_predicates, callback, unordered_map, counts, offset,
             permute});
+
+    // fill the output view from the unordered_map
+     Kokkos::parallel_for(unordered_map.capacity(), KOKKOS_LAMBDA (uint32_t i) {
+    if( unordered_map.valid_at(i) ) {
+    auto key   = unordered_map.key_at(i);
+    auto value = unordered_map.value_at(i);
+    out(offset(key.first)+key.second) = value;
+     }
+});
+
 
     Kokkos::Profiling::popRegion();
   }
