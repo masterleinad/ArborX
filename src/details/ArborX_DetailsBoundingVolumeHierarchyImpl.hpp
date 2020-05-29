@@ -334,7 +334,7 @@ check_valid_callback_if_first_argument_is_not_a_view(
 }
 
 template <typename View, typename Predicates, typename OutputView>
-std::enable_if_t<Kokkos::is_view<View>()>
+std::enable_if_t<Kokkos::is_view<View>::value>
 check_valid_callback_if_first_argument_is_not_a_view(View const &,
                                                      Predicates const &,
                                                      OutputView const &)
