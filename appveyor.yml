@@ -29,6 +29,6 @@ build_script:
            -D ARBORX_ENABLE_MPI=OFF
            -D ARBORX_ENABLE_TESTS=ON
            -D ARBORX_ENABLE_EXAMPLES=ON
-           -D ARBORX_ENABLE_BENCHMARKS=ON
+           -D ARBORX_ENABLE_BENCHMARKS=OFF
            ..
   - cmd: cmake --build . --target install && ctest -C Debug -V
