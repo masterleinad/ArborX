@@ -177,14 +177,14 @@ queryDispatch(SpatialPredicateTag, BVH const &bvh, ExecutionSpace const &space,
 
 template <typename BVH, typename ExecutionSpace, typename Predicates,
           typename Indices, typename Offset>
-inline std::enable_if_t<Kokkos::is_view<Indices>{} && Kokkos::is_view<Offset>{}>
+inline std::enable_if_t<Kokkos::is_view<Indices>() && Kokkos::is_view<Offset>()>
 queryDispatch(SpatialPredicateTag, BVH const &bvh, ExecutionSpace const &space,
               Predicates const &predicates, Indices &indices, Offset &offset,
               Experimental::TraversalPolicy const &policy =
                   Experimental::TraversalPolicy())
 {
-  queryDispatch(SpatialPredicateTag{}, bvh, space, predicates,
-                CallbackDefaultSpatialPredicate{}, indices, offset, policy);
+  queryDispatch(SpatialPredicateTag(), bvh, space, predicates,
+                CallbackDefaultSpatialPredicate(), indices, offset, policy);
 }
 
 template <typename BVH, typename ExecutionSpace, typename Predicates,
@@ -199,7 +199,7 @@ queryDispatch(SpatialPredicateTag, BVH const &bvh, ExecutionSpace const &space,
 {
   using MemorySpace = typename BVH::memory_space;
   Kokkos::View<int *, MemorySpace> indices("indices", 0);
-  queryDispatch(SpatialPredicateTag{}, bvh, space, predicates, indices, offset,
+  queryDispatch(SpatialPredicateTag(), bvh, space, predicates, indices, offset,
                 policy);
   callback(predicates, offset, indices, out);
 }
@@ -285,7 +285,7 @@ queryDispatch(NearestPredicateTag, BVH const &bvh, ExecutionSpace const &space,
 
 template <typename BVH, typename ExecutionSpace, typename Predicates,
           typename Indices, typename Offset>
-inline std::enable_if_t<Kokkos::is_view<Indices>{} && Kokkos::is_view<Offset>{}>
+inline std::enable_if_t<Kokkos::is_view<Indices>() && Kokkos::is_view<Offset>()>
 queryDispatch(NearestPredicateTag, BVH const &bvh, ExecutionSpace const &space,
               Predicates const &predicates, Indices &indices, Offset &offset,
               Experimental::TraversalPolicy const &policy =
@@ -297,9 +297,9 @@ queryDispatch(NearestPredicateTag, BVH const &bvh, ExecutionSpace const &space,
 
 template <typename BVH, typename ExecutionSpace, typename Predicates,
           typename Indices, typename Offset, typename Distances>
-inline std::enable_if_t<Kokkos::is_view<Indices>{} &&
-                        Kokkos::is_view<Offset>{} &&
-                        Kokkos::is_view<Distances>{}>
+inline std::enable_if_t<Kokkos::is_view<Indices>() &&
+                        Kokkos::is_view<Offset>() &&
+                        Kokkos::is_view<Distances>()>
 queryDispatch(NearestPredicateTag, BVH const &bvh, ExecutionSpace const &space,
               Predicates const &predicates, Indices &indices, Offset &offset,
               Distances &distances,
@@ -325,7 +325,7 @@ queryDispatch(NearestPredicateTag, BVH const &bvh, ExecutionSpace const &space,
 } // namespace BoundingVolumeHierarchyImpl
 
 template <typename Callback, typename Predicates, typename OutputView>
-std::enable_if_t<!Kokkos::is_view<Callback>{}>
+std::enable_if_t<!Kokkos::is_view<Callback>()>
 check_valid_callback_if_first_argument_is_not_a_view(
     Callback const &callback, Predicates const &predicates,
     OutputView const &out)
@@ -334,7 +334,7 @@ check_valid_callback_if_first_argument_is_not_a_view(
 }
 
 template <typename View, typename Predicates, typename OutputView>
-std::enable_if_t<Kokkos::is_view<View>{}>
+std::enable_if_t<Kokkos::is_view<View>()>
 check_valid_callback_if_first_argument_is_not_a_view(View const &,
                                                      Predicates const &,
                                                      OutputView const &)
