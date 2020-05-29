@@ -87,8 +87,8 @@ struct InsertGenerator
               });
   }
   template <typename U = PassTag, typename V = Tag>
-  KOKKOS_FUNCTION std::enable_if_t<std::is_same<U, FirstPassTag>{} &&
-                                   std::is_same<V, NearestPredicateTag>{}>
+  KOKKOS_FUNCTION std::enable_if_t<std::is_same<U, FirstPassTag>() &&
+                                   std::is_same<V, NearestPredicateTag>()>
   operator()(int predicate_index, int primitive_index, float distance) const
   {
     auto const permuted_predicate_index = _permute(predicate_index);
@@ -110,8 +110,8 @@ struct InsertGenerator
 
   template <typename U = PassTag, typename V = Tag>
   KOKKOS_FUNCTION
-      std::enable_if_t<std::is_same<U, FirstPassNoBufferOptimizationTag>{} &&
-                       std::is_same<V, SpatialPredicateTag>{}>
+      std::enable_if_t<std::is_same<U, FirstPassNoBufferOptimizationTag>() &&
+                       std::is_same<V, SpatialPredicateTag>()>
       operator()(int predicate_index, int primitive_index) const
   {
     auto &count = _counts(predicate_index);
@@ -123,8 +123,8 @@ struct InsertGenerator
 
   template <typename U = PassTag, typename V = Tag>
   KOKKOS_FUNCTION
-      std::enable_if_t<std::is_same<U, FirstPassNoBufferOptimizationTag>{} &&
-                       std::is_same<V, NearestPredicateTag>{}>
+      std::enable_if_t<std::is_same<U, FirstPassNoBufferOptimizationTag>() &&
+                       std::is_same<V, NearestPredicateTag>()>
       operator()(int predicate_index, int primitive_index, float distance) const
   {
     auto &count = _counts(predicate_index);
@@ -135,8 +135,8 @@ struct InsertGenerator
   }
 
   template <typename U = PassTag, typename V = Tag>
-  KOKKOS_FUNCTION std::enable_if_t<std::is_same<U, SecondPassTag>{} &&
-                                   std::is_same<V, SpatialPredicateTag>{}>
+  KOKKOS_FUNCTION std::enable_if_t<std::is_same<U, SecondPassTag>() &&
+                                   std::is_same<V, SpatialPredicateTag>()>
   operator()(int predicate_index, int primitive_index) const
   {
     // we store offsets in counts, and offset(permute(i)) = counts(i)
@@ -153,8 +153,8 @@ struct InsertGenerator
   }
 
   template <typename U = PassTag, typename V = Tag>
-  KOKKOS_FUNCTION std::enable_if_t<std::is_same<U, SecondPassTag>{} &&
-                                   std::is_same<V, NearestPredicateTag>{}>
+  KOKKOS_FUNCTION std::enable_if_t<std::is_same<U, SecondPassTag>() &&
+                                   std::is_same<V, NearestPredicateTag>()>
   operator()(int predicate_index, int primitive_index, float distance) const
   {
     // we store offsets in counts, and offset(permute(i)) = counts(i)
@@ -221,7 +221,7 @@ void queryImpl(ExecutionSpace const &space, TreeTraversal const &tree_traversal,
   // pre-condition: offset and out are preallocated. If buffer_size > 0, offset
   // is pre-initialized
 
-  static_assert(Kokkos::is_execution_space<ExecutionSpace>{}, "");
+  static_assert(Kokkos::is_execution_space<ExecutionSpace>(), "");
 
   using Access = Traits::Access<Predicates, Traits::PredicatesTag>;
   auto const n_queries = Access::size(predicates);
