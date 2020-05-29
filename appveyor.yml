@@ -12,7 +12,7 @@ build_script:
   - cmd: curl -fsSL -o %KOKKOS_ARCHIVE% %KOKKOS_URL%
   - cmd: mkdir kokkos
   - cmd: echo %KOKKOS_ARCHIVE%
-  - cmd: 7z e %KOKKOS_ARCHIVE% -okokkos -aoa
+  - cmd: 7z x %KOKKOS_ARCHIVE% -okokkos
   - cmd: cd kokkos && mkdir build && cd build
   - cmd: cat ..\CMakeLists.txt 
   - cmd: cmake -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=%KOKKOS_DIR% %KOKKOS_OPTIONS% ..
