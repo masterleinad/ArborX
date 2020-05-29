@@ -10,9 +10,9 @@ build_script:
   - cmd: set KOKKOS_ARCHIVE=kokkos-%KOKKOS_HASH%.tar.gz
   - cmd: curl -fsSL -o %KOKKOS_ARCHIVE% %KOKKOS_URL%
   - cmd: mkdir kokkos
-  - cmd: tar -xf ${KOKKOS_ARCHIVE} -C kokkos --strip-components=1
+  - cmd: tar -xf %KOKKOS_ARCHIVE% -C kokkos --strip-components=1
   - cmd: cd kokkos && mkdir build && cd build
-  - cmd: cmake -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=${KOKKOS_DIR} ${KOKKOS_OPTIONS} ..
+  - cmd: cmake -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=%KOKKOS_DIR% %KOKKOS_OPTIONS% ..
   - cmd: cmake --build . --target install
   - cmd: cd c:\projects\source && mkdir build && cd build
   - cmd: cmake -D CMAKE_BUILD_TYPE=Debug \
