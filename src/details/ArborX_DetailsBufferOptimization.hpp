@@ -66,8 +66,8 @@ struct InsertGenerator
   using Tag = typename Traits::Helper<Access>::tag;
 
   template <typename U = PassTag, typename V = Tag>
-  KOKKOS_FUNCTION std::enable_if_t<std::is_same<U, FirstPassTag>{} &&
-                                   std::is_same<V, SpatialPredicateTag>{}>
+  KOKKOS_FUNCTION std::enable_if_t<std::is_same<U, FirstPassTag>() &&
+                                   std::is_same<V, SpatialPredicateTag>()>
   operator()(int predicate_index, int primitive_index) const
   {
     auto const permuted_predicate_index = _permute(predicate_index);
