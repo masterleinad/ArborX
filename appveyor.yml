@@ -10,9 +10,9 @@ build_script:
   - cmd: set KOKKOS_URL=https://github.com/kokkos/kokkos/archive/%KOKKOS_VERSION%.zip
   - cmd: set KOKKOS_ARCHIVE=kokkos-%KOKKOS_VERSION%.zip
   - cmd: curl -fsSL -o %KOKKOS_ARCHIVE% %KOKKOS_URL%
-  - cmd: mkdir kokkos
   - cmd: echo %KOKKOS_ARCHIVE%
-  - cmd: 7z x %KOKKOS_ARCHIVE% -okokkos
+  - cmd: 7z x %KOKKOS_ARCHIVE%
+  - cmd: mv kokkos-%KOKKOS_VERSION% kokkos
   - cmd: cd kokkos && mkdir build && cd build
   - cmd: ls ..
   - cmd: cmake -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=%KOKKOS_DIR% %KOKKOS_OPTIONS% ..
