@@ -3,26 +3,25 @@ image:
 clone_folder: c:\projects\source
 
 build_script:
-- cmd: >-
-    set KOKKOS_VERSION=3.1.00
-    set KOKKOS_OPTIONS="-DKokkos_ENABLE_SERIAL=ON -DKokkos_ENABLE_LIBDL=OFF -DKokkos_ENABLE_PROFILING=OFF"
-    set KOKKOS_DIR=c:\projects\source\kokkos-install
-    set KOKKOS_URL=https://github.com/kokkos/kokkos/archive/%KOKKOS_VERSION%.tar.gz
-    set KOKKOS_ARCHIVE=kokkos-%KOKKOS_HASH%.tar.gz
-    curl -fsSL -o %KOKKOS_ARCHIVE% %KOKKOS_URL%
-    mkdir kokkos
-    tar -xf ${KOKKOS_ARCHIVE} -C kokkos --strip-components=1
-    cd kokkos && mkdir build && cd build
-    cmake -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=${KOKKOS_DIR} ${KOKKOS_OPTIONS} ..
-    cmake --build . --target install
-    cd c:\projects\source && mkdir build && cd build
-    cmake -D CMAKE_BUILD_TYPE=Debug \
-          -D CMAKE_CXX_EXTENSIONS=OFF \
-          -D CMAKE_PREFIX_PATH="%KOKKOS_DIR%" \
-          -D ARBORX_ENABLE_MPI=OFF \
-          -D ARBORX_ENABLE_TESTS=ON \
-          -D ARBORX_ENABLE_EXAMPLES=ON   \
-          -D ARBORX_ENABLE_BENCHMARKS=ON \
-    ..
-    cmake --build . --target install &&
-    ctest -C Debug -V
+- cmd:
+    - set KOKKOS_VERSION=3.1.00
+    - set KOKKOS_OPTIONS="-DKokkos_ENABLE_SERIAL=ON -DKokkos_ENABLE_LIBDL=OFF -DKokkos_ENABLE_PROFILING=OFF"
+    - set KOKKOS_DIR=c:\projects\source\kokkos-install
+    - set KOKKOS_URL=https://github.com/kokkos/kokkos/archive/%KOKKOS_VERSION%.tar.gz
+    - set KOKKOS_ARCHIVE=kokkos-%KOKKOS_HASH%.tar.gz
+    - curl -fsSL -o %KOKKOS_ARCHIVE% %KOKKOS_URL%
+    - mkdir kokkos
+    - tar -xf ${KOKKOS_ARCHIVE} -C kokkos --strip-components=1
+    - cd kokkos && mkdir build && cd build
+    - cmake -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=${KOKKOS_DIR} ${KOKKOS_OPTIONS} ..
+    - cmake --build . --target install
+    - cd c:\projects\source && mkdir build && cd build
+    - cmake -D CMAKE_BUILD_TYPE=Debug \
+        -D CMAKE_CXX_EXTENSIONS=OFF \
+        -D CMAKE_PREFIX_PATH="%KOKKOS_DIR%" \
+        -D ARBORX_ENABLE_MPI=OFF \
+        -D ARBORX_ENABLE_TESTS=ON \
+        -D ARBORX_ENABLE_EXAMPLES=ON \
+        -D ARBORX_ENABLE_BENCHMARKS=ON \
+        ..
+    - cmake --build . --target install && ctest -C Debug -V
