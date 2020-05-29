@@ -71,20 +71,14 @@ struct InsertGenerator
                                    std::is_same<V, SpatialPredicateTag>{}>
   operator()(int predicate_index, int primitive_index) const
   {
-    auto const permuted_predicate_index = _permute(predicate_index);
-    // With permutation, we access offset in random manner, and
-    // _offset(permutated_predicate_index+1) may be in a completely different
-    // place. Instead, use pointers to get the correct value for the buffer
-    // size. For this reason, also take a reference for offset.
-    auto const &offset = _offset(permuted_predicate_index);
-    auto const buffer_size = *(&offset + 1) - offset;
     auto &count = _counts(predicate_index);
 
     _callback(Access::get(_permuted_predicates, predicate_index),
               primitive_index, [&](ValueType const &value) {
                 int count_old = Kokkos::atomic_fetch_add(&count, 1);
-                if (count_old < buffer_size)
-                  _out(offset + count_old) = value;
+                _out.insert(
+                    Kokkos::pair<int, int>{predicate_index, count_old},
+                    value);
               });
   }
   template <typename U = PassTag, typename V = Tag>
@@ -92,47 +86,15 @@ struct InsertGenerator
                                    std::is_same<V, NearestPredicateTag>{}>
   operator()(int predicate_index, int primitive_index, float distance) const
   {
-    auto const permuted_predicate_index = _permute(predicate_index);
-    // With permutation, we access offset in random manner, and
-    // _offset(permutated_predicate_index+1) may be in a completely different
-    // place. Instead, use pointers to get the correct value for the buffer
-    // size. For this reason, also take a reference for offset.
-    auto const &offset = _offset(permuted_predicate_index);
-    auto const buffer_size = *(&offset + 1) - offset;
     auto &count = _counts(predicate_index);
 
     _callback(Access::get(_permuted_predicates, predicate_index),
               primitive_index, distance, [&](ValueType const &value) {
                 int count_old = Kokkos::atomic_fetch_add(&count, 1);
-                if (count_old < buffer_size)
-                  _out(offset + count_old) = value;
+		 _out.insert(
+                    Kokkos::pair<int, int>{predicate_index, count_old},
+                    value);
               });
-  }
-
-  template <typename U = PassTag, typename V = Tag>
-  KOKKOS_FUNCTION
-      std::enable_if_t<std::is_same<U, FirstPassNoBufferOptimizationTag>{} &&
-                       std::is_same<V, SpatialPredicateTag>{}>
-      operator()(int predicate_index, int primitive_index) const
-  {
-    auto &count = _counts(predicate_index);
-
-    _callback(Access::get(_permuted_predicates, predicate_index),
-              primitive_index,
-              [&](ValueType const &) { Kokkos::atomic_fetch_add(&count, 1); });
-  }
-
-  template <typename U = PassTag, typename V = Tag>
-  KOKKOS_FUNCTION
-      std::enable_if_t<std::is_same<U, FirstPassNoBufferOptimizationTag>{} &&
-                       std::is_same<V, NearestPredicateTag>{}>
-      operator()(int predicate_index, int primitive_index, float distance) const
-  {
-    auto &count = _counts(predicate_index);
-
-    _callback(Access::get(_permuted_predicates, predicate_index),
-              primitive_index, distance,
-              [&](ValueType const &) { Kokkos::atomic_fetch_add(&count, 1); });
   }
 
   template <typename U = PassTag, typename V = Tag>
@@ -238,77 +200,17 @@ void queryImpl(ExecutionSpace const &space, TreeTraversal const &tree_traversal,
   using Access = Traits::Access<Predicates, Traits::PredicatesTag>;
   auto const n_queries = Access::size(predicates);
 
-  Kokkos::Profiling::pushRegion("ArborX:BVH:two_pass");
-
   using CountView = Kokkos::View<int *, ExecutionSpace>;
   CountView counts(Kokkos::view_alloc("counts", space), n_queries);
 
   using PermutedPredicates = PermutedPredicates<Predicates, PermuteType>;
   PermutedPredicates permuted_predicates = {predicates, permute};
 
-  Kokkos::Profiling::pushRegion("ArborX:BVH:two_pass:first_pass");
-  bool underflow = false;
-  bool overflow = false;
-  if (buffer_status != BufferStatus::PreallocationNone)
-  {
-    tree_traversal.launch(
-        space, permuted_predicates,
-        InsertGenerator<FirstPassTag, PermutedPredicates, Callback, OutputView,
-                        CountView, OffsetView, PermuteType>{
-            permuted_predicates, callback, out, counts, offset, permute});
-
-    // Detecting overflow is a local operation that needs to be done for every
-    // index. We allow individual buffer sizes to differ, so it's not as easy
-    // as computing max counts.
-    int overflow_int = 0;
-    Kokkos::parallel_reduce(
-        ARBORX_MARK_REGION("compute_overflow"),
-        Kokkos::RangePolicy<ExecutionSpace>(space, 0, n_queries),
-        KOKKOS_LAMBDA(int i, int &update) {
-          auto const *const offset_ptr = &offset(permute(i));
-          if (counts(i) > *(offset_ptr + 1) - *offset_ptr)
-            update = 1;
-        },
-        overflow_int);
-    overflow = (overflow_int > 0);
-
-    if (!overflow)
-    {
-      int n_results = 0;
-      Kokkos::parallel_reduce(
-          ARBORX_MARK_REGION("compute_underflow"),
-          Kokkos::RangePolicy<ExecutionSpace>(space, 0, n_queries),
-          KOKKOS_LAMBDA(int i, int &update) { update += counts(i); },
-          n_results);
-      underflow = (n_results < out.extent_int(0));
-    }
-  }
-  else
-  {
-    InsertGenerator<FirstPassNoBufferOptimizationTag, PermutedPredicates,
-                    Callback, MapType, CountView, OffsetView, PermuteType>
-        insert_generator{permuted_predicates,
-                         callback,
-                         unordered_map,
-                         counts,
-                         offset,
-                         permute};
-    tree_traversal.launch(space, permuted_predicates, insert_generator);
-    // This may not be true, but it does not matter. As long as we have
-    // (n_results == 0) check before second pass, this value is not used.
-    // Otherwise, we know it's overflowed as there is no allocation.
-    overflow = true;
-  }
-
-  Kokkos::Profiling::popRegion();
-  Kokkos::Profiling::pushRegion("ArborX:BVH:two_pass:first_pass_postprocess");
-
-  OffsetView preallocated_offset("offset_copy", 0);
-  if (underflow)
-  {
-    // Store a copy of the original offset. We'll need it for compression.
-    preallocated_offset = clone(space, offset);
-  }
+  tree_traversal.launch(
+    space, permuted_predicates,
+    InsertGenerator<FirstPassTag, PermutedPredicates, Callback, MapType,
+                    CountView, OffsetView, PermuteType>{
+    permuted_predicates, callback, unordered_map, counts, offset, permute});
 
   Kokkos::parallel_for(
       ARBORX_MARK_REGION("copy_counts_to_offsets"),
@@ -317,83 +219,16 @@ void queryImpl(ExecutionSpace const &space, TreeTraversal const &tree_traversal,
   exclusivePrefixSum(space, offset);
 
   int const n_results = lastElement(offset);
-
-  Kokkos::Profiling::popRegion();
-
-  if (n_results == 0)
-  {
-    // Exit early if either no results were found for any of the queries, or
-    // nothing was inserted inside a callback for found results. This check
-    // guarantees that the second pass will not be executed.
-    Kokkos::resize(out, 0);
-    // FIXME: do we need to reset offset if it was preallocated here?
-    Kokkos::Profiling::popRegion();
-    return;
-  }
-
-  if (overflow || buffer_status == BufferStatus::PreallocationNone)
-  {
-    // Not enough (individual) storage for results
-
-    // If it was hard preallocation, we simply throw
-    ARBORX_ASSERT(buffer_status != BufferStatus::PreallocationHard);
-
-    // Otherwise, do the second pass
-    Kokkos::Profiling::pushRegion("ArborX:BVH:two_pass:second_pass");
-
-    Kokkos::parallel_for(
-        ARBORX_MARK_REGION("copy_offsets_to_counts"),
-        Kokkos::RangePolicy<ExecutionSpace>(space, 0, n_queries),
-        KOKKOS_LAMBDA(int const i) { counts(i) = offset(permute(i)); });
-
-    reallocWithoutInitializing(out, n_results);
-
-    tree_traversal.launch(
-        space, permuted_predicates,
-        InsertGenerator<SecondPassTag, PermutedPredicates, Callback, MapType,
-                        CountView, OffsetView, PermuteType>{
-            permuted_predicates, callback, unordered_map, counts, offset,
-            permute});
+  reallocWithoutInitializing(out, n_results);
 
     // fill the output view from the unordered_map
     Kokkos::parallel_for(unordered_map.capacity(), KOKKOS_LAMBDA (uint32_t i) {
       if( unordered_map.valid_at(i) ) {
         auto key   = unordered_map.key_at(i);
         auto value = unordered_map.value_at(i);
-        out(/*offset(key.first)+*/key.second) = value;
+        out(offset(permute(key.first))+key.second) = value;
       }
     });
-    Kokkos::Profiling::popRegion();
-  }
-  else if (underflow)
-  {
-     assert(false);
-    // More than enough storage for results, need compression
-    Kokkos::Profiling::pushRegion("ArborX:BVH:two_pass:copy_values");
-
-    OutputView tmp_out(Kokkos::ViewAllocateWithoutInitializing(out.label()),
-                       n_results);
-
-    Kokkos::parallel_for(
-        ARBORX_MARK_REGION("copy_valid_values"),
-        Kokkos::RangePolicy<ExecutionSpace>(space, 0, n_queries),
-        KOKKOS_LAMBDA(int i) {
-          int count = offset(i + 1) - offset(i);
-          for (int j = 0; j < count; ++j)
-          {
-            tmp_out(offset(i) + j) = out(preallocated_offset(i) + j);
-          }
-        });
-    out = tmp_out;
-
-    Kokkos::Profiling::popRegion();
-  }
-  else
-  {
-     assert(false);
-    // The allocated storage was exactly enough for results, do nothing
-  }
-  Kokkos::Profiling::popRegion();
 } // namespace Details
 
 } // namespace Details
