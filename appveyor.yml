@@ -21,7 +21,7 @@ build_script:
           -D CMAKE_PREFIX_PATH="%KOKKOS_DIR%" \
           -D ARBORX_ENABLE_MPI=OFF \
           -D ARBORX_ENABLE_TESTS=ON \
-          -D ARBORX_ENABLE_EXAMPLES=ON \
+          -D ARBORX_ENABLE_EXAMPLES=ON   \
           -D ARBORX_ENABLE_BENCHMARKS=ON \
     ..
     cmake --build . --target install &&
