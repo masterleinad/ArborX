@@ -15,6 +15,7 @@ build_script:
   - cmd: mv kokkos-%KOKKOS_VERSION% kokkos
   - cmd: cd kokkos && mkdir build && cd build
   - cmd: ls ..
+  - cmd: echo %KOKKOS_OPTIONS%
   - cmd: cmake -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=%KOKKOS_DIR% %KOKKOS_OPTIONS% ..
   - cmd: cmake --build . --target install
   - cmd: cd c:\projects\source && mkdir build && cd build
