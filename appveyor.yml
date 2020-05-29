@@ -27,7 +27,7 @@ build_script:
            -D CMAKE_CXX_EXTENSIONS=OFF
            -D CMAKE_PREFIX_PATH="%KOKKOS_DIR%;C:\Libraries\boost_1_73_0"
            -D ARBORX_ENABLE_MPI=OFF
-           -D ARBORX_ENABLE_TESTS=ON
+           -D ARBORX_ENABLE_TESTS=OFF
            -D ARBORX_ENABLE_EXAMPLES=ON
            -D ARBORX_ENABLE_BENCHMARKS=OFF
            ..
