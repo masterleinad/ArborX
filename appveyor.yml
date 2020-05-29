@@ -14,6 +14,7 @@ build_script:
   - cmd: echo %KOKKOS_ARCHIVE%
   - cmd: 7z e %KOKKOS_ARCHIVE% -okokkos -aoa
   - cmd: cd kokkos && mkdir build && cd build
+  - cmd: cat ..\CMakeLists.txt 
   - cmd: cmake -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=%KOKKOS_DIR% %KOKKOS_OPTIONS% ..
   - cmd: cmake --build . --target install
   - cmd: cd c:\projects\source && mkdir build && cd build
