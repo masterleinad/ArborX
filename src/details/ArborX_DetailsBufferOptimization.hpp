@@ -59,8 +59,6 @@ struct InsertGenerator
   Callback _callback;
   OutputView _out;
   CountView _counts;
-  OffsetView _offset;
-  PermuteType _permute;
 
   using ValueType = typename OutputView::value_type;
   using Access = Traits::Access<Predicates, Traits::PredicatesTag>;
@@ -93,48 +91,6 @@ struct InsertGenerator
                 int count_old = Kokkos::atomic_fetch_add(&count, 1);
 		 _out.insert(
                     Kokkos::pair<int, int>{predicate_index, count_old},
-                    value);
-              });
-  }
-
-  template <typename U = PassTag, typename V = Tag>
-  KOKKOS_FUNCTION std::enable_if_t<std::is_same<U, SecondPassTag>{} &&
-                                   std::is_same<V, SpatialPredicateTag>{}>
-  operator()(int predicate_index, int primitive_index) const
-  {
-    // we store offsets in counts, and offset(permute(i)) = counts(i)
-    auto &offset = _counts(predicate_index);
-
-    // TODO: there is a tradeoff here between skipping computation offset +
-    // count, and atomic increment of count. I think atomically incrementing
-    // offset is problematic for OpenMP as you potentially constantly steal
-    // cache lines.
-    _callback(Access::get(_permuted_predicates, predicate_index),
-              primitive_index, [&](ValueType const &value) {
-                //_out(Kokkos::atomic_fetch_add(&offset, 1)) = value;
-                 _out.insert(
-                    Kokkos::pair<int, int>{predicate_index, Kokkos::atomic_fetch_add(&offset, 1)},
-                    value);
-              });
-  }
-
-  template <typename U = PassTag, typename V = Tag>
-  KOKKOS_FUNCTION std::enable_if_t<std::is_same<U, SecondPassTag>{} &&
-                                   std::is_same<V, NearestPredicateTag>{}>
-  operator()(int predicate_index, int primitive_index, float distance) const
-  {
-    // we store offsets in counts, and offset(permute(i)) = counts(i)
-    auto &offset = _counts(predicate_index);
-
-    // TODO: there is a tradeoff here between skipping computation offset +
-    // count, and atomic increment of count. I think atomically incrementing
-    // offset is problematic for OpenMP as you potentially constantly steal
-    // cache lines.
-    _callback(Access::get(_permuted_predicates, predicate_index),
-              primitive_index, distance, [&](ValueType const &value) {
-                //_out(Kokkos::atomic_fetch_add(&offset, 1)) = value;
-                 _out.insert(
-                    Kokkos::pair<int, int>{predicate_index, Kokkos::atomic_fetch_add(&offset, 1)},
                     value);
               });
   }
@@ -210,7 +166,7 @@ void queryImpl(ExecutionSpace const &space, TreeTraversal const &tree_traversal,
     space, permuted_predicates,
     InsertGenerator<FirstPassTag, PermutedPredicates, Callback, MapType,
                     CountView, OffsetView, PermuteType>{
-    permuted_predicates, callback, unordered_map, counts, offset, permute});
+    permuted_predicates, callback, unordered_map, counts});
 
   Kokkos::parallel_for(
       ARBORX_MARK_REGION("copy_counts_to_offsets"),
