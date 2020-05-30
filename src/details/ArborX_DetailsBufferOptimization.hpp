@@ -74,9 +74,8 @@ struct InsertGenerator
     _callback(Access::get(_permuted_predicates, predicate_index),
               primitive_index, [&](ValueType const &value) {
                 int count_old = Kokkos::atomic_fetch_add(&count, 1);
-                _out.insert(
-                    Kokkos::pair<int, int>{predicate_index, count_old},
-                    value);
+                _out.insert(Kokkos::pair<int, int>{predicate_index, count_old},
+                            value);
               });
   }
   template <typename U = PassTag, typename V = Tag>
@@ -89,9 +88,8 @@ struct InsertGenerator
     _callback(Access::get(_permuted_predicates, predicate_index),
               primitive_index, distance, [&](ValueType const &value) {
                 int count_old = Kokkos::atomic_fetch_add(&count, 1);
-		 _out.insert(
-                    Kokkos::pair<int, int>{predicate_index, count_old},
-                    value);
+                _out.insert(Kokkos::pair<int, int>{predicate_index, count_old},
+                            value);
               });
   }
 };
@@ -163,10 +161,10 @@ void queryImpl(ExecutionSpace const &space, TreeTraversal const &tree_traversal,
   PermutedPredicates permuted_predicates = {predicates, permute};
 
   tree_traversal.launch(
-    space, permuted_predicates,
-    InsertGenerator<FirstPassTag, PermutedPredicates, Callback, MapType,
-                    CountView, OffsetView, PermuteType>{
-    permuted_predicates, callback, unordered_map, counts});
+      space, permuted_predicates,
+      InsertGenerator<FirstPassTag, PermutedPredicates, Callback, MapType,
+                      CountView, OffsetView, PermuteType>{
+          permuted_predicates, callback, unordered_map, counts});
 
   Kokkos::parallel_for(
       ARBORX_MARK_REGION("copy_counts_to_offsets"),
@@ -177,14 +175,15 @@ void queryImpl(ExecutionSpace const &space, TreeTraversal const &tree_traversal,
   int const n_results = lastElement(offset);
   reallocWithoutInitializing(out, n_results);
 
-    // fill the output view from the unordered_map
-    Kokkos::parallel_for(unordered_map.capacity(), KOKKOS_LAMBDA (uint32_t i) {
-      if( unordered_map.valid_at(i) ) {
-        auto key   = unordered_map.key_at(i);
-        auto value = unordered_map.value_at(i);
-        out(offset(permute(key.first))+key.second) = value;
-      }
-    });
+  // fill the output view from the unordered_map
+  Kokkos::parallel_for(unordered_map.capacity(), KOKKOS_LAMBDA(uint32_t i) {
+    if (unordered_map.valid_at(i))
+    {
+      auto key = unordered_map.key_at(i);
+      auto value = unordered_map.value_at(i);
+      out(offset(permute(key.first)) + key.second) = value;
+    }
+  });
 } // namespace Details
 
 } // namespace Details
