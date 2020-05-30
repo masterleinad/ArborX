@@ -144,7 +144,7 @@ void queryImpl(ExecutionSpace const &space, TreeTraversal const &tree_traversal,
   // pre-condition: offset and out are preallocated. If buffer_size > 0, offset
   // is pre-initialized
 
-  using MapType = /*OutputView;*/
+  using MapType =
       Kokkos::UnorderedMap<Kokkos::pair<int, int>,
                            typename OutputView::value_type, ExecutionSpace>;
   MapType unordered_map(1000000);
@@ -176,7 +176,7 @@ void queryImpl(ExecutionSpace const &space, TreeTraversal const &tree_traversal,
   reallocWithoutInitializing(out, n_results);
 
   // fill the output view from the unordered_map
-  Kokkos::parallel_for(unordered_map.capacity(), KOKKOS_LAMBDA(uint32_t i) {
+  Kokkos::parallel_for(Kokkos::RangePolicy<ExecutionSpace>(space, 0, unordered_map.capacity()), KOKKOS_LAMBDA(uint32_t i) {
     if (unordered_map.valid_at(i))
     {
       auto key = unordered_map.key_at(i);
