@@ -150,7 +150,7 @@ void BM_radius_search(benchmark::State &state)
   int const n_queries = state.range(1);
   int const n_neighbors = state.range(2);
   int const sort_predicates_int = state.range(3);
-  int const buffer_size = -(n_neighbors+1);//state.range(4);
+  int const buffer_size = -(10*n_neighbors);//state.range(4);
   auto const source_point_cloud_type =
       static_cast<PointCloudType>(state.range(5));
   auto const target_point_cloud_type =
@@ -202,30 +202,7 @@ public:
 
 #else
 #define REGISTER_BENCHMARK(TreeType, r1, r2, r3)                               \
-  BENCHMARK_TEMPLATE(BM_construction, TreeType)                                \
-      ->Args({(int)r1, 0})                                                     \
-      ->Args({(int)r2, 0})                                                     \
-      ->Args({(int)r3, 0})                                                     \
-      ->Args({(int)r1, 1})                                                     \
-      ->Args({(int)r2, 1})                                                     \
-      ->Args({(int)r3, 1})                                                     \
-      ->UseManualTime()                                                        \
-      ->Unit(benchmark::kMicrosecond);                                         \
-  BENCHMARK_TEMPLATE(BM_knn_search, TreeType)                                  \
-      ->Args({(int)r1, (int)r1, 10, 1, 0, 2})                                  \
-      ->Args({(int)r2, (int)r2, 10, 1, 0, 2})                                  \
-      ->Args({(int)r3, (int)r3, 10, 1, 0, 2})                                  \
-      ->Args({(int)r1, (int)r1, 10, 1, 1, 3})                                  \
-      ->Args({(int)r2, (int)r2, 10, 1, 1, 3})                                  \
-      ->Args({(int)r3, (int)r3, 10, 1, 1, 3})                                  \
-      ->UseManualTime()                                                        \
-      ->Unit(benchmark::kMicrosecond);                                         \
   BENCHMARK_TEMPLATE(BM_radius_search, TreeType)                               \
-      ->Args({(int)r1, (int)r1, 10, 1, 0, 0, 2})                               \
-      ->Args({(int)r2, (int)r2, 10, 1, 0, 0, 2})                               \
-      ->Args({(int)r3, (int)r3, 10, 1, 0, 0, 2})                               \
-      ->Args({(int)r1, (int)r1, 10, 1, 0, 1, 3})                               \
-      ->Args({(int)r2, (int)r2, 10, 1, 0, 1, 3})                               \
       ->Args({(int)r3, (int)r3, 10, 1, 0, 1, 3})                               \
       ->UseManualTime()                                                        \
       ->Unit(benchmark::kMicrosecond);
@@ -277,9 +254,9 @@ public:
 
 int main(int argc, char *argv[])
 {
-#ifdef ARBORX_PERFORMANCE_TESTING
-  MPI_Init(&argc, &argv);
-#endif
+//#ifdef ARBORX_PERFORMANCE_TESTING
+//  MPI_Init(&argc, &argv);
+//#endif
   Kokkos::initialize(argc, argv);
 
   namespace bpo = boost::program_options;
@@ -357,23 +334,23 @@ int main(int argc, char *argv[])
   int target_point_cloud_type = to_point_cloud_enum.at(target_pt_cloud);
 
 #ifdef KOKKOS_ENABLE_SERIAL
-  using Serial = Kokkos::Serial::device_type;
-  REGISTER_BENCHMARK(ArborX::BVH<Serial>, 1e3, 1e4, 1e5);
+  //using Serial = Kokkos::Serial::device_type;
+  //EGISTER_BENCHMARK(ArborX::BVH<Serial>, 1e3, 1e4, 1e5);
 #endif
 
 #ifdef KOKKOS_ENABLE_OPENMP
-  using OpenMP = Kokkos::OpenMP::device_type;
-  REGISTER_BENCHMARK(ArborX::BVH<OpenMP>, 1e3, 1e4, 1e5);
+  //using OpenMP = Kokkos::OpenMP::device_type;
+  //REGISTER_BENCHMARK(ArborX::BVH<OpenMP>, 1e3, 1e4, 1e5);
 #endif
 
 #ifdef KOKKOS_ENABLE_THREADS
-  using Threads = Kokkos::Threads::device_type;
-  REGISTER_BENCHMARK(ArborX::BVH<Threads>, 1e3, 1e4, 1e5);
+  //using Threads = Kokkos::Threads::device_type;
+  //REGISTER_BENCHMARK(ArborX::BVH<Threads>, 1e3, 1e4, 1e5);
 #endif
 
 #ifdef KOKKOS_ENABLE_CUDA
   using Cuda = Kokkos::Cuda::device_type;
-  REGISTER_BENCHMARK(ArborX::BVH<Cuda>, 1e4, 1e5, 1e6);
+  REGISTER_BENCHMARK(ArborX::BVH<Cuda>, 1e3, 1e4, 1e5);
 #endif
 
 #ifndef ARBORX_PERFORMANCE_TESTING
@@ -384,9 +361,9 @@ int main(int argc, char *argv[])
   benchmark::RunSpecifiedBenchmarks();
 
   Kokkos::finalize();
-#ifdef ARBORX_PERFORMANCE_TESTING
-  MPI_Finalize();
-#endif
+//#ifdef ARBORX_PERFORMANCE_TESTING
+//  MPI_Finalize();
+//#endif
 
   return EXIT_SUCCESS;
 }

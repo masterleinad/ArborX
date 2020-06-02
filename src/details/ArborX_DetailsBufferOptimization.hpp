@@ -178,7 +178,7 @@ void queryImpl(ExecutionSpace const &space, TreeTraversal const &tree_traversal,
   reallocWithoutInitializing(out, n_results);
 
   // fill the output view from the unordered_map
-  Kokkos::parallel_for(
+  Kokkos::parallel_for("copy back from unordered map",
       Kokkos::RangePolicy<ExecutionSpace>(space, 0, unordered_map.capacity()),
       KOKKOS_LAMBDA(uint32_t i) {
         if (unordered_map.valid_at(i))
