@@ -306,7 +306,6 @@ int main(int argc, char *argv[])
   // clang-format off
     desc.add_options()
         ( "help", "produce help message" )
-	( "backends", bpo::value<std::string>(&backends)->default_value("all"), "backends to run on can be 'all', 'serial', 'openmp', or 'cuda'" )
         ( "values", bpo::value<int>(&n_values)->default_value(50000), "number of indexable values (source)" )
         ( "queries", bpo::value<int>(&n_queries)->default_value(20000), "number of queries (target)" )
         ( "predicate-sort", bpo::value<bool>(&sort_predicates)->default_value(true), "sort predicates" )
