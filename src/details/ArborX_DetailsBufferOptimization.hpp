@@ -114,6 +114,7 @@ struct InsertGenerator
                        std::is_same<V, SpatialPredicateTag>{}>
       operator()(int predicate_index, int primitive_index) const
   {
+    Kokkos::abort("");
     auto &count = _counts(predicate_index);
 
     _callback(Access::get(_permuted_predicates, predicate_index),
@@ -127,6 +128,7 @@ struct InsertGenerator
                        std::is_same<V, NearestPredicateTag>{}>
       operator()(int predicate_index, int primitive_index, float distance) const
   {
+    Kokkos::abort("");
     auto &count = _counts(predicate_index);
 
     _callback(Access::get(_permuted_predicates, predicate_index),
@@ -139,6 +141,7 @@ struct InsertGenerator
                                    std::is_same<V, SpatialPredicateTag>{}>
   operator()(int predicate_index, int primitive_index) const
   {
+    Kokkos::abort("");
     // we store offsets in counts, and offset(permute(i)) = counts(i)
     auto &offset = _counts(predicate_index);
 
@@ -157,6 +160,7 @@ struct InsertGenerator
                                    std::is_same<V, NearestPredicateTag>{}>
   operator()(int predicate_index, int primitive_index, float distance) const
   {
+    Kokkos::abort("");
     // we store offsets in counts, and offset(permute(i)) = counts(i)
     auto &offset = _counts(predicate_index);
 
