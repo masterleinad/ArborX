@@ -50,7 +50,7 @@ void filledBoxCloud(float const half_edge,
   using GeneratorPool = Kokkos::Random_XorShift1024_Pool<ExecutionSpace>;
   using GeneratorType = typename GeneratorPool::generator_type;
 
-  GeneratorPool rand_pool;
+  GeneratorPool rand_pool(0);
   unsigned int const n = random_points.extent(0);
 
   Kokkos::parallel_for(
@@ -74,7 +74,7 @@ void hollowBoxCloud(float const half_edge,
   using GeneratorPool = Kokkos::Random_XorShift1024_Pool<ExecutionSpace>;
   using GeneratorType = typename GeneratorPool::generator_type;
 
-  GeneratorPool rand_pool;
+  GeneratorPool rand_pool(0);
   unsigned int const n = random_points.extent(0);
 
   Kokkos::parallel_for(
@@ -122,7 +122,7 @@ void filledSphereCloud(float const radius,
   using GeneratorPool = Kokkos::Random_XorShift1024_Pool<ExecutionSpace>;
   using GeneratorType = typename GeneratorPool::generator_type;
 
-  GeneratorPool rand_pool;
+  GeneratorPool rand_pool(0);
   unsigned int const n = random_points.extent(0);
 
   Kokkos::parallel_for(
@@ -159,7 +159,7 @@ void hollowSphereCloud(double const radius,
   using GeneratorPool = Kokkos::Random_XorShift1024_Pool<ExecutionSpace>;
   using GeneratorType = typename GeneratorPool::generator_type;
 
-  GeneratorPool rand_pool;
+  GeneratorPool rand_pool(0);
   unsigned int const n = random_points.extent(0);
 
   Kokkos::parallel_for(
