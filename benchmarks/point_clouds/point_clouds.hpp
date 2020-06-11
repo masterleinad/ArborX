@@ -50,19 +50,21 @@ void filledBoxCloud(float const half_edge,
   using GeneratorPool = Kokkos::Random_XorShift1024_Pool<ExecutionSpace>;
   using GeneratorType = typename GeneratorPool::generator_type;
 
+  constexpr unsigned int batch_size = 128;
+
   GeneratorPool rand_pool(0);
   unsigned int const n = random_points.extent(0);
 
   Kokkos::parallel_for(
       ARBORX_MARK_REGION("generate_filledBoxCloud"),
-      Kokkos::RangePolicy<ExecutionSpace>(ExecutionSpace{}, 0, n / 1024),
+      Kokkos::RangePolicy<ExecutionSpace>(ExecutionSpace{}, 0, n / batch_size),
       KOKKOS_LAMBDA(int i) {
         auto rand_gen = rand_pool.get_state();
         auto random = [&rand_gen, half_edge]() {
           return Kokkos::rand<GeneratorType, float>::draw(rand_gen, -half_edge,
                                                           half_edge);
         };
-        for (unsigned int k = i * 1024; k < min((i + 1) * 1024u, n); ++k)
+        for (unsigned int k = i * batch_size; k < std::min((i + 1) * batch_size, n); ++k)
           random_points(k) = {{random(), random(), random()}};
       });
 }
@@ -75,19 +77,21 @@ void hollowBoxCloud(float const half_edge,
   using GeneratorPool = Kokkos::Random_XorShift1024_Pool<ExecutionSpace>;
   using GeneratorType = typename GeneratorPool::generator_type;
 
+  constexpr unsigned int batch_size = 128;
+
   GeneratorPool rand_pool(0);
   unsigned int const n = random_points.extent(0);
 
   Kokkos::parallel_for(
       ARBORX_MARK_REGION("generate_filledBoxCloud"),
-      Kokkos::RangePolicy<ExecutionSpace>(ExecutionSpace{}, 0, n / 1024),
+      Kokkos::RangePolicy<ExecutionSpace>(ExecutionSpace{}, 0, n / batch_size),
       KOKKOS_LAMBDA(int i) {
         auto rand_gen = rand_pool.get_state();
         auto random = [&rand_gen, half_edge]() {
           return Kokkos::rand<GeneratorType, float>::draw(rand_gen, -half_edge,
                                                           half_edge);
         };
-        for (unsigned int k = i * 1024; k < min((i + 1) * 1024u, n); ++k)
+        for (unsigned int k = i * batch_size; k < std::min((i + 1) * batch_size, n); ++k)
         {
           unsigned int face = k % 6;
           switch (face)
@@ -125,19 +129,21 @@ void filledSphereCloud(float const radius,
   using GeneratorPool = Kokkos::Random_XorShift1024_Pool<ExecutionSpace>;
   using GeneratorType = typename GeneratorPool::generator_type;
 
+  constexpr unsigned int batch_size = 128;
+
   GeneratorPool rand_pool(0);
   unsigned int const n = random_points.extent(0);
 
   Kokkos::parallel_for(
       ARBORX_MARK_REGION("generate_filledBoxCloud"),
-      Kokkos::RangePolicy<ExecutionSpace>(ExecutionSpace{}, 0, n / 1024),
+      Kokkos::RangePolicy<ExecutionSpace>(ExecutionSpace{}, 0, n / batch_size),
       KOKKOS_LAMBDA(int i) {
         auto rand_gen = rand_pool.get_state();
         auto random = [&rand_gen, radius]() {
           return Kokkos::rand<GeneratorType, float>::draw(rand_gen, -radius,
                                                           radius);
         };
-        for (unsigned int k = i * 1024; k < min((i + 1) * 1024u, n); ++k)
+        for (unsigned int k = i * batch_size; k < std::min((i + 1) * batch_size, n); ++k)
         {
           bool point_accepted = false;
           while (!point_accepted)
@@ -165,19 +171,21 @@ void hollowSphereCloud(double const radius,
   using GeneratorPool = Kokkos::Random_XorShift1024_Pool<ExecutionSpace>;
   using GeneratorType = typename GeneratorPool::generator_type;
 
+  constexpr unsigned int batch_size = 128;
+
   GeneratorPool rand_pool(0);
   unsigned int const n = random_points.extent(0);
 
   Kokkos::parallel_for(
       ARBORX_MARK_REGION("generate_filledBoxCloud"),
-      Kokkos::RangePolicy<ExecutionSpace>(ExecutionSpace{}, 0, n / 1024),
+      Kokkos::RangePolicy<ExecutionSpace>(ExecutionSpace{}, 0, n / batch_size),
       KOKKOS_LAMBDA(int i) {
         auto rand_gen = rand_pool.get_state();
         auto random = [&rand_gen, radius]() {
           return Kokkos::rand<GeneratorType, float>::draw(rand_gen, -radius,
                                                           radius);
         };
-        for (unsigned int k = i * 1024; k < min((i + 1) * 1024u, n); ++k)
+        for (unsigned int k = i * batch_size; k < std::min((i + 1) * batch_size, n); ++k)
         {
           double const x = random();
           double const y = random();
