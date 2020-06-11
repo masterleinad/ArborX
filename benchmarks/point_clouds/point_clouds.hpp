@@ -189,24 +189,16 @@ void generatePointCloud(PointCloudType const point_cloud_type,
   switch (point_cloud_type)
   {
   case PointCloudType::filled_box:
-    std::cout << "filledBox begin" << std::endl;
     filledBoxCloud(length, random_points);
-    std::cout << "filledBox end" << std::endl;
     break;
   case PointCloudType::hollow_box:
-    std::cout << "hollowBox begin" << std::endl;
     hollowBoxCloud(length, random_points);
-    std::cout << "hollowBox end" << std::endl;
     break;
   case PointCloudType::filled_sphere:
-    std::cout << "filledSphere begin" << std::endl;
     filledSphereCloud(length, random_points);
-    std::cout << "filledSphere end" << std::endl;
     break;
   case PointCloudType::hollow_sphere:
-    std::cout << "hollowSphere begin" << std::endl;
     hollowSphereCloud(length, random_points);
-    std::cout << "hollowSphere end" << std::endl;
     break;
   default:
     throw ArborX::SearchException("not implemented");
