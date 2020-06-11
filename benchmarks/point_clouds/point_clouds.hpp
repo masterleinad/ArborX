@@ -55,14 +55,15 @@ void filledBoxCloud(float const half_edge,
 
   Kokkos::parallel_for(
       ARBORX_MARK_REGION("generate_filledBoxCloud"),
-      Kokkos::RangePolicy<ExecutionSpace>(ExecutionSpace{}, 0, n),
+      Kokkos::RangePolicy<ExecutionSpace>(ExecutionSpace{}, 0, n / 1024),
       KOKKOS_LAMBDA(int i) {
         auto rand_gen = rand_pool.get_state();
         auto random = [&rand_gen, half_edge]() {
           return Kokkos::rand<GeneratorType, float>::draw(rand_gen, -half_edge,
                                                           half_edge);
         };
-        random_points(i) = {{random(), random(), random()}};
+        for (unsigned int k = i * 1024; k < std::min((i + 1) * 1024u, n); ++k)
+          random_points(k) = {{random(), random(), random()}};
       });
 }
 
@@ -79,37 +80,39 @@ void hollowBoxCloud(float const half_edge,
 
   Kokkos::parallel_for(
       ARBORX_MARK_REGION("generate_filledBoxCloud"),
-      Kokkos::RangePolicy<ExecutionSpace>(ExecutionSpace{}, 0, n),
+      Kokkos::RangePolicy<ExecutionSpace>(ExecutionSpace{}, 0, n / 1024),
       KOKKOS_LAMBDA(int i) {
         auto rand_gen = rand_pool.get_state();
         auto random = [&rand_gen, half_edge]() {
           return Kokkos::rand<GeneratorType, float>::draw(rand_gen, -half_edge,
                                                           half_edge);
         };
-
-        unsigned int face = i % 6;
-        switch (face)
+        for (unsigned int k = i * 1024; k < std::min((i + 1) * 1024u, n); ++k)
         {
-        case 0:
-          random_points(i) = {{-half_edge, random(), random()}};
-          break;
-        case 1:
-          random_points(i) = {{half_edge, random(), random()}};
-          break;
-        case 2:
-          random_points(i) = {{random(), -half_edge, random()}};
-          break;
-        case 3:
-          random_points(i) = {{random(), half_edge, random()}};
-          break;
-        case 4:
-          random_points(i) = {{random(), random(), -half_edge}};
-          break;
-        case 5:
-          random_points(i) = {{random(), random(), half_edge}};
-          break;
-        default:
-          random_points(i) = {{0., 0., 0.}};
+          unsigned int face = k % 6;
+          switch (face)
+          {
+          case 0:
+            random_points(k) = {{-half_edge, random(), random()}};
+            break;
+          case 1:
+            random_points(k) = {{half_edge, random(), random()}};
+            break;
+          case 2:
+            random_points(k) = {{random(), -half_edge, random()}};
+            break;
+          case 3:
+            random_points(k) = {{random(), half_edge, random()}};
+            break;
+          case 4:
+            random_points(k) = {{random(), random(), -half_edge}};
+            break;
+          case 5:
+            random_points(k) = {{random(), random(), half_edge}};
+            break;
+          default:
+            random_points(k) = {{0., 0., 0.}};
+          }
         }
       });
 }
@@ -127,25 +130,28 @@ void filledSphereCloud(float const radius,
 
   Kokkos::parallel_for(
       ARBORX_MARK_REGION("generate_filledBoxCloud"),
-      Kokkos::RangePolicy<ExecutionSpace>(ExecutionSpace{}, 0, n),
+      Kokkos::RangePolicy<ExecutionSpace>(ExecutionSpace{}, 0, n / 1024),
       KOKKOS_LAMBDA(int i) {
         auto rand_gen = rand_pool.get_state();
         auto random = [&rand_gen, radius]() {
           return Kokkos::rand<GeneratorType, float>::draw(rand_gen, -radius,
                                                           radius);
         };
-        bool point_accepted = false;
-        while (!point_accepted)
+        for (unsigned int k = i * 1024; k < std::min((i + 1) * 1024u, n); ++k)
         {
-          double const x = random();
-          double const y = random();
-          double const z = random();
-
-          // Only accept points that are in the sphere
-          if (std::sqrt(x * x + y * y + z * z) <= radius)
+          bool point_accepted = false;
+          while (!point_accepted)
           {
-            random_points(i) = {{x, y, z}};
-            point_accepted = true;
+            double const x = random();
+            double const y = random();
+            double const z = random();
+
+            // Only accept points that are in the sphere
+            if (std::sqrt(x * x + y * y + z * z) <= radius)
+            {
+              random_points(k) = {{x, y, z}};
+              point_accepted = true;
+            }
           }
         }
       });
@@ -164,20 +170,23 @@ void hollowSphereCloud(double const radius,
 
   Kokkos::parallel_for(
       ARBORX_MARK_REGION("generate_filledBoxCloud"),
-      Kokkos::RangePolicy<ExecutionSpace>(ExecutionSpace{}, 0, n),
+      Kokkos::RangePolicy<ExecutionSpace>(ExecutionSpace{}, 0, n / 1024),
       KOKKOS_LAMBDA(int i) {
         auto rand_gen = rand_pool.get_state();
         auto random = [&rand_gen, radius]() {
           return Kokkos::rand<GeneratorType, float>::draw(rand_gen, -radius,
                                                           radius);
         };
-        double const x = random();
-        double const y = random();
-        double const z = random();
-        double const norm = std::sqrt(x * x + y * y + z * z);
+        for (unsigned int k = i * 1024; k < std::min((i + 1) * 1024u, n); ++k)
+        {
+          double const x = random();
+          double const y = random();
+          double const z = random();
+          double const norm = std::sqrt(x * x + y * y + z * z);
 
-        random_points(i) = {
-            {radius * x / norm, radius * y / norm, radius * z / norm}};
+          random_points(k) = {
+              {radius * x / norm, radius * y / norm, radius * z / norm}};
+        }
       });
 }
 
