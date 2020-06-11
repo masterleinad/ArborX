@@ -64,7 +64,7 @@ void filledBoxCloud(float const half_edge,
           return Kokkos::rand<GeneratorType, float>::draw(rand_gen, -half_edge,
                                                           half_edge);
         };
-        for (unsigned int k = i * batch_size; k < std::min((i + 1) * batch_size, n); ++k)
+        for (unsigned int k = i * batch_size; k < min((i + 1) * batch_size, n); ++k)
           random_points(k) = {{random(), random(), random()}};
       });
 }
@@ -91,7 +91,7 @@ void hollowBoxCloud(float const half_edge,
           return Kokkos::rand<GeneratorType, float>::draw(rand_gen, -half_edge,
                                                           half_edge);
         };
-        for (unsigned int k = i * batch_size; k < std::min((i + 1) * batch_size, n); ++k)
+        for (unsigned int k = i * batch_size; k < min((i + 1) * batch_size, n); ++k)
         {
           unsigned int face = k % 6;
           switch (face)
@@ -143,7 +143,7 @@ void filledSphereCloud(float const radius,
           return Kokkos::rand<GeneratorType, float>::draw(rand_gen, -radius,
                                                           radius);
         };
-        for (unsigned int k = i * batch_size; k < std::min((i + 1) * batch_size, n); ++k)
+        for (unsigned int k = i * batch_size; k < min((i + 1) * batch_size, n); ++k)
         {
           bool point_accepted = false;
           while (!point_accepted)
@@ -185,7 +185,7 @@ void hollowSphereCloud(double const radius,
           return Kokkos::rand<GeneratorType, float>::draw(rand_gen, -radius,
                                                           radius);
         };
-        for (unsigned int k = i * batch_size; k < std::min((i + 1) * batch_size, n); ++k)
+        for (unsigned int k = i * batch_size; k < min((i + 1) * batch_size, n); ++k)
         {
           double const x = random();
           double const y = random();
