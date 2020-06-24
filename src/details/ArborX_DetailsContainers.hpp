@@ -13,7 +13,18 @@
 
 #include <Kokkos_Macros.hpp>
 
+// FIXME_HIP
+#if !defined(NDEBUG) && defined(KOKKOS_ENABLE_HIP)
+#define ARBORX_NDEBUG_UNDEFINED
+#define NDEBUG
+#endif
+
 #include <cassert> // assert
+
+#ifdef ARBORX_NDEBUG_UNDEFINED
+#undef NDEBUG
+#endif
+
 #include <cstddef> // size_t, ptrdiff_t
 #include <utility> // move, forward
 
