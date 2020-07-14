@@ -185,24 +185,18 @@ void BM_knn_search(benchmark::State &state, Spec const &spec)
 
   TreeType index(
       constructPoints<DeviceType>(spec.n_values, spec.source_point_cloud_type));
-  auto const queries_tmp = makeNearestQueries<DeviceType>(
+  auto const queries = makeNearestQueries<DeviceType>(
       spec.n_values, spec.n_queries, spec.n_neighbors,
       spec.target_point_cloud_type);
-  auto const permute =
-      ArborX::Details::BatchedQueries<DeviceType>::sortQueriesAlongZOrderCurve(
-          typename DeviceType::execution_space{}, index.bounds(), queries_tmp);
-  auto const queries =
-      ArborX::Details::BatchedQueries<DeviceType>::applyPermutation(
-          typename DeviceType::execution_space{}, permute, queries_tmp);
 
   for (auto _ : state)
   {
     Kokkos::View<int *, DeviceType> offset("offset", 0);
     Kokkos::View<int *, DeviceType> indices("indices", 0);
     auto const start = std::chrono::high_resolution_clock::now();
-    index.query(
-        queries, indices, offset,
-        ArborX::Experimental::TraversalPolicy().setPredicateSorting(false));
+    index.query(queries, indices, offset,
+                ArborX::Experimental::TraversalPolicy().setPredicateSorting(
+                    spec.sort_predicates));
     auto const end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds = end - start;
     state.SetIterationTime(elapsed_seconds.count());
@@ -216,15 +210,9 @@ void BM_radius_search(benchmark::State &state, Spec const &spec)
 
   TreeType index(
       constructPoints<DeviceType>(spec.n_values, spec.source_point_cloud_type));
-  auto const queries_tmp = makeSpatialQueries<DeviceType>(
+  auto const queries = makeSpatialQueries<DeviceType>(
       spec.n_values, spec.n_queries, spec.n_neighbors,
       spec.target_point_cloud_type);
-  auto const permute =
-      ArborX::Details::BatchedQueries<DeviceType>::sortQueriesAlongZOrderCurve(
-          typename DeviceType::execution_space{}, index.bounds(), queries_tmp);
-  auto const queries =
-      ArborX::Details::BatchedQueries<DeviceType>::applyPermutation(
-          typename DeviceType::execution_space{}, permute, queries_tmp);
 
   for (auto _ : state)
   {
@@ -233,7 +221,7 @@ void BM_radius_search(benchmark::State &state, Spec const &spec)
     auto const start = std::chrono::high_resolution_clock::now();
     index.query(queries, indices, offset,
                 ArborX::Experimental::TraversalPolicy()
-                    .setPredicateSorting(false)
+                    .setPredicateSorting(spec.sort_predicates)
                     .setBufferSize(spec.buffer_size));
     auto const end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed_seconds = end - start;
@@ -447,6 +435,11 @@ int main(int argc, char *argv[])
 #else
     if (spec.backends == "hip")
       throw std::runtime_error("HIP backend not available!");
+#endif
+
+#ifdef KOKKOS_ENABLE_SERIAL
+    if (spec.backends == "all" || spec.backends == "rtree")
+      register_benchmark<BoostExt::RTree<ArborX::Point>>("BoostRTree", spec);
 #endif
   }
 
