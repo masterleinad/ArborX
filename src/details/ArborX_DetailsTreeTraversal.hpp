@@ -282,8 +282,10 @@ struct TreeTraversal<BVH, Predicates, Callback, NearestPredicateTag>
     float node_distance = 0.f;
     do
     {
-      if (!node->isLeaf())
+#ifdef __CUDA_ARCH__
+      if (threadIdx.x ==0 && threadIdx.y ==0 && threadIdx.z==0 && !node->isLeaf())
         ++(node->counter());
+#endif
       if (node_distance < radius)
       {
         if (node->isLeaf())
