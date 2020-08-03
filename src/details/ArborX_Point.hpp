@@ -69,6 +69,13 @@ public:
     return _data.coords[i];
   }
 };
+
+inline std::ostream& operator<<(std::ostream& os, const Point& nearest)
+{
+  os << nearest[0] << " " << nearest[1] << " " << nearest[2] << std::endl;
+  return os;
+}
+
 } // namespace ArborX
 
 #endif
