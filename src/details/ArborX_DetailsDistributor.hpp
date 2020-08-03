@@ -243,29 +243,33 @@ public:
     return preparePointToPointCommunication();
   }
 
-  template <typename ExecutionSpace, typename ExportView, typename ImportView>
-  void doPostsAndWaits(ExecutionSpace const& space, ExportView const &exports, size_t num_packets,
-                       ImportView const &imports) const
+  template <typename ExecutionSpace, typename View>
+  void doPostsAndWaits(ExecutionSpace const &space,
+                       typename View::const_type const &exports,
+                       size_t num_packets, View const &imports) const
   {
     ARBORX_ASSERT(num_packets * _src_offsets.back() == imports.size());
     ARBORX_ASSERT(num_packets * _dest_offsets.back() == exports.size());
 
-    using ValueType = typename ImportView::value_type;
-    static_assert(
-        std::is_same<ValueType,
-                     std::remove_cv_t<typename ExportView::value_type>>::value,
-        "");
-    static_assert(ImportView::rank == 1, "");
+    using ValueType = typename View::value_type;
+    static_assert(View::rank == 1, "");
 
     static_assert(
-        std::is_same<typename ExportView::memory_space,
+        std::is_same<typename View::memory_space,
                      typename decltype(_permute)::memory_space>::value,
         "");
+#ifndef ARBORX_USE_CUDA_AWARE_MPI
+    static_assert(
+        Kokkos::Impl::MemorySpaceAccess<typename View::memory_space,
+                                        Kokkos::HostSpace>::accessible,
+        "");
+#endif
 
     // If _permute is empty, we are assuming that we don't need to permute
     // exports.
     bool const permutation_necessary = _permute.size() != 0;
-    ExportView dest_buffer = Kokkos::create_mirror(typename ExportView::execution_space{}, exports);
+    Kokkos::View<ValueType *, typename View::traits::device_type> dest_buffer(
+        "destination_buffer", 0);
     if (permutation_necessary)
     {
 //      reallocWithoutInitializing(dest_buffer, exports.size());
@@ -285,8 +289,6 @@ public:
                                  exports[num_packets * i + j];
                            });
     }
-    auto copied_dest_buffer = Kokkos::create_mirror_view_and_copy(
-        typename ImportView::memory_space(), dest_buffer);
 
     int comm_rank;
     MPI_Comm_rank(_comm, &comm_rank);
@@ -320,7 +322,7 @@ public:
           _dest_counts[i] * num_packets * sizeof(ValueType);
       auto const send_buffer_ptr =
           permutation_necessary
-              ? copied_dest_buffer.data() + _dest_offsets[i] * num_packets
+              ? dest_buffer.data() + _dest_offsets[i] * num_packets
               : exports.data() + _dest_offsets[i] * num_packets;
       if (_destinations[i] == comm_rank)
       {
@@ -330,11 +332,10 @@ public:
         auto const receive_buffer_ptr =
             imports.data() + _src_offsets[position] * num_packets;
 
-        Kokkos::View<ValueType *, typename ImportView::traits::device_type,
+        Kokkos::View<ValueType *, typename View::traits::device_type,
                      Kokkos::MemoryTraits<Kokkos::Unmanaged>>
             receive_view(receive_buffer_ptr, message_size / sizeof(ValueType));
-        Kokkos::View<const ValueType *,
-                     typename ExportView::traits::device_type,
+        Kokkos::View<const ValueType *, typename View::traits::device_type,
                      Kokkos::MemoryTraits<Kokkos::Unmanaged>>
             send_view(send_buffer_ptr, message_size / sizeof(ValueType));
         Kokkos::deep_copy(space, receive_view, send_view);
@@ -384,7 +385,11 @@ private:
   }
 
   MPI_Comm _comm;
+#ifdef ARBORX_USE_CUDA_AWARE_MPI
   Kokkos::View<int *, DeviceType> _permute;
+#else
+  Kokkos::View<int *, Kokkos::HostSpace> _permute;
+#endif
   std::vector<int> _dest_offsets;
   std::vector<int> _dest_counts;
   std::vector<int> _src_offsets;
