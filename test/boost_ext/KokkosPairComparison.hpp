@@ -28,7 +28,7 @@ namespace tt_detail
 
 // FIXME needed for TuplePrinter
 template <typename T1, typename T2>
-std::ostream &operator<<(std::ostream &os, Kokkos::pair<T1, T2> const &p)
+inline std::ostream &operator<<(std::ostream &os, Kokkos::pair<T1, T2> const &p)
 {
   os << '(' << p.first << ',' << p.second << ')';
   return os;

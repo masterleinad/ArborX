@@ -46,6 +46,13 @@ struct Nearest
 };
 
 template <typename Geometry>
+std::ostream& operator<<(std::ostream& os, const Nearest<Geometry>& nearest)
+{
+  os << nearest._geometry;
+  return os;
+}
+
+template <typename Geometry>
 struct Intersects
 {
   using Tag = Details::SpatialPredicateTag;
@@ -65,6 +72,13 @@ struct Intersects
 
   Geometry _geometry;
 };
+
+template <typename Geometry>
+std::ostream& operator<<(std::ostream& os, const Intersects<Geometry>& nearest)
+{
+  os << nearest._geometry;
+  return os;
+}
 
 template <typename Geometry>
 KOKKOS_INLINE_FUNCTION Nearest<Geometry> nearest(Geometry const &geometry,

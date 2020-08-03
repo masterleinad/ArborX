@@ -32,6 +32,14 @@ namespace ArborX
 namespace Details
 {
 
+	// FIXME needed for TuplePrinter
+template <typename T1, typename T2>
+std::ostream &operator<<(std::ostream &os, Kokkos::pair<T1, T2> const &p)
+{
+  os << '(' << p.first << ',' << p.second << ')';
+  return os;
+}
+
 // Assuming that batched_ranks might contain elements multiply, but duplicates
 // are not separated by other elements, return the unique elements in that array
 // with the corresponding element counts and displacement (offsets).
@@ -333,6 +341,10 @@ public:
         requests.emplace_back();
         MPI_Isend(send_buffer_ptr, message_size, MPI_BYTE, _destinations[i],
                   123, _comm, &requests.back());
+	std::cout << "Sending to " << _destinations[i] << std::endl;
+	for (unsigned int i=0; i<message_size; ++i)
+		std::cout << send_buffer_ptr[i] << std::endl;
+	std::cout << std::endl;
       }
     }
     if (!requests.empty())

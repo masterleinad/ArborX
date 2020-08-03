@@ -42,6 +42,14 @@ struct Sphere
   Point _centroid = {};
   float _radius = 0.;
 };
+
+inline std::ostream& operator<<(std::ostream& os, const Sphere& nearest)
+{
+  os << nearest.centroid() << " " << nearest.radius() << std::endl;
+  return os;
+}
+
+
 } // namespace ArborX
 
 #endif

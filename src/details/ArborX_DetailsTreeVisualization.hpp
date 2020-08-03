@@ -25,11 +25,11 @@ class BoundingVolumeHierarchy;
 
 namespace Details
 {
-std::ostream &operator<<(std::ostream &os, Point const &p)
+/*std::ostream &operator<<(std::ostream &os, Point const &p)
 {
   os << "(" << p[0] << "," << p[1] << ")";
   return os;
-}
+}*/
 
 template <typename DeviceType>
 struct TreeVisualization

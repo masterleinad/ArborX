@@ -66,6 +66,14 @@ struct Box
                         -KokkosExt::ArithmeticTraits::max<float>::value,
                         -KokkosExt::ArithmeticTraits::max<float>::value}};
 };
+
+inline std::ostream& operator<<(std::ostream& os, const Box& nearest)
+{
+  os << nearest.minCorner() << " " << nearest.maxCorner() << std::endl;
+  return os;
+}
+
+
 } // namespace ArborX
 
 #endif
