@@ -276,8 +276,15 @@ public:
       // Use KOKKOS_CLASS_LAMBDA when we require C++17.
       auto const permute_copy = _permute;
 
-        ArborX::Details::applyInversePermutation(
-            space, permute_copy, exports, dest_buffer);
+      for (unsigned int i = 0; i < num_packets; ++i)
+        ArborX::Details::applyReversePermutation(
+            space, permute_copy,
+            Kokkos::subview(exports,
+                            std::pair<unsigned int, unsigned int>(
+                                permute_size * i, permute_size * (i + 1))),
+            Kokkos::subview(dest_buffer,
+                            std::pair<unsigned int, unsigned int>(
+                                permute_size * i, permute_size * (i + 1))));
     }
     Kokkos::View<ValueType *, typename ExportView::traits::device_type,
                  Kokkos::MemoryTraits<Kokkos::Unmanaged>>

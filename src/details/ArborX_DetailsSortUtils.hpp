@@ -166,7 +166,7 @@ struct CopyOp<DstViewType, SrcViewType, 3>
 
 template <typename ExecutionSpace, typename PermutationView, typename InputView,
           typename OutputView>
-void applyInversePermutation(ExecutionSpace const &space,
+void applyReversePermutation(ExecutionSpace const &space,
                              PermutationView const &permutation,
                              InputView const &input_view,
                              OutputView const &output_view)
@@ -177,7 +177,7 @@ void applyInversePermutation(ExecutionSpace const &space,
   ARBORX_ASSERT(output_view.extent(0) == input_view.extent(0));
 
   Kokkos::parallel_for(
-      ARBORX_MARK_REGION("inverse_permute"),
+      ARBORX_MARK_REGION("permute"),
       Kokkos::RangePolicy<ExecutionSpace>(space, 0, input_view.extent(0)),
       KOKKOS_LAMBDA(int i) {
         PermuteHelper::CopyOp<OutputView, InputView>::copy(
