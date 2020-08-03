@@ -285,13 +285,8 @@ public:
                                  exports[num_packets * i + j];
                            });
     }
-    Kokkos::View<ValueType *, typename ExportView::traits::device_type,
-                 Kokkos::MemoryTraits<Kokkos::Unmanaged>>
-        unmanaged_dest_buffer(dest_buffer.data(), dest_buffer.size());
-
-    auto dest_buffer_mirror = ArborX::Details::create_layout_right_mirror_view_and_copy(
-        typename ImportView::memory_space(),
-        permutation_necessary ? dest_buffer : exports);
+    auto copied_dest_buffer = Kokkos::create_mirror_view_and_copy(
+        typename ImportView::memory_space(), dest_buffer);
 
     int comm_rank;
     MPI_Comm_rank(_comm, &comm_rank);
@@ -324,7 +319,9 @@ public:
       auto const message_size =
           _dest_counts[i] * num_packets * sizeof(ValueType);
       auto const send_buffer_ptr =
-          dest_buffer_mirror.data() + _dest_offsets[i] * num_packets;
+          permutation_necessary
+              ? copied_dest_buffer.data() + _dest_offsets[i] * num_packets
+              : exports.data() + _dest_offsets[i] * num_packets;
       if (_destinations[i] == comm_rank)
       {
         auto const it = std::find(_sources.begin(), _sources.end(), comm_rank);
