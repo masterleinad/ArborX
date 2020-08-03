@@ -258,10 +258,10 @@ public:
     // If _permute is empty, we are assuming that we don't need to permute
     // exports.
     bool const permutation_necessary = _permute.size() != 0;
-    ExportView dest_buffer("destination_buffer", 0);
+    ExportView dest_buffer = Kokkos::create_mirror(typename ExportView::execution_space{}, exports);
     if (permutation_necessary)
     {
-      reallocWithoutInitializing(dest_buffer, exports.size());
+//      reallocWithoutInitializing(dest_buffer, exports.size());
 
       // We need to create a local copy to avoid capturing a member variable
       // (via the 'this' pointer) which we can't do using a KOKKOS_LAMBDA.
