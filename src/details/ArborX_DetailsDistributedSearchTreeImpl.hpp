@@ -173,27 +173,6 @@ struct DistributedSearchTreeImpl
                     typename View::non_const_type imports);
 };
 
-namespace internal
-{
-template <typename PointerType>
-struct PointerDepth
-{
-  static int constexpr value = 0;
-};
-
-template <typename PointerType>
-struct PointerDepth<PointerType *>
-{
-  static int constexpr value = PointerDepth<PointerType>::value + 1;
-};
-
-template <typename PointerType, std::size_t N>
-struct PointerDepth<PointerType[N]>
-{
-  static int constexpr value = PointerDepth<PointerType>::value;
-};
-} // namespace internal
-
 template <typename View>
 inline Kokkos::View<typename View::traits::data_type, Kokkos::LayoutRight,
                     typename View::traits::host_mirror_space>
@@ -275,14 +254,14 @@ DistributedSearchTreeImpl<DeviceType>::sendAcrossNetwork(
                Kokkos::MemoryTraits<Kokkos::Unmanaged>>
       import_buffer(imports_host.data(), imports_host.size());
 
-  distributor.doPostsAndWaits(space, export_buffer, num_packets, import_buffer);
+  distributor.doPostsAndWaits(space, exports, num_packets, import_buffer);
   Kokkos::deep_copy(space, imports, imports_host);
 #else
   Kokkos::View<NonConstValueType *, typename View::device_type,
                Kokkos::MemoryTraits<Kokkos::Unmanaged>>
       import_buffer(imports.data(), imports.size());
 
-  distributor.doPostsAndWaits(space, export_buffer, num_packets, import_buffer);
+  distributor.doPostsAndWaits(space, exports, num_packets, imports_buffer);
 #endif
 }
 
