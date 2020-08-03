@@ -269,7 +269,7 @@ public:
     ExportView dest_buffer = Kokkos::create_mirror(typename ExportView::execution_space{}, exports);
     if (permutation_necessary)
     {
-//      reallocWithoutInitializing(dest_buffer, exports.size());
+      reallocWithoutInitializing(dest_buffer, exports.size());
 
       // We need to create a local copy to avoid capturing a member variable
       // (via the 'this' pointer) which we can't do using a KOKKOS_LAMBDA.
@@ -342,7 +342,7 @@ public:
         MPI_Isend(send_buffer_ptr, message_size, MPI_BYTE, _destinations[i],
                   123, _comm, &requests.back());
 	std::cout << "Sending to " << _destinations[i] << std::endl;
-	for (unsigned int i=0; i<message_size; ++i)
+	for (unsigned int i=0; i<_dest_counts[i] * num_packets; ++i)
 		std::cout << send_buffer_ptr[i] << std::endl;
 	std::cout << std::endl;
       }
