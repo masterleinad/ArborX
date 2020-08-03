@@ -243,19 +243,12 @@ DistributedSearchTreeImpl<DeviceType>::sendAcrossNetwork(
   using NonConstValueType = typename View::non_const_value_type;
   using ConstValueType = typename View::const_value_type;
 
-  Kokkos::View<ConstValueType *, typename View::device_type,
-               Kokkos::MemoryTraits<Kokkos::Unmanaged>>
-      export_buffer(exports.data(), exports.size());
-
 #ifndef ARBORX_USE_CUDA_AWARE_MPI
   (void)space;
   auto exports_host = create_layout_right_mirror_view(exports);
   Kokkos::deep_copy(space, exports_host, exports);
 
   auto imports_host = create_layout_right_mirror_view(imports);
-
-  using NonConstValueType = typename View::non_const_value_type;
-  using ConstValueType = typename View::const_value_type;
 
   Kokkos::View<ConstValueType *, Kokkos::HostSpace,
                Kokkos::MemoryTraits<Kokkos::Unmanaged>>
