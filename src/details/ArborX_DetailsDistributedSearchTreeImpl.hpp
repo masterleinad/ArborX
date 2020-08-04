@@ -254,14 +254,16 @@ DistributedSearchTreeImpl<DeviceType>::sendAcrossNetwork(
                Kokkos::MemoryTraits<Kokkos::Unmanaged>>
       import_buffer(imports_host.data(), imports_host.size());
 
-  distributor.doPostsAndWaits(space, export_buffer, num_packets, import_buffer);
+  distributor.doPostsAndWaits(space, exports, num_packets, import_buffer);
   Kokkos::deep_copy(space, imports, imports_host);
 #else
   Kokkos::View<NonConstValueType *, typename View::device_type,
                Kokkos::MemoryTraits<Kokkos::Unmanaged>>
       import_buffer(imports.data(), imports.size());
+  static_assert(typename View::rank == 1,
+                "Only implemented for rank one Views!");
 
-  distributor.doPostsAndWaits(space, export_buffer, num_packets, import_buffer);
+  distributor.doPostsAndWaits(space, exports, num_packets, import_buffer);
 #endif
 }
 
