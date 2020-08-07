@@ -272,10 +272,6 @@ public:
       ArborX::Details::applyInversePermutation(space, permute_copy, exports,
                                                dest_buffer);
     }
-    Kokkos::View<ValueType *, typename ExportView::traits::device_type,
-                 Kokkos::MemoryTraits<Kokkos::Unmanaged>>
-        unmanaged_dest_buffer(dest_buffer.data(), dest_buffer.size());
-
     auto dest_buffer_mirror =
         ArborX::Details::create_layout_right_mirror_view_and_copy(
             typename ImportView::memory_space(),
