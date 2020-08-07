@@ -345,8 +345,8 @@ public:
         MPI_Isend(send_buffer_ptr, message_size, MPI_BYTE, _destinations[i],
                   123, _comm, &requests.back());
 	std::cout << "Sending to " << _destinations[i] << std::endl;
-	for (unsigned int i=0; i<message_size; ++i)
-		std::cout << send_buffer_ptr[i] << std::endl;
+	for (unsigned int j=0; j<message_size; ++j)
+		std::cout << send_buffer_ptr[j] << std::endl;
 	std::cout << std::endl;
       }
     }
