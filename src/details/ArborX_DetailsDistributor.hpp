@@ -282,6 +282,9 @@ public:
             typename ImportView::memory_space(),
             permutation_necessary ? dest_buffer : exports);
 
+    static_assert(std::is_same<typename decltype(dest_buffer_mirror)::array_layout, Kokkos::LayoutRight>::value, "");
+    static_assert(std::is_same<typename ImportView::array_layout, Kokkos::LayoutRight>::value, "");
+
     int comm_rank;
     MPI_Comm_rank(_comm, &comm_rank);
     int comm_size;
