@@ -214,13 +214,8 @@ DistributedSearchTreeImpl<DeviceType>::sendAcrossNetwork(
 
   distributor.doPostsAndWaits(space, exports, num_packets, import_buffer);
 
-  if (View::rank==1)
-    Kokkos::deep_copy(space, imports, imports_layout_right);
-  else
-  {
     auto tmp_view = Kokkos::create_mirror_view_and_copy(typename View::device_type{}, imports_layout_right);
     Kokkos::deep_copy(space, imports, tmp_view);
-  }
 }
 
 template <typename DeviceType>
