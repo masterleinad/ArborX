@@ -162,12 +162,13 @@ public:
   template <typename ExecutionSpace>
   static std::tuple<Kokkos::View<int *, DeviceType>,
                     Kokkos::View<int *, DeviceType>,
-                    Kokkos::View<float *, DeviceType>>
-  reversePermutation(ExecutionSpace const &space,
-                     Kokkos::View<unsigned int const *, DeviceType> permute,
-                     Kokkos::View<int const *, DeviceType> offset,
-                     Kokkos::View<int const *, DeviceType> indices,
-                     Kokkos::View<float const *, DeviceType> distances)
+                    Kokkos::View<DistanceReturnType *, DeviceType>>
+  reversePermutation(
+      ExecutionSpace const &space,
+      Kokkos::View<unsigned int const *, DeviceType> permute,
+      Kokkos::View<int const *, DeviceType> offset,
+      Kokkos::View<int const *, DeviceType> indices,
+      Kokkos::View<DistanceReturnType const *, DeviceType> distances)
   {
     auto const tmp_offset = permuteOffset(permute, offset);
 

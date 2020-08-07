@@ -89,7 +89,8 @@ struct InsertGenerator
   template <typename U = PassTag, typename V = Tag>
   KOKKOS_FUNCTION std::enable_if_t<std::is_same<U, FirstPassTag>{} &&
                                    std::is_same<V, NearestPredicateTag>{}>
-  operator()(int predicate_index, int primitive_index, float distance) const
+  operator()(int predicate_index, int primitive_index,
+             DistanceReturnType distance) const
   {
     auto const permuted_predicate_index = _permute(predicate_index);
     // With permutation, we access offset in random manner, and
@@ -125,7 +126,8 @@ struct InsertGenerator
   KOKKOS_FUNCTION
       std::enable_if_t<std::is_same<U, FirstPassNoBufferOptimizationTag>{} &&
                        std::is_same<V, NearestPredicateTag>{}>
-      operator()(int predicate_index, int primitive_index, float distance) const
+      operator()(int predicate_index, int primitive_index,
+                 DistanceReturnType distance) const
   {
     auto &count = _counts(predicate_index);
 
@@ -155,7 +157,8 @@ struct InsertGenerator
   template <typename U = PassTag, typename V = Tag>
   KOKKOS_FUNCTION std::enable_if_t<std::is_same<U, SecondPassTag>{} &&
                                    std::is_same<V, NearestPredicateTag>{}>
-  operator()(int predicate_index, int primitive_index, float distance) const
+  operator()(int predicate_index, int primitive_index,
+             DistanceReturnType distance) const
   {
     // we store offsets in counts, and offset(permute(i)) = counts(i)
     auto &offset = _counts(predicate_index);

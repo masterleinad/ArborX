@@ -369,10 +369,10 @@ struct CustomInlineCallbackAttachmentSpatialPredicate
                                   Insert const &insert) const
   {
     auto data = ArborX::getData(query);
-    float const distance_to_origin =
+    auto const distance_to_origin =
         ArborX::Details::distance(points(index), origin);
 
-    insert(distance_to_origin + data);
+    insert(distance_to_origin.to_float() + data);
   }
 };
 
@@ -399,7 +399,7 @@ struct CustomPostCallbackAttachmentSpatialPredicate
           auto data = ArborX::getData(queries(i));
           for (int j = offset(i); j < offset(i + 1); ++j)
           {
-            out(j) = (float)distance(points_(in(j)), origin_) + data;
+            out(j) = distance(points_(in(j)), origin_).to_float() + data;
           }
         });
   }
@@ -459,8 +459,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(callback_with_attachment, DeviceType,
   Kokkos::View<float *, DeviceType> ref("ref", n_results);
   Kokkos::parallel_for(
       Kokkos::RangePolicy<ExecutionSpace>(0, n_results), KOKKOS_LAMBDA(int i) {
-        ref(i) =
-            float(ArborX::Details::distance(points(i), origin) + 1) + comm_rank;
+        ref(i) = ArborX::Details::distance(points(i), origin).to_float() + 1 +
+                 comm_rank;
       });
 
   {

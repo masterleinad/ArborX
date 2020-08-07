@@ -137,7 +137,8 @@ struct TreeTraversal<BVH, Predicates, Callback, NearestPredicateTag>
 
   using Access = AccessTraits<Predicates, PredicatesTag>;
 
-  using Buffer = Kokkos::View<Kokkos::pair<int, float> *, MemorySpace>;
+  using Buffer =
+      Kokkos::View<Kokkos::pair<int, DistanceReturnType> *, MemorySpace>;
   using Offset = Kokkos::View<int *, MemorySpace>;
   struct BufferProvider
   {
@@ -247,9 +248,10 @@ struct TreeTraversal<BVH, Predicates, Callback, NearestPredicateTag>
     // Nodes with a distance that exceed that radius can safely be
     // discarded. Initialize the radius to infinity and tighten it once k
     // neighbors have been found.
-    auto radius = KokkosExt::ArithmeticTraits::infinity<float>::value;
+    DistanceReturnType radius{
+        KokkosExt::ArithmeticTraits::infinity<float>::value};
 
-    using PairIndexDistance = Kokkos::pair<int, float>;
+    using PairIndexDistance = Kokkos::pair<int, DistanceReturnType>;
     static_assert(
         std::is_same<typename decltype(buffer)::value_type,
                      PairIndexDistance>::value,
@@ -273,13 +275,13 @@ struct TreeTraversal<BVH, Predicates, Callback, NearestPredicateTag>
         heap(UnmanagedStaticVector<PairIndexDistance>(buffer.data(),
                                                       buffer.size()));
 
-    using PairNodePtrDistance = Kokkos::pair<Node const *, float>;
+    using PairNodePtrDistance = Kokkos::pair<Node const *, DistanceReturnType>;
     PairNodePtrDistance stack[64];
     auto *stack_ptr = stack;
-    *stack_ptr++ = {nullptr, 0.f};
+    *stack_ptr++ = {nullptr, DistanceReturnType{0.f}};
 
     Node const *node = bvh_.getRoot();
-    float node_distance = 0.f;
+    DistanceReturnType node_distance = DistanceReturnType{0.f};
     do
     {
       if (node_distance < radius)
@@ -378,7 +380,7 @@ struct TreeTraversal<BVH, Predicates, Callback, NearestPredicateTag>
     if (k < 1)
       return 0;
 
-    using PairNodePtrDistance = Kokkos::pair<Node const *, float>;
+    using PairNodePtrDistance = Kokkos::pair<Node const *, DistanceReturnType>;
     struct CompareDistance
     {
       KOKKOS_INLINE_FUNCTION bool
@@ -451,9 +453,10 @@ struct TreeTraversal<BVH, void, void, void>
     // Nodes with a distance that exceed that radius can safely be
     // discarded. Initialize the radius to infinity and tighten it once k
     // neighbors have been found.
-    auto radius = KokkosExt::ArithmeticTraits::infinity<float>::value;
+    DistanceReturnType radius{
+        KokkosExt::ArithmeticTraits::infinity<float>::value};
 
-    using PairIndexDistance = Kokkos::pair<int, float>;
+    using PairIndexDistance = Kokkos::pair<int, DistanceReturnType>;
     static_assert(
         std::is_same<typename Buffer::value_type, PairIndexDistance>::value,
         "Type of the elements stored in the buffer passed as argument to "
@@ -476,11 +479,11 @@ struct TreeTraversal<BVH, void, void, void>
         heap(UnmanagedStaticVector<PairIndexDistance>(buffer.data(),
                                                       buffer.size()));
 
-    using PairNodePtrDistance = Kokkos::pair<Node const *, float>;
+    using PairNodePtrDistance = Kokkos::pair<Node const *, DistanceReturnType>;
     Stack<PairNodePtrDistance> stack;
     // Do not bother computing the distance to the root node since it is
     // immediately popped out of the stack and processed.
-    stack.emplace(bvh.getRoot(), 0.);
+    stack.emplace(bvh.getRoot(), DistanceReturnType{0.});
 
     while (!stack.empty())
     {

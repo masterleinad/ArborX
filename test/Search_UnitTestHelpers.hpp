@@ -91,7 +91,9 @@ template <typename Tree, typename Queries>
 auto query_with_distance(Tree const &tree, Queries const &queries)
 {
   using device_type = typename Tree::device_type;
-  Kokkos::View<Kokkos::pair<int, float> *, device_type> values("indices", 0);
+  Kokkos::View<Kokkos::pair<int, ArborX::Details::DistanceReturnType> *,
+               device_type>
+      values("indices", 0);
   Kokkos::View<int *, device_type> offset("offset", 0);
   tree.query(queries,
              ArborX::Details::CallbackDefaultNearestPredicateWithDistance{},
@@ -114,9 +116,26 @@ void validateResults(T1 const &reference, T2 const &other)
   {
     auto const l = extractRow(other, i);
     auto const r = extractRow(reference, i);
-    BOOST_TEST(l == r, boost::test_tools::per_element());
+    for (unsigned int i = 0; i < l.size(); ++i)
+      BOOST_TEST(l[i] == r[i]);
   }
 }
+
+/*void validateResults(std::multiset<Kokkos::pair<int,
+ArborX::Details::DistanceReturnType>> const &reference,
+                     std::multiset<Kokkos::pair<int,
+ArborX::Details::DistanceReturnType>> const &other)
+{
+  auto const m = getNumberOfRows(reference);
+  BOOST_TEST(m == getNumberOfRows(other));
+  for (std::size_t i = 0; i < m; ++i)
+  {
+    auto const l = extractRow(other, i);
+    auto const r = extractRow(reference, i);
+    for (unsigned int i = 0; i < l.size(); ++i)
+      BOOST_TEST(l[i].to_float() == r[i].to_float());
+  }
+}*/
 
 namespace tt = boost::test_tools;
 
@@ -167,7 +186,8 @@ void checkResults(Tree const &tree, Queries const &queries,
   Kokkos::View<int *, device_type> indices("indices", 0);
   Kokkos::View<int *, device_type> offset("offset", 0);
   Kokkos::View<int *, device_type> ranks("ranks", 0);
-  Kokkos::View<float *, device_type> distances("distances", 0);
+  Kokkos::View<ArborX::Details::DistanceReturnType *, device_type> distances(
+      "distances", 0);
   tree.query(queries, indices, offset, ranks, distances);
 
   auto indices_host =

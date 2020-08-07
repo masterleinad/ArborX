@@ -275,7 +275,7 @@ queryDispatch(NearestPredicateTag, BVH const &bvh, ExecutionSpace const &space,
                   Experimental::TraversalPolicy())
 {
   using MemorySpace = typename BVH::memory_space;
-  Kokkos::View<Kokkos::pair<int, float> *, MemorySpace> pairs(
+  Kokkos::View<Kokkos::pair<int, DistanceReturnType> *, MemorySpace> pairs(
       "pairs_index_distance", 0);
   queryDispatch(NearestPredicateTag{}, bvh, space, predicates,
                 CallbackDefaultNearestPredicateWithDistance{}, pairs, offset,
@@ -307,7 +307,7 @@ queryDispatch(NearestPredicateTag, BVH const &bvh, ExecutionSpace const &space,
                   Experimental::TraversalPolicy())
 {
   using MemorySpace = typename BVH::memory_space;
-  Kokkos::View<Kokkos::pair<int, float> *, MemorySpace> out(
+  Kokkos::View<Kokkos::pair<int, DistanceReturnType> *, MemorySpace> out(
       "pairs_index_distance", 0);
   queryDispatch(NearestPredicateTag{}, bvh, space, predicates,
                 CallbackDefaultNearestPredicateWithDistance{}, out, offset,

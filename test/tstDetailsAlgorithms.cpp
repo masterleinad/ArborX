@@ -36,7 +36,8 @@ BOOST_AUTO_TEST_CASE(distance)
   // normal projection onto center of one face
   BOOST_TEST(distance({{2.0, 0.5, 0.5}}, box) == 1.0);
   // projection onto edge
-  BOOST_TEST(distance({{2.0, 0.75, -1.0}}, box) == std::sqrt(2.f));
+  BOOST_CHECK_CLOSE(distance({{2.0, 0.75, -1.0}}, box).to_float(),
+                    std::sqrt(2.), 1.e-5);
   // projection onto corner node
   BOOST_TEST(distance({{-1.0, 2.0, 2.0}}, box) == std::sqrt(3.f));
 

@@ -94,8 +94,9 @@ BOOST_AUTO_TEST_CASE(distance)
   BOOST_TEST(bg::distance(p, unit_box) == std::sqrt(3.0));
 
   p = {{-1., .5, -1.}};
-  BOOST_TEST(details::distance(p, unit_box) == std::sqrt(2.f));
-  BOOST_TEST(bg::distance(p, unit_box) == std::sqrt(2.0));
+  BOOST_CHECK_CLOSE(details::distance(p, unit_box).to_float(), std::sqrt(2.),
+                    1.e-5);
+  BOOST_TEST(bg::distance(p, unit_box) == sqrt(2.0));
 
   p = {{-1., .5, .5}};
   BOOST_TEST(details::distance(p, unit_box) == 1.);

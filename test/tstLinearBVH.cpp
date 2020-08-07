@@ -70,7 +70,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(empty_tree, Tree, TreeTypes)
     // Passing an empty distance vector.
     ARBORX_TEST_QUERY_TREE_WITH_DISTANCE(
         tree, makeNearestQueries<device_type>({}),
-        (make_reference_solution<Kokkos::pair<int, float>>)({}, {0}));
+        (make_reference_solution<
+            Kokkos::pair<int, ArborX::Details::DistanceReturnType>>)({}, {0}));
 
     // Now passing a couple queries of various type and checking the
     // results.
@@ -102,7 +103,9 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(empty_tree, Tree, TreeTypes)
             {{{0., 0., 0.}}, 1},
             {{{1., 1., 1.}}, 2},
         }),
-        (make_reference_solution<Kokkos::pair<int, float>>)({}, {0, 0, 0}));
+        (make_reference_solution<
+            Kokkos::pair<int, ArborX::Details::DistanceReturnType>>)({}, {0, 0,
+                                                                          0}));
   }
 }
 
@@ -130,13 +133,21 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(single_leaf_tree, Tree, TreeTypes)
 
   ARBORX_TEST_QUERY_TREE_WITH_DISTANCE(
       tree, makeNearestQueries<device_type>({}),
-      (make_reference_solution<Kokkos::pair<int, float>>)({}, {0}));
+      (make_reference_solution<
+          Kokkos::pair<int, ArborX::Details::DistanceReturnType>>)({}, {0}));
 
   ARBORX_TEST_QUERY_TREE_WITH_DISTANCE(
       tree,
       makeNearestQueries<device_type>({{{0., 0., 0.}, 3}, {{4., 5., 1.}, 1}}),
-      (make_reference_solution<Kokkos::pair<int, float>>)({{0, 0.}, {0, 5.}},
-                                                          {0, 1, 2}));
+      (make_reference_solution<Kokkos::pair<
+           int, ArborX::Details::
+                    DistanceReturnType>>)({{0,
+                                            ArborX::Details::DistanceReturnType{
+                                                0.}},
+                                           {0,
+                                            ArborX::Details::DistanceReturnType{
+                                                25.}}},
+                                          {0, 1, 2}));
 
   ARBORX_TEST_QUERY_TREE(tree,
                          makeIntersectsBoxQueries<device_type>({
@@ -168,10 +179,18 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(single_leaf_tree, Tree, TreeTypes)
           {{{0., 2., 0.}}, 2},
           {{{0., 0., 3.}}, 3},
       }),
-      (make_reference_solution<Kokkos::pair<int, float>>)({{0, 0.f},
-                                                           {0, 1.f},
-                                                           {0, 2.f}},
-                                                          {0, 1, 2, 3}));
+      (make_reference_solution<Kokkos::pair<
+           int, ArborX::Details::
+                    DistanceReturnType>>)({{0,
+                                            ArborX::Details::DistanceReturnType{
+                                                0.f}},
+                                           {0,
+                                            ArborX::Details::DistanceReturnType{
+                                                1.f}},
+                                           {0,
+                                            ArborX::Details::DistanceReturnType{
+                                                4.f}}},
+                                          {0, 1, 2, 3}));
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(couple_leaves_tree, Tree, TreeTypes)
@@ -235,11 +254,21 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(couple_leaves_tree, Tree, TreeTypes)
           {{{0., 0., 0.}}, 2},
           {{{1., 0., 0.}}, 4},
       }),
-      (make_reference_solution<Kokkos::pair<int, float>>)({{0, 0.f},
-                                                           {1, sqrt(3.f)},
-                                                           {0, 1.f},
-                                                           {1, sqrt(2.f)}},
-                                                          {0, 2, 4}));
+      (make_reference_solution<Kokkos::pair<
+           int, ArborX::Details::
+                    DistanceReturnType>>)({{0,
+                                            ArborX::Details::DistanceReturnType{
+                                                0.f}},
+                                           {1,
+                                            ArborX::Details::DistanceReturnType{
+                                                3.f}},
+                                           {0,
+                                            ArborX::Details::DistanceReturnType{
+                                                1.f}},
+                                           {1,
+                                            ArborX::Details::DistanceReturnType{
+                                                2.f}}},
+                                          {0, 2, 4}));
 }
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(duplicated_leaves, DeviceType,
@@ -453,9 +482,9 @@ struct CustomInlineCallbackSpatialPredicate
   KOKKOS_FUNCTION void operator()(Query const &, int index,
                                   Insert const &insert) const
   {
-    float const distance_to_origin =
+    auto const distance_to_origin =
         ArborX::Details::distance(points(index), origin);
-    insert({index, distance_to_origin});
+    insert({index, distance_to_origin.to_float()});
   }
 };
 
@@ -481,7 +510,7 @@ struct CustomPostCallbackSpatialPredicate
         Kokkos::RangePolicy<ExecutionSpace>(0, n), KOKKOS_LAMBDA(int i) {
           for (int j = offset(i); j < offset(i + 1); ++j)
           {
-            out(j) = {in(j), (float)distance(points_(in(j)), origin_)};
+            out(j) = {in(j), distance(points_(in(j)), origin_).to_float()};
           }
         });
   }
@@ -492,10 +521,11 @@ struct CustomInlineCallbackNearestPredicate
 {
   using tag = ArborX::Details::InlineCallbackTag;
   template <typename Query, typename Insert>
-  KOKKOS_FUNCTION void operator()(Query const &, int index, float distance,
+  KOKKOS_FUNCTION void operator()(Query const &, int index,
+                                  ArborX::Details::DistanceReturnType distance,
                                   Insert const &insert) const
   {
-    insert({index, (float)distance});
+    insert({index, distance.to_float()});
   }
 };
 
@@ -515,7 +545,7 @@ struct CustomPostCallbackNearestPredicate
                          KOKKOS_LAMBDA(int i) {
                            for (int j = offset(i); j < offset(i + 1); ++j)
                            {
-                             out(j) = {in(j).first, (float)in(j).second};
+                             out(j) = {in(j).first, in(j).second.to_float()};
                            }
                          });
   }
@@ -531,7 +561,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(callback, DeviceType, ARBORX_DEVICE_TYPES)
   Kokkos::parallel_for(
       Kokkos::RangePolicy<ExecutionSpace>(0, n), KOKKOS_LAMBDA(int i) {
         points(i) = {{(double)i, (double)i, (double)i}};
-        ref(i) = {i, (float)ArborX::Details::distance(points(i), origin)};
+        ref(i) = {i, ArborX::Details::distance(points(i), origin).to_float()};
       });
   ArborX::BVH<DeviceType> const bvh{points};
   {
@@ -611,11 +641,11 @@ struct CustomInlineCallbackAttachmentSpatialPredicate
   KOKKOS_FUNCTION void operator()(Query const &query, int index,
                                   Insert const &insert) const
   {
-    float const distance_to_origin =
+    auto const distance_to_origin =
         ArborX::Details::distance(points(index), origin);
 
     auto data = ArborX::getData(query);
-    insert({index, data + distance_to_origin});
+    insert({index, data + distance_to_origin.to_float()});
   }
 };
 template <typename DeviceType>
@@ -642,7 +672,8 @@ struct CustomPostCallbackAttachmentSpatialPredicate
           auto data = data_2[1];
           for (int j = offset(i); j < offset(i + 1); ++j)
           {
-            out(j) = {in(j), data + (float)distance(points_(in(j)), origin_)};
+            out(j) = {in(j),
+                      data + distance(points_(in(j)), origin_).to_float()};
           }
         });
   }
@@ -653,11 +684,12 @@ struct CustomInlineCallbackAttachmentNearestPredicate
 {
   using tag = ArborX::Details::InlineCallbackTag;
   template <typename Query, typename Insert>
-  KOKKOS_FUNCTION void operator()(Query const &query, int index, float distance,
+  KOKKOS_FUNCTION void operator()(Query const &query, int index,
+                                  ArborX::Details::DistanceReturnType distance,
                                   Insert const &insert) const
   {
     auto data = ArborX::getData(query);
-    insert({index, data + (float)distance});
+    insert({index, data + distance.to_float()});
   }
 };
 
@@ -673,15 +705,15 @@ struct CustomPostCallbackAttachmentNearestPredicate
     using ExecutionSpace = typename DeviceType::execution_space;
     auto const n = offset.extent(0) - 1;
     ArborX::reallocWithoutInitializing(out, in.extent(0));
-    Kokkos::parallel_for(Kokkos::RangePolicy<ExecutionSpace>(0, n),
-                         KOKKOS_LAMBDA(int i) {
-                           auto data_2 = ArborX::getData(queries(i));
-                           auto data = data_2[1];
-                           for (int j = offset(i); j < offset(i + 1); ++j)
-                           {
-                             out(j) = {in(j).first, data + (float)in(j).second};
-                           }
-                         });
+    Kokkos::parallel_for(
+        Kokkos::RangePolicy<ExecutionSpace>(0, n), KOKKOS_LAMBDA(int i) {
+          auto data_2 = ArborX::getData(queries(i));
+          auto data = data_2[1];
+          for (int j = offset(i); j < offset(i + 1); ++j)
+          {
+            out(j) = {in(j).first, data + in(j).second.to_float()};
+          }
+        });
   }
 };
 
@@ -694,11 +726,12 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(callback_with_attachment, DeviceType,
   ArborX::Point const origin = {{0., 0., 0.}};
   float const delta = 5.0;
   using ExecutionSpace = typename DeviceType::execution_space;
-  Kokkos::parallel_for(Kokkos::RangePolicy<ExecutionSpace>(0, n), KOKKOS_LAMBDA(
-                                                                      int i) {
-    points(i) = {{(double)i, (double)i, (double)i}};
-    ref(i) = {i, delta + (float)ArborX::Details::distance(points(i), origin)};
-  });
+  Kokkos::parallel_for(
+      Kokkos::RangePolicy<ExecutionSpace>(0, n), KOKKOS_LAMBDA(int i) {
+        points(i) = {{(double)i, (double)i, (double)i}};
+        ref(i) = {
+            i, delta + ArborX::Details::distance(points(i), origin).to_float()};
+      });
   ArborX::BVH<DeviceType> const bvh{points};
   {
     Kokkos::View<Kokkos::pair<int, float> *, DeviceType> custom("custom", 0);

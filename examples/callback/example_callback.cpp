@@ -56,7 +56,7 @@ struct AccessTraits<NearestToOrigin, PredicatesTag>
 struct PairIndexDistance
 {
   int index;
-  float distance;
+  ArborX::Details::DistanceReturnType distance;
 };
 
 struct PrintfCallback
@@ -69,10 +69,12 @@ struct PrintfCallback
     out(primitive);
   }
   template <typename Predicate, typename OutputFunctor>
-  KOKKOS_FUNCTION void operator()(Predicate, int primitive, float distance,
+  KOKKOS_FUNCTION void operator()(Predicate, int primitive,
+                                  ArborX::Details::DistanceReturnType distance,
                                   OutputFunctor const &out) const
   {
-    printf("Found %d with distance %.3f from functor\n", primitive, distance);
+    printf("Found %d with distance %.3f from functor\n", primitive,
+           distance.to_float());
     out({primitive, distance});
   }
 };
@@ -121,10 +123,11 @@ int main(int argc, char *argv[])
               offsets);
 #ifndef __NVCC__
     bvh.query(ExecutionSpace{}, NearestToOrigin{k},
-              KOKKOS_LAMBDA(auto /*predicate*/, int primitive, float distance,
+              KOKKOS_LAMBDA(auto /*predicate*/, int primitive,
+                            ArborX::Details::DistanceReturnType distance,
                             auto /*output_functor*/) {
                 printf("Found %d with distance %.3f from generic lambda\n",
-                       primitive, distance);
+                       primitive, distance.to_float());
               },
               values, offsets);
 #endif
