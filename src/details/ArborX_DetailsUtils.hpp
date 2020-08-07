@@ -97,7 +97,7 @@ inline auto create_layout_right_mirror_view(View const &src)
 
 template <typename View, typename ExecutionSpace>
 inline auto create_layout_right_mirror_view_and_copy(
-    ExecutionSpace const & /*execution_space*/, View const &src,
+    ExecutionSpace const & execution_space, View const &src,
     typename std::enable_if<!(
         (std::is_same<typename View::traits::array_layout,
                       Kokkos::LayoutRight>::value ||
@@ -122,15 +122,9 @@ inline auto create_layout_right_mirror_view_and_copy(
           pointer_depth > 5 ? src.extent(5) : KOKKOS_INVALID_INDEX,
           pointer_depth > 6 ? src.extent(6) : KOKKOS_INVALID_INDEX,
           pointer_depth > 7 ? src.extent(7) : KOKKOS_INVALID_INDEX);
-  typename View::traits::memory_space copy_space;
-  if (View::rank == 1)
-    Kokkos::deep_copy(/*execution_space, */ layout_right_view, src);
-  else
-  {
-    auto tmp_view = Kokkos::create_mirror_view(copy_space, layout_right_view);
-    Kokkos::deep_copy(tmp_view, src);
-    Kokkos::deep_copy(/*execution_space, */ layout_right_view, tmp_view);
-  }
+  auto tmp_view = Kokkos::create_mirror_view_and_copy(execution_space, src);
+  // TODO not quite sure wy this can't be execution_space
+  Kokkos::deep_copy(/*execution_space, */layout_right_view, tmp_view);
   return layout_right_view;
 }
 
