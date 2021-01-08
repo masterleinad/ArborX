@@ -59,6 +59,12 @@
 #include <thrust/sort.h>
 #endif
 
+#ifdef KOKKOS_ENABLE_SYCL
+#include <oneapi/dpl/algorithm>
+#include <oneapi/dpl/execution>
+#include <oneapi/dpl/iterator>
+#endif
+
 namespace ArborX
 {
 
@@ -133,6 +139,40 @@ Kokkos::View<SizeType *, typename ViewType::device_type> sortObjects(
   auto begin_ptr = thrust::device_ptr<ValueType>(view.data());
   auto end_ptr = thrust::device_ptr<ValueType>(view.data() + n);
   thrust::sort_by_key(execution_policy, begin_ptr, end_ptr, permute_ptr);
+
+  return permute;
+}
+#endif
+
+#if defined(KOKKOS_ENABLE_SYCL)
+// NOTE returns the permutation indices **and** sorts the input view
+template <typename ViewType, class SizeType = unsigned int>
+Kokkos::View<SizeType *, typename ViewType::device_type>
+sortObjects(Kokkos::Experimental::SYCL const &space, ViewType &view)
+{
+  int const n = view.extent(0);
+
+  using ValueType = typename ViewType::value_type;
+  static_assert(std::is_same<std::decay_t<decltype(space)>,
+                             typename ViewType::execution_space>::value,
+                "");
+
+  Kokkos::View<SizeType *, typename ViewType::device_type> permute(
+      Kokkos::ViewAllocateWithoutInitializing("ArborX::Sorting::permutation"),
+      n);
+  ArborX::iota(space, permute);
+
+  sycl::buffer<typename ViewType::value_type, 1> view_buffer{view.data(),
+                                                             sycl::range<1>{n}};
+  sycl::buffer<SizeType, 1> permute_buffer{permute.data(), sycl::range<1>{n}};
+  auto keys_begin = oneapi::dpl::begin(view_buffer);
+  auto vals_begin = oneapi::dpl::begin(permute_buffer);
+
+  auto zipped_begin = oneapi::dpl::make_zip_iterator(keys_begin, vals_begin);
+  oneapi::dpl::execution::device_policy policy;
+  oneapi::dpl::sort(
+      policy, zipped_begin, zipped_begin + n,
+      [](auto lhs, auto rhs) { return std::get<0>(lhs) < std::get<0>(rhs); });
 
   return permute;
 }
