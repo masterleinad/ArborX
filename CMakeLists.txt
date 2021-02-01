@@ -28,6 +28,11 @@ if(Kokkos_ENABLE_HIP AND NOT ARBORX_ENABLE_ROCTHRUST)
   message(WARNING "rocThrust is NOT enabled.\nThis will negatively impact performance on AMD GPUs.")
 endif()
 
+if(Kokkos_ENABLE_SYCL)
+ find_package(TBB 2021.1.1.0 REQUIRED)
+ target_link_libraries(ArborX INTERFACE TBB::tbb)
+endif()
+
 # Refer to the alias target in examples and benchmarks so they can be built
 # against an installed ArborX
 add_library(ArborX::ArborX ALIAS ArborX)
