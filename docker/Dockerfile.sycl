@@ -125,11 +125,13 @@ RUN KOKKOS_URL=https://github.com/kokkos/kokkos/archive/${KOKKOS_VERSION}.tar.gz
     make -j${NPROCS} install && \
     rm -rf ${SCRATCH_DIR}
 
-RUN cd /tmp && wget https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB && \
-    apt-key add GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB && \
-    rm GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB && \
-    echo "deb https://apt.repos.intel.com/oneapi all main" | tee /etc/apt/sources.list.d/oneAPI.list
-
-RUN apt-get update && apt-get install -y intel-oneapi-tbb-devel && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+# Install oneTBB
+ARG ONETBB_VERSION=2021.1.1
+ENV ONETBB_DIR=/opt/onetbb
+RUN ONETBB_URL=https://github.com/oneapi-src/oneTBB/releases/download/v2021.1.1/oneapi-tbb-${ONETBB_VERSION}-lin.tgz && \
+    ONETBB_ARCHIVE=oneapi-tbb-${ONETBB_VERSION}-lin.tgz && \
+    SCRATCH_DIR=/scratch && mkdir -p ${SCRATCH_DIR} && cd ${SCRATCH_DIR} && \
+    wget --quiet ${ONETBB_URL} --output-document=${ONETBB_ARCHIVE} && \
+    mkdir -p ${ONETBB_DIR} && \
+    tar -xf ${ONETBB_ARCHIVE} -C ${ONETBB_DIR} --strip-components=1 && \
+    rm -rf ${SCRATCH_DIR} 
