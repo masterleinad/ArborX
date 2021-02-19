@@ -50,6 +50,7 @@ int main(int argc, char *argv[])
   float eps;
   int cluster_min_size;
   int core_min_size;
+  std::string reader_type;
 
   bpo::options_description desc("Allowed options");
   // clang-format off
@@ -63,6 +64,7 @@ int main(int argc, char *argv[])
         ( "verify", bpo::bool_switch(&verify)->default_value(false), "verify connected components")
         ( "print-dbscan-timers", bpo::bool_switch(&print_dbscan_timers)->default_value(false), "print dbscan timers")
         ( "output-sizes-and-centers", bpo::bool_switch(&print_sizes_centers)->default_value(false), "print cluster sizes and centers")
+        ( "reader", bpo::value<std::string>(&reader_type)->default_value("arborx"), "reader type")
         ;
   // clang-format on
   bpo::variables_map vm;
@@ -79,8 +81,8 @@ int main(int argc, char *argv[])
   std::cout << "ArborX hash   : " << ArborX::gitCommitHash() << std::endl;
 
   // read in data
-  auto const primitives =
-      vec2view<MemorySpace>(loadData(filename, "arborx", binary), "primitives");
+  auto const primitives = vec2view<MemorySpace>(
+      loadData(filename, reader_type, binary), "primitives");
 
   ExecutionSpace exec_space;
 
