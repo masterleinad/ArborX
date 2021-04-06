@@ -262,8 +262,7 @@ BasicBoundingVolumeHierarchy<MemorySpace, BoundingVolume, Enable>::
 
   // calculate Morton codes of all objects
   Kokkos::View<unsigned int *, MemorySpace> morton_indices(
-      "ArborX::BVH::BVH::morton",
-      size());
+      "ArborX::BVH::BVH::morton", size());
   Details::TreeConstruction::assignMortonCodes(space, primitives,
                                                morton_indices, bbox);
 
