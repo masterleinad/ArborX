@@ -29,7 +29,7 @@ if(Kokkos_ENABLE_HIP AND NOT ARBORX_ENABLE_ROCTHRUST)
 endif()
 
 if(Kokkos_ENABLE_SYCL)
- find_package(TBB 2021.1.1.0 REQUIRED)
+ find_package(TBB REQUIRED)
  target_link_libraries(ArborX INTERFACE TBB::tbb)
 endif()
 
