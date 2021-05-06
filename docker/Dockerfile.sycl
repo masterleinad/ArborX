@@ -59,7 +59,7 @@ RUN SYCL_VERSION=20210311 && \
     rm -rf ${SCRATCH_DIR}
 ENV PATH=${SYCL_DIR}/bin:$PATH
 
-RUN ONE_DPL_VERSION=oneDPL-golden-release && \
+RUN ONE_DPL_VERSION=oneDPL-2021.3.0-release && \
     ONE_DPL_URL=https://github.com/oneapi-src/oneDPL/archive && \
     ONE_DPL_ARCHIVE=${ONE_DPL_VERSION}.tar.gz && \
     SCRATCH_DIR=/scratch && mkdir -p ${SCRATCH_DIR} && cd ${SCRATCH_DIR} && \
@@ -126,9 +126,9 @@ RUN KOKKOS_URL=https://github.com/kokkos/kokkos/archive/${KOKKOS_VERSION}.tar.gz
     rm -rf ${SCRATCH_DIR}
 
 # Install oneTBB
-ARG ONETBB_VERSION=2021.1.1
 ENV ONETBB_DIR=/opt/onetbb
-RUN ONETBB_URL=https://github.com/oneapi-src/oneTBB/releases/download/v2021.1.1/oneapi-tbb-${ONETBB_VERSION}-lin.tgz && \
+RUN ONETBB_VERSION=2021.2.0 && \
+    ONETBB_URL=https://github.com/oneapi-src/oneTBB/releases/download/v${ONETBB_VERSION}/oneapi-tbb-${ONETBB_VERSION}-lin.tgz && \
     ONETBB_ARCHIVE=oneapi-tbb-${ONETBB_VERSION}-lin.tgz && \
     SCRATCH_DIR=/scratch && mkdir -p ${SCRATCH_DIR} && cd ${SCRATCH_DIR} && \
     wget --quiet ${ONETBB_URL} --output-document=${ONETBB_ARCHIVE} && \
