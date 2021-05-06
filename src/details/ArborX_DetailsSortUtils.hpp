@@ -14,6 +14,7 @@
 
 #include <ArborX_Config.hpp> // ARBORX_ENABLE_ROCTHRUST
 
+#include <ArborX_DetailsKokkosExtAccessibilityTraits.hpp> // is_accessible_from
 #include <ArborX_DetailsUtils.hpp> // iota
 #include <ArborX_Exception.hpp>
 
@@ -152,9 +153,8 @@ sortObjects(Kokkos::Experimental::SYCL const &space, ViewType &view)
 {
   int const n = view.extent(0);
 
-  using ValueType = typename ViewType::value_type;
-  static_assert(std::is_same<std::decay_t<decltype(space)>,
-                             typename ViewType::execution_space>::value,
+  static_assert(KokkosExt::is_accessible_from<typename ViewType::memory_space, 
+                                              Kokkos::Experimental::SYCL>::value,
                 "");
 
   Kokkos::View<SizeType *, typename ViewType::device_type> permute(
