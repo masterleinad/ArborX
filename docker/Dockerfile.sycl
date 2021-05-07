@@ -59,14 +59,21 @@ RUN SYCL_VERSION=20210311 && \
     rm -rf ${SCRATCH_DIR}
 ENV PATH=${SYCL_DIR}/bin:$PATH
 
+# Install oneDPL
+ENV ONE_DPL_DIR=/opt/onedpl
 RUN ONE_DPL_VERSION=oneDPL-2021.3.0-release && \
     ONE_DPL_URL=https://github.com/oneapi-src/oneDPL/archive && \
     ONE_DPL_ARCHIVE=${ONE_DPL_VERSION}.tar.gz && \
     SCRATCH_DIR=/scratch && mkdir -p ${SCRATCH_DIR} && cd ${SCRATCH_DIR} && \
     wget --quiet ${ONE_DPL_URL}/${ONE_DPL_ARCHIVE} && \
     mkdir onedpl && \
-    tar -xf ${ONE_DPL_ARCHIVE} -C onedpl --strip-components=1 && \
-    cp -r onedpl/include/oneapi ${SYCL_DIR}/include/sycl/ && \
+    tar -xf ${ONE_DPL_ARCHIVE} -C onedpl --strip-components=1 && cd onedpl && \
+    echo 'install(CODE "set(OUTPUT_DIR \"${CMAKE_INSTALL_PREFIX}/lib/cmake/oneDPL\")")' >> CMakeLists.txt && \
+    echo 'install(SCRIPT cmake/scripts/generate_config.cmake)' >> CMakeLists.txt && \
+    echo 'install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include DESTINATION linux)' >> CMakeLists.txt && \
+    mkdir build && cd build && \
+    cmake -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_INSTALL_PREFIX=${ONE_DPL_DIR} -DCMAKE_SKIP_INSTALL_ALL_DEPENDENCY=TRUE -DONEDPL_BACKEND="dpcpp_only" .. && \
+    make -j${NPROCS} install && \
     rm -rf ${SCRATCH_DIR}
 
 # Install Boost
@@ -124,14 +131,3 @@ RUN KOKKOS_URL=https://github.com/kokkos/kokkos/archive/${KOKKOS_VERSION}.tar.gz
     cmake -D CMAKE_BUILD_TYPE=Release -D CMAKE_INSTALL_PREFIX=${KOKKOS_DIR} -D CMAKE_CXX_COMPILER=clang++ ${KOKKOS_OPTIONS} .. && \
     make -j${NPROCS} install && \
     rm -rf ${SCRATCH_DIR}
-
-# Install oneTBB
-ENV ONETBB_DIR=/opt/onetbb
-RUN ONETBB_VERSION=2021.2.0 && \
-    ONETBB_URL=https://github.com/oneapi-src/oneTBB/releases/download/v${ONETBB_VERSION}/oneapi-tbb-${ONETBB_VERSION}-lin.tgz && \
-    ONETBB_ARCHIVE=oneapi-tbb-${ONETBB_VERSION}-lin.tgz && \
-    SCRATCH_DIR=/scratch && mkdir -p ${SCRATCH_DIR} && cd ${SCRATCH_DIR} && \
-    wget --quiet ${ONETBB_URL} --output-document=${ONETBB_ARCHIVE} && \
-    mkdir -p ${ONETBB_DIR} && \
-    tar -xf ${ONETBB_ARCHIVE} -C ${ONETBB_DIR} --strip-components=1 && \
-    rm -rf ${SCRATCH_DIR} 
