@@ -29,8 +29,8 @@ if(Kokkos_ENABLE_HIP AND NOT ARBORX_ENABLE_ROCTHRUST)
 endif()
 
 if(Kokkos_ENABLE_SYCL)
- find_package(TBB REQUIRED)
- target_link_libraries(ArborX INTERFACE TBB::tbb)
+  find_package(oneDPL REQUIRED)
+  target_link_libraries(ArborX INTERFACE oneDPL)
 endif()
 
 # Refer to the alias target in examples and benchmarks so they can be built
