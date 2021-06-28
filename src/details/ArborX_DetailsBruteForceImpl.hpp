@@ -67,7 +67,8 @@ struct BruteForceImpl
 
     int const n_primitive_tiles =
         ceil((float)n_primitives / primitives_per_team);
-    int const n_predicate_tiles = ceil((float)n_predicates / predicates_per_team);
+    int const n_predicate_tiles =
+        ceil((float)n_predicates / predicates_per_team);
     int const n_teams = n_primitive_tiles * n_predicate_tiles;
 
     using ScratchPredicateType =
@@ -79,58 +80,58 @@ struct BruteForceImpl
                      typename ExecutionSpace::scratch_memory_space,
                      Kokkos::MemoryTraits<Kokkos::Unmanaged>>;
     int scratch_size = ScratchPredicateType::shmem_size(predicates_per_team) +
-        	       ScratchPrimitiveType::shmem_size(primitives_per_team);
+                       ScratchPrimitiveType::shmem_size(primitives_per_team);
 
     Kokkos::parallel_for(
         "ArborX::BruteForce::query::spatial::"
         "check_all_predicates_against_all_primitives",
         TeamPolicy((long)n_teams, Kokkos::AUTO)
             .set_scratch_size(0, Kokkos::PerTeam(scratch_size)),
-        KOKKOS_LAMBDA(const typename TeamPolicy::member_type &teamMember){
+        KOKKOS_LAMBDA(const typename TeamPolicy::member_type &teamMember) {
           // select the tiles of predicates/primitives checked by each team
           int predicate_start = predicates_per_team *
-				(teamMember.league_rank() / n_primitive_tiles);
+                                (teamMember.league_rank() / n_primitive_tiles);
           int primitive_start = primitives_per_team *
-				(teamMember.league_rank() % n_primitive_tiles);
+                                (teamMember.league_rank() % n_primitive_tiles);
 
           int predicates_in_this_team = KokkosExt::min(
-	      predicates_per_team, n_predicates - predicate_start);
+              predicates_per_team, n_predicates - predicate_start);
           int primitives_in_this_team = KokkosExt::min(
               primitives_per_team, n_primitives - primitive_start);
 
-          ScratchPredicateType scratch_predicates(
-                  teamMember.team_scratch(0), predicates_per_team);
-          ScratchPrimitiveType scratch_primitives(
-                  teamMember.team_scratch(0), primitives_per_team);
-          // rank 0 in each team fills the scratch space with the 
+          ScratchPredicateType scratch_predicates(teamMember.team_scratch(0),
+                                                  predicates_per_team);
+          ScratchPrimitiveType scratch_primitives(teamMember.team_scratch(0),
+                                                  primitives_per_team);
+          // rank 0 in each team fills the scratch space with the
           // predicates / primitives in the tile
           if (teamMember.team_rank() == 0)
           {
             Kokkos::parallel_for(
-                    Kokkos::ThreadVectorRange(
-                        teamMember, (long)predicates_in_this_team),
-                    KOKKOS_LAMBDA(const int q) {
-                      scratch_predicates(q) = AccessPredicates::get(
-                              predicates, predicate_start + q);
-                    });
+                Kokkos::ThreadVectorRange(teamMember,
+                                          (long)predicates_in_this_team),
+                KOKKOS_LAMBDA(const int q) {
+                  scratch_predicates(q) =
+                      AccessPredicates::get(predicates, predicate_start + q);
+                });
             Kokkos::parallel_for(
-                    Kokkos::ThreadVectorRange(
-                        teamMember, (long)primitives_in_this_team),
-                    KOKKOS_LAMBDA(const int j) {
-                      scratch_primitives(j) = AccessPrimitives::get(
-                              primitives, primitive_start + j);
-                    });
+                Kokkos::ThreadVectorRange(teamMember,
+                                          (long)primitives_in_this_team),
+                KOKKOS_LAMBDA(const int j) {
+                  scratch_primitives(j) =
+                      AccessPrimitives::get(primitives, primitive_start + j);
+                });
           }
           teamMember.team_barrier();
 
           // start threads for every predicate / primitive combination
           Kokkos::parallel_for(
-              Kokkos::TeamThreadRange(
-                  teamMember, (long) primitives_in_this_team),
+              Kokkos::TeamThreadRange(teamMember,
+                                      (long)primitives_in_this_team),
               KOKKOS_LAMBDA(int j) {
                 Kokkos::parallel_for(
-                    Kokkos::ThreadVectorRange(
-                        teamMember, (long) predicates_in_this_team),
+                    Kokkos::ThreadVectorRange(teamMember,
+                                              (long)predicates_in_this_team),
                     KOKKOS_LAMBDA(const int q) {
                       auto const &predicate = scratch_predicates(q);
                       auto const &primitive = scratch_primitives(j);

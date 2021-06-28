@@ -13,42 +13,54 @@
 #include <ArborX_LinearBVH.hpp>
 
 #include <Kokkos_Core.hpp>
+
 #include <stdlib.h>
 #include <unistd.h>
 
-struct Dummy {
+struct Dummy
+{
   int count;
 };
 
 using MemorySpace = Kokkos::HostSpace;
 using ExecutionSpace = Kokkos::DefaultHostExecutionSpace;
 
-template <> struct ArborX::AccessTraits<Dummy, ArborX::PrimitivesTag> {
+template <>
+struct ArborX::AccessTraits<Dummy, ArborX::PrimitivesTag>
+{
   using memory_space = MemorySpace;
   using size_type = typename MemorySpace::size_type;
   static KOKKOS_FUNCTION size_type size(Dummy const &d) { return d.count; }
-  static KOKKOS_FUNCTION Point get(Dummy const &, size_type i) {
+  static KOKKOS_FUNCTION Point get(Dummy const &, size_type i)
+  {
     return {{(float)i, (float)i, (float)i}};
   }
 };
 
-template <> struct ArborX::AccessTraits<Dummy, ArborX::PredicatesTag> {
+template <>
+struct ArborX::AccessTraits<Dummy, ArborX::PredicatesTag>
+{
   using memory_space = MemorySpace;
   using size_type = typename MemorySpace::size_type;
   static KOKKOS_FUNCTION size_type size(Dummy const &d) { return d.count; }
-  static KOKKOS_FUNCTION auto get(Dummy const &, size_type i) {
-    return attach(intersects(Sphere{{{(float)i, (float)i, (float)i}},
-                                    (float) i}),
-                  i);
+  static KOKKOS_FUNCTION auto get(Dummy const &, size_type i)
+  {
+    return attach(
+        intersects(Sphere{{{(float)i, (float)i, (float)i}}, (float)i}), i);
   }
 };
 
-struct PrintfCallback {
+struct PrintfCallback
+{
   Kokkos::View<int, ExecutionSpace, Kokkos::MemoryTraits<Kokkos::Atomic>> c_;
-  PrintfCallback() : c_{"counter"} {}
+  PrintfCallback()
+      : c_{"counter"}
+  {
+  }
   template <typename Predicate, typename OutputFunctor>
   KOKKOS_FUNCTION void operator()(Predicate const &predicate, int i,
-                                  OutputFunctor const &out) const {
+                                  OutputFunctor const &out) const
+  {
     int const j = getData(predicate);
     printf("%d callback (%d,%d)\n", ++c_(), i, j);
     out(i);
@@ -56,7 +68,8 @@ struct PrintfCallback {
 };
 
 template <typename T, typename... P>
-std::vector<T> view2vec(Kokkos::View<T *, P...> view) {
+std::vector<T> view2vec(Kokkos::View<T *, P...> view)
+{
   std::vector<T> vec(view.size());
   Kokkos::deep_copy(Kokkos::View<T *, Kokkos::HostSpace,
                                  Kokkos::MemoryTraits<Kokkos::Unmanaged>>(
@@ -66,7 +79,8 @@ std::vector<T> view2vec(Kokkos::View<T *, P...> view) {
 }
 
 template <typename OutputView, typename OffsetView>
-void print(OutputView const out, OffsetView const offset) {
+void print(OutputView const out, OffsetView const offset)
+{
   int const n_queries = offset.extent(0) - 1;
 
   auto const h_out = view2vec(out);
@@ -78,13 +92,15 @@ void print(OutputView const out, OffsetView const offset) {
       printf("%d result (%d, %d)\n", ++count, h_out[k], j);
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
   Kokkos::ScopeGuard guard(argc, argv);
 
   int nqueries = 5, nprimitives = 5, nrepeats = 1;
   int c;
   while ((c = getopt(argc, argv, "p:q:r:")) != -1)
-    switch (c) {
+    switch (c)
+    {
     case 'p':
       nprimitives = atoi(optarg);
       break;
@@ -108,7 +124,8 @@ int main(int argc, char *argv[]) {
   Dummy primitives{nprimitives};
   Dummy predicates{nqueries};
 
-  for (int i = 0; i < nrepeats; i++) {
+  for (int i = 0; i < nrepeats; i++)
+  {
     int out_count;
     // printf("Bounding Volume Hierarchy\n");
     {
@@ -118,8 +135,8 @@ int main(int argc, char *argv[]) {
       Kokkos::View<int *, ExecutionSpace> indices("indices_ref", 0);
       Kokkos::View<int *, ExecutionSpace> offset("offset_ref", 0);
       bvh.query(
-          space, predicates, ArborX::Details::DefaultCallback{},
-          indices, offset,
+          space, predicates, ArborX::Details::DefaultCallback{}, indices,
+          offset,
           ArborX::Experimental::TraversalPolicy{}.setPredicateSorting(true));
 
       double time = timer.seconds();
@@ -137,9 +154,8 @@ int main(int argc, char *argv[]) {
 
       Kokkos::View<int *, ExecutionSpace> indices("indices", 0);
       Kokkos::View<int *, ExecutionSpace> offset("offset", 0);
-      brute.query(space, predicates,
-                  ArborX::Details::DefaultCallback{}, indices,
-                  offset);
+      brute.query(space, predicates, ArborX::Details::DefaultCallback{},
+                  indices, offset);
 
       double time = timer.seconds();
       printf("Time BF: %lf\n", time);
