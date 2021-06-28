@@ -8,6 +8,7 @@ endif()
 add_subdirectory(access_traits)
 
 add_subdirectory(callback)
+add_subdirectory(brute_force)
 
 find_package(Boost COMPONENTS program_options)
 if(Boost_FOUND)
