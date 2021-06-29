@@ -110,14 +110,14 @@ struct BruteForceImpl
             Kokkos::parallel_for(
                 Kokkos::ThreadVectorRange(teamMember,
                                           (long)predicates_in_this_team),
-                KOKKOS_LAMBDA(const int q) {
+                [&](const int q) {
                   scratch_predicates(q) =
                       AccessPredicates::get(predicates, predicate_start + q);
                 });
             Kokkos::parallel_for(
                 Kokkos::ThreadVectorRange(teamMember,
                                           (long)primitives_in_this_team),
-                KOKKOS_LAMBDA(const int j) {
+                [&](const int j) {
                   scratch_primitives(j) =
                       AccessPrimitives::get(primitives, primitive_start + j);
                 });
@@ -128,11 +128,11 @@ struct BruteForceImpl
           Kokkos::parallel_for(
               Kokkos::TeamThreadRange(teamMember,
                                       (long)primitives_in_this_team),
-              KOKKOS_LAMBDA(int j) {
+              [&](int j) {
                 Kokkos::parallel_for(
                     Kokkos::ThreadVectorRange(teamMember,
                                               (long)predicates_in_this_team),
-                    KOKKOS_LAMBDA(const int q) {
+                    [&](const int q) {
                       auto const &predicate = scratch_predicates(q);
                       auto const &primitive = scratch_primitives(j);
                       if (predicate(primitive))
