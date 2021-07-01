@@ -14,6 +14,8 @@
 
 #include <Kokkos_Core.hpp>
 
+#include <boost/program_options.hpp>
+
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -97,28 +99,28 @@ int main(int argc, char *argv[])
   Kokkos::ScopeGuard guard(argc, argv);
 
   int nqueries = 5, nprimitives = 5, nrepeats = 1;
-  int c;
-  while ((c = getopt(argc, argv, "p:q:r:")) != -1)
-    switch (c)
-    {
-    case 'p':
-      nprimitives = atoi(optarg);
-      break;
-    case 'q':
-      nqueries = atoi(optarg);
-      break;
-    case 'r':
-      nrepeats = atoi(optarg);
-      break;
-    case '?':
-      fprintf(stderr, "Usage: %s [-p <count> -q <count>]\n", argv[0]);
-      return 1;
-    default:
-      abort();
-    }
+  namespace bpo = boost::program_options;
+  bpo::options_description desc("Allowed options");
+  // clang-format off
+  desc.add_options()
+      ( "help", "help message" )
+      ( "predicates", bpo::value<int>(&nqueries), "number of predicates" )
+      ( "primitives", bpo::value<int>(&nprimitives), "number of primitives" )
+      ( "iterations", bpo::value<int>(&nrepeats), "number of iterations" )
+      ;
+  // clang-format on
+  bpo::variables_map vm;
+  bpo::store(bpo::command_line_parser(argc, argv).options(desc).run(), vm);
+  bpo::notify(vm);
 
+  if (vm.count("help") > 0)
+  {
+    std::cout << desc << '\n';
+    return 1;
+  }
   printf("Primitives: %d\n", nprimitives);
   printf("Predicates: %d\n", nqueries);
+  printf("Iterations: %d\n", nrepeats);
 
   ExecutionSpace space{};
   Dummy primitives{nprimitives};
@@ -127,7 +129,6 @@ int main(int argc, char *argv[])
   for (int i = 0; i < nrepeats; i++)
   {
     int out_count;
-    // printf("Bounding Volume Hierarchy\n");
     {
       Kokkos::Timer timer;
       ArborX::BoundingVolumeHierarchy<MemorySpace> bvh{space, primitives};
@@ -147,7 +148,6 @@ int main(int argc, char *argv[])
       out_count = indices.extent(0);
     }
 
-    // printf("Brute Force\n");
     {
       Kokkos::Timer timer;
       ArborX::BruteForce<MemorySpace> brute{space, primitives};
