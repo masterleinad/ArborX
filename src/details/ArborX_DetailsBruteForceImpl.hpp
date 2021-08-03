@@ -64,6 +64,8 @@ struct BruteForceImpl
     int max_scratch_size = TeamPolicy::scratch_size_max(0) / 2;
     int const predicates_per_team = max_scratch_size / sizeof(PredicateType);
     int const primitives_per_team = max_scratch_size / sizeof(PrimitiveType);
+    ARBORX_ASSERT(predicates_per_team > 0);
+    ARBORX_ASSERT(primitives_per_team > 0);
 
     int const n_primitive_tiles =
         ceil((float)n_primitives / primitives_per_team);
@@ -85,7 +87,7 @@ struct BruteForceImpl
     Kokkos::parallel_for(
         "ArborX::BruteForce::query::spatial::"
         "check_all_predicates_against_all_primitives",
-        TeamPolicy(space, n_teams, Kokkos::AUTO)
+        TeamPolicy(space, n_teams, Kokkos::AUTO, 1)
             .set_scratch_size(0, Kokkos::PerTeam(scratch_size)),
         KOKKOS_LAMBDA(const typename TeamPolicy::member_type &teamMember) {
           // select the tiles of predicates/primitives checked by each team
@@ -108,15 +110,13 @@ struct BruteForceImpl
           if (teamMember.team_rank() == 0)
           {
             Kokkos::parallel_for(
-                Kokkos::ThreadVectorRange(teamMember,
-                                          (long)predicates_in_this_team),
+                Kokkos::ThreadVectorRange(teamMember, predicates_in_this_team),
                 [&](const int q) {
                   scratch_predicates(q) =
                       AccessPredicates::get(predicates, predicate_start + q);
                 });
             Kokkos::parallel_for(
-                Kokkos::ThreadVectorRange(teamMember,
-                                          (long)primitives_in_this_team),
+                Kokkos::ThreadVectorRange(teamMember, primitives_in_this_team),
                 [&](const int j) {
                   scratch_primitives(j) =
                       AccessPrimitives::get(primitives, primitive_start + j);
@@ -126,12 +126,11 @@ struct BruteForceImpl
 
           // start threads for every predicate / primitive combination
           Kokkos::parallel_for(
-              Kokkos::TeamThreadRange(teamMember,
-                                      (long)primitives_in_this_team),
+              Kokkos::TeamThreadRange(teamMember, primitives_in_this_team),
               [&](int j) {
                 Kokkos::parallel_for(
                     Kokkos::ThreadVectorRange(teamMember,
-                                              (long)predicates_in_this_team),
+                                              predicates_in_this_team),
                     [&](const int q) {
                       auto const &predicate = scratch_predicates(q);
                       auto const &primitive = scratch_primitives(j);

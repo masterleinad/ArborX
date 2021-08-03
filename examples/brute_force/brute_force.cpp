@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2012-2019 by the ArborX authors                            *
+ * Copyright (c) 2012-2021 by the ArborX authors                            *
  * All rights reserved.                                                     *
  *                                                                          *
  * This file is part of the ArborX library. ArborX is                       *
@@ -16,16 +16,13 @@
 
 #include <boost/program_options.hpp>
 
-#include <stdlib.h>
-#include <unistd.h>
-
 struct Dummy
 {
   int count;
 };
 
 using MemorySpace = Kokkos::HostSpace;
-using ExecutionSpace = Kokkos::DefaultHostExecutionSpace;
+using ExecutionSpace = Kokkos::DefaultExecutionSpace;
 
 template <>
 struct ArborX::AccessTraits<Dummy, ArborX::PrimitivesTag>
@@ -52,61 +49,19 @@ struct ArborX::AccessTraits<Dummy, ArborX::PredicatesTag>
   }
 };
 
-struct PrintfCallback
-{
-  Kokkos::View<int, ExecutionSpace, Kokkos::MemoryTraits<Kokkos::Atomic>> c_;
-  PrintfCallback()
-      : c_{"counter"}
-  {
-  }
-  template <typename Predicate, typename OutputFunctor>
-  KOKKOS_FUNCTION void operator()(Predicate const &predicate, int i,
-                                  OutputFunctor const &out) const
-  {
-    int const j = getData(predicate);
-    printf("%d callback (%d,%d)\n", ++c_(), i, j);
-    out(i);
-  }
-};
-
-template <typename T, typename... P>
-std::vector<T> view2vec(Kokkos::View<T *, P...> view)
-{
-  std::vector<T> vec(view.size());
-  Kokkos::deep_copy(Kokkos::View<T *, Kokkos::HostSpace,
-                                 Kokkos::MemoryTraits<Kokkos::Unmanaged>>(
-                        vec.data(), vec.size()),
-                    view);
-  return vec;
-}
-
-template <typename OutputView, typename OffsetView>
-void print(OutputView const out, OffsetView const offset)
-{
-  int const n_queries = offset.extent(0) - 1;
-
-  auto const h_out = view2vec(out);
-  auto const h_offset = view2vec(offset);
-  int count = 0;
-
-  for (int j = 0; j < n_queries; ++j)
-    for (int k = h_offset[j]; k < h_offset[j + 1]; ++k)
-      printf("%d result (%d, %d)\n", ++count, h_out[k], j);
-}
-
 int main(int argc, char *argv[])
 {
   Kokkos::ScopeGuard guard(argc, argv);
 
-  int nqueries = 5, nprimitives = 5, nrepeats = 1;
+  int nqueries, nprimitives, nrepeats;
   namespace bpo = boost::program_options;
   bpo::options_description desc("Allowed options");
   // clang-format off
   desc.add_options()
       ( "help", "help message" )
-      ( "predicates", bpo::value<int>(&nqueries), "number of predicates" )
-      ( "primitives", bpo::value<int>(&nprimitives), "number of primitives" )
-      ( "iterations", bpo::value<int>(&nrepeats), "number of iterations" )
+      ( "predicates", bpo::value<int>(&nqueries)->default_value(5), "number of predicates" )
+      ( "primitives", bpo::value<int>(&nprimitives)->default_value(5), "number of primitives" )
+      ( "iterations", bpo::value<int>(&nrepeats)->default_value(1), "number of iterations" )
       ;
   // clang-format on
   bpo::variables_map vm;
@@ -122,24 +77,25 @@ int main(int argc, char *argv[])
   printf("Predicates: %d\n", nqueries);
   printf("Iterations: %d\n", nrepeats);
 
+  ARBORX_ASSERT(nprimitives > 0);
+  ARBORX_ASSERT(nqueries > 0);
+
   ExecutionSpace space{};
   Dummy primitives{nprimitives};
   Dummy predicates{nqueries};
 
   for (int i = 0; i < nrepeats; i++)
   {
-    int out_count;
+    unsigned int out_count;
     {
       Kokkos::Timer timer;
       ArborX::BoundingVolumeHierarchy<MemorySpace> bvh{space, primitives};
 
       Kokkos::View<int *, ExecutionSpace> indices("indices_ref", 0);
       Kokkos::View<int *, ExecutionSpace> offset("offset_ref", 0);
-      bvh.query(
-          space, predicates, ArborX::Details::DefaultCallback{}, indices,
-          offset,
-          ArborX::Experimental::TraversalPolicy{}.setPredicateSorting(true));
+      bvh.query(space, predicates, indices, offset);
 
+      Kokkos::fence();
       double time = timer.seconds();
       if (i == 0)
         printf("Collisions: %.5f\n",
@@ -157,6 +113,7 @@ int main(int argc, char *argv[])
       brute.query(space, predicates, ArborX::Details::DefaultCallback{},
                   indices, offset);
 
+      Kokkos::fence();
       double time = timer.seconds();
       printf("Time BF: %lf\n", time);
       ARBORX_ASSERT(out_count == indices.extent(0));
