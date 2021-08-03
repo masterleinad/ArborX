@@ -85,7 +85,7 @@ struct BruteForceImpl
     Kokkos::parallel_for(
         "ArborX::BruteForce::query::spatial::"
         "check_all_predicates_against_all_primitives",
-        TeamPolicy((long)n_teams, Kokkos::AUTO)
+        TeamPolicy(space, n_teams, Kokkos::AUTO)
             .set_scratch_size(0, Kokkos::PerTeam(scratch_size)),
         KOKKOS_LAMBDA(const typename TeamPolicy::member_type &teamMember) {
           // select the tiles of predicates/primitives checked by each team
