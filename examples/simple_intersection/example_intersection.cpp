@@ -27,23 +27,26 @@
 // __________
 
 
+struct Mapping
+{
+  ArborX::Point alpha;
+  ArborX::Point beta;
+  ArborX::Point p0;
+
+  ArborX::Point get_coeff(ArborX::Point p) const
+  {
+    float alpha_coeff = alpha[0]*(p[0]-p0[0])+alpha[1]*(p[1]-p0[1])+alpha[2]*(p[2]-p0[2]);
+    float beta_coeff = beta[0]*(p[0]-p0[0])+beta[1]*(p[1]-p0[1])+beta[2]*(p[2]-p0[2]);
+    return {1-alpha_coeff-beta_coeff, alpha_coeff, beta_coeff};
+  }
+};
+
 struct Triangle
 {
   ArborX::Point a;
   ArborX::Point b;
   ArborX::Point c;
 };
-
-namespace ArborX
-{
-KOKKOS_INLINE_FUNCTION void expand(ArborX::Box &box, Triangle const &triangle)
-{
-  using Details::expand;
-  expand(box, triangle.a);
-  expand(box, triangle.b);
-  expand(box, triangle.c);
-}
-}
 
 template <typename DeviceType>
 class Points
@@ -53,8 +56,8 @@ public:
   {
     float Lx = 100.0;
     float Ly = 100.0;
-    int nx = 11;
-    int ny = 11;
+    int nx = 2;
+    int ny = 2;
     int n = nx * ny;
     float hx = Lx / (nx - 1);
     float hy = Ly / (ny - 1);
@@ -101,8 +104,8 @@ public:
   {
     float Lx = 100.0;
     float Ly = 100.0;
-    int nx = 11;
-    int ny = 11;
+    int nx = 2;
+    int ny = 2;
     int n = nx * ny;
     float hx = Lx / (nx - 1);
     float hy = Ly / (ny - 1);
@@ -115,6 +118,10 @@ public:
         Kokkos::view_alloc(Kokkos::WithoutInitializing, "triangles"), 2*n);
     auto triangles_host = Kokkos::create_mirror_view(_triangles);
 
+    _mappings = Kokkos::View<Mapping *, typename DeviceType::memory_space>(
+        Kokkos::view_alloc(Kokkos::WithoutInitializing, "mappings"), 2*n);
+    auto mappings_host = Kokkos::create_mirror_view(_mappings);
+
     for (int i = 0; i < nx; ++i)
       for (int j = 0; j < ny; ++j)
         {
@@ -122,9 +129,27 @@ public:
           ArborX::Point br{(i+1) * hx, j * hy, 0.};
 	  ArborX::Point tl{i*hx, (j+1)*hy, 0.};
 	  ArborX::Point tr{(i+1)*hx, (j+1)*hy, 0.};
+
           triangles_host[2*index(i, j)] = {tl, bl, br};
 	  triangles_host[2*index(i, j)+1] = {tl, br, tr};
-        }
+	}
+  
+    for (int k=0; k<2*n; ++k)
+    {
+      mappings_host[k] = get_mapping(triangles_host[k]);
+/*
+      const auto t = triangles_host[k];
+      std::cout << "triangle " << k << ":\n";
+      std::cout << "a: " << t.a[0] << ' ' << t.a[1] << ' '  << t.a[2] << '\n';
+      std::cout << "b: " << t.b[0] << ' ' << t.b[1] << ' '  << t.b[2] << '\n';
+      std::cout << "c: " << t.c[0] << ' ' << t.c[1] << ' '  << t.c[2] << '\n'; 
+      const auto m = mappings_host[k];
+      std::cout << "mapping " << k << ":\n";
+      std::cout << "p0:    " << m.p0[0]    << ' ' << m.p0[1]    << ' '  << m.p0[2]    << '\n';
+      std::cout << "alpha: " << m.alpha[0] << ' ' << m.alpha[1] << ' '  << m.alpha[2] << '\n';
+      std::cout << "beta:  " << m.beta[0]  << ' ' << m.beta[1]  << ' '  << m.beta[2]  << '\n';
+*/
+    }
     Kokkos::deep_copy(execution_space, _triangles, triangles_host);
   }
 
@@ -133,11 +158,35 @@ public:
 
   // Return the triangle with index i.
   KOKKOS_FUNCTION const Triangle &get_triangle(int i) const { return _triangles(i); }
-
-  KOKKOS_FUNCTION const auto &get_triangles() const { return _triangles; }
+  
+  KOKKOS_FUNCTION const Mapping &get_mapping(int i) const { return _mappings(i); }
 
 private:
   Kokkos::View<Triangle *, typename DeviceType::memory_space> _triangles;
+  Kokkos::View<Mapping *, typename DeviceType::memory_space> _mappings;
+
+  // x = a + alpha * (b - a) + beta * (c - a) 
+  //   = (1-beta-alpha) * a + alpha * b + beta * c
+  //
+  // FIXME Only works for 2D reliably  
+  static Mapping get_mapping(const Triangle& triangle) 
+  {
+    const auto& a = triangle.a;
+    const auto& b = triangle.b;
+    const auto& c = triangle.c;
+
+    ArborX::Point u = {b[0]-a[0], b[1]-a[1], b[2]-a[2]};
+    ArborX::Point v = {c[0]-a[0], c[1]-a[1], c[2]-a[2]};
+    
+    const float inv_det = 1./(v[1]*u[0]-v[0]*u[1]);
+
+    Mapping mapping;
+    mapping.alpha = ArborX::Point{v[1]*inv_det, -v[0]*inv_det,0};
+    mapping.beta = ArborX::Point{-u[1]*inv_det, u[0]*inv_det,0};
+    mapping.p0 = a;
+
+    return mapping;
+  }
 };
 
 // For creating the bounding volume hierarchy given a Triangles object, we
@@ -241,6 +290,23 @@ int main()
 
     std::cout << "Create grid with triangles.\n";
     Triangles<DeviceType> triangles(execution_space);
+
+    constexpr float eps = 1.e-3;
+
+    for (int i = 0; i<triangles.size(); ++i)
+    {
+      const auto& mapping  = triangles.get_mapping(i);   
+      const auto& triangle = triangles.get_triangle(i);
+      const auto& coeff_a = mapping.get_coeff(triangle.a);
+      if ((std::abs(coeff_a[0]-1.) > eps) || std::abs(coeff_a[1]) > eps || std::abs(coeff_a[2]) > eps)
+        std::cout << i << " a: " << coeff_a[0] << ' ' << coeff_a[1] << ' '  << coeff_a[2] << std::endl;
+      const auto& coeff_b = mapping.get_coeff(triangle.b);
+      if ((std::abs(coeff_b[0]) > eps) || std::abs(coeff_b[1]-1.) > eps || std::abs(coeff_b[2]) > eps)
+        std::cout << i << " b: " << coeff_b[0] << ' ' << coeff_b[1] << ' '  << coeff_b[2] << std::endl;
+      const auto& coeff_c = mapping.get_coeff(triangle.c);
+      if ((std::abs(coeff_c[0]) > eps) || std::abs(coeff_c[1]) > eps || std::abs(coeff_c[2]-1.) > eps)
+        std::cout << i << " c: " << coeff_c[0] << ' ' << coeff_c[1] << ' '  << coeff_c[2] << std::endl;
+    }
     std::cout << "Triangles set up.\n";
 
     std::cout << "Creating BVH tree.\n";
@@ -253,7 +319,7 @@ int main()
 	    
     std::cout << "Starting the queries.\n";
     // The query will resize indices and offsets accordingly
-    unsigned int const n = triangles.size();
+    int const n = triangles.size();
     Kokkos::View<int *, MemorySpace> offsets("offsets", n);
 
     tree.query(execution_space, points, PrintfCallback<DeviceType>{offsets, points, triangles});//indices, offsets);
