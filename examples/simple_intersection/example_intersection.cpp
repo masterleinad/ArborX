@@ -85,9 +85,9 @@ public:
       return i + j * nx;
     };
 
-    _points = Kokkos::View<ArborX::Point *, typename DeviceType::memory_space>(
+    points_ = Kokkos::View<ArborX::Point *, typename DeviceType::memory_space>(
         Kokkos::view_alloc(Kokkos::WithoutInitializing, "points"), 2*n);
-    auto points_host = Kokkos::create_mirror_view(_points);
+    auto points_host = Kokkos::create_mirror_view(points_);
 
     for (int i = 0; i < nx; ++i)
       for (int j = 0; j < ny; ++j)
@@ -95,22 +95,21 @@ public:
           points_host[2*index(i, j)] = {(i+.25f) * hx, (j+.25f) * hy, 0.f};
           points_host[2*index(i, j)+1] = {(i+.75f) * hx, (j+.75f) * hy, 0.f};
         }
-    Kokkos::deep_copy(execution_space, _points, points_host);
+    Kokkos::deep_copy(execution_space, points_, points_host);
   }
 
   KOKKOS_FUNCTION auto const & get_point(int i) const
   {
-    return _points(i);
+    return points_(i);
   }
 
-
-  KOKKOS_FUNCTION auto const & get_points() const
+  KOKKOS_FUNCTION auto size() const
   {
-    return _points;
+    return points_.size();
   }
 
   private:
-    Kokkos::View<ArborX::Point *, typename DeviceType::memory_space> _points;
+    Kokkos::View<ArborX::Point *, typename DeviceType::memory_space> points_;
 };
 
 template <typename DeviceType>
@@ -133,13 +132,13 @@ public:
       return i + j * nx;
     };
 
-    _triangles = Kokkos::View<Triangle *, typename DeviceType::memory_space>(
+    triangles_ = Kokkos::View<Triangle *, typename DeviceType::memory_space>(
         Kokkos::view_alloc(Kokkos::WithoutInitializing, "triangles"), 2*n);
-    auto triangles_host = Kokkos::create_mirror_view(_triangles);
+    auto triangles_host = Kokkos::create_mirror_view(triangles_);
 
-    _mappings = Kokkos::View<Mapping *, typename DeviceType::memory_space>(
+    mappings_ = Kokkos::View<Mapping *, typename DeviceType::memory_space>(
         Kokkos::view_alloc(Kokkos::WithoutInitializing, "mappings"), 2*n);
-    auto mappings_host = Kokkos::create_mirror_view(_mappings);
+    auto mappings_host = Kokkos::create_mirror_view(mappings_);
 
     for (int i = 0; i < nx; ++i)
       for (int j = 0; j < ny; ++j)
@@ -157,20 +156,20 @@ public:
     {
       mappings_host[k].compute(triangles_host[k]);
     }
-    Kokkos::deep_copy(execution_space, _triangles, triangles_host);
+    Kokkos::deep_copy(execution_space, triangles_, triangles_host);
   }
 
   // Return the number of triangles.
-  KOKKOS_FUNCTION int size() const { return _triangles.size(); }
+  KOKKOS_FUNCTION int size() const { return triangles_.size(); }
 
   // Return the triangle with index i.
-  KOKKOS_FUNCTION const Triangle &get_triangle(int i) const { return _triangles(i); }
+  KOKKOS_FUNCTION const Triangle &get_triangle(int i) const { return triangles_(i); }
   
-  KOKKOS_FUNCTION const Mapping &get_mapping(int i) const { return _mappings(i); }
+  KOKKOS_FUNCTION const Mapping &get_mapping(int i) const { return mappings_(i); }
 
 private:
-  Kokkos::View<Triangle *, typename DeviceType::memory_space> _triangles;
-  Kokkos::View<Mapping *, typename DeviceType::memory_space> _mappings;
+  Kokkos::View<Triangle *, typename DeviceType::memory_space> triangles_;
+  Kokkos::View<Mapping *, typename DeviceType::memory_space> mappings_;
 };
 
 // For creating the bounding volume hierarchy given a Triangles object, we
@@ -205,11 +204,11 @@ struct ArborX::AccessTraits<Points<DeviceType>, ArborX::PredicatesTag>
   using memory_space = typename DeviceType::memory_space;
   static KOKKOS_FUNCTION int size(Points<DeviceType> const &points)
   {
-    return points.get_points().size();
+    return points.size();
   }
   static KOKKOS_FUNCTION auto get(Points<DeviceType> const &points, int i)
   {
-    return ArborX::attach(intersects(points.get_points()(i)), i);
+    return ArborX::attach(intersects(points.get_point(i)), i);
   }
 };
 
@@ -219,9 +218,10 @@ class PrintfCallback
 {
 public:
   PrintfCallback(Kokkos::View<int*, typename DeviceType::memory_space> results,
-		 Points<DeviceType> points, 
+                 Kokkos::View<ArborX::Point *, typename DeviceType::memory_space> coefficients,
+                 Points<DeviceType> points, 
 		 Triangles<DeviceType> triangles) 
-	  : results_(results), points_(points), triangles_(triangles)
+	  : results_(results), coefficients_(coefficients), points_(points), triangles_(triangles)
   {}
 
   template <typename Query>
@@ -234,10 +234,14 @@ public:
     bool intersects = coeffs[0]>=0 && coeffs[1]>=0 && coeffs[2]>=0;
 
     if (intersects)
+    {
       results_(point_index) = triangle_index;
+      coefficients_(point_index) = coeffs;
+    }
   }
 private:
   Kokkos::View<int*, typename DeviceType::memory_space> results_;
+  Kokkos::View<ArborX::Point *, typename DeviceType::memory_space> coefficients_;
   Points<DeviceType> points_;
   Triangles<DeviceType> triangles_;
 };
@@ -284,21 +288,34 @@ int main()
 	    
     std::cout << "Starting the queries.\n";
     // The query will resize indices and offsets accordingly
-    int const n = triangles.size();
+    int const n = points.size();
     Kokkos::View<int *, MemorySpace> offsets("offsets", n);
+    Kokkos::View<ArborX::Point *, MemorySpace> coefficients("coefficients", n);
 
-    tree.query(execution_space, points, PrintfCallback<DeviceType>{offsets, points, triangles});
+    tree.query(execution_space, points, PrintfCallback<DeviceType>{offsets, coefficients, points, triangles});
     std::cout << "Queries done.\n";
 
     std::cout << "Starting checking results.\n";
     auto offsets_host =
         Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, offsets);
+    auto coeffs_host =
+        Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, coefficients);
 
     for (int i = 0; i < n; ++i)
+    {
       if (offsets_host(i) != i)
       {
-        std ::cout << offsets_host(i) << " should be " << i << std::endl;      
+        std::cout << offsets_host(i) << " should be " << i << std::endl;      
       }
+      const auto& c = coeffs_host(i);
+      const auto& t = triangles.get_triangle(offsets_host(i));
+      const auto& p_h = points.get_point(i);
+      ArborX::Point p = {{c[0]*t.a[0]+c[1]*t.b[0]+c[2]*t.c[0]},{c[0]*t.a[1]+c[1]*t.b[1]+c[2]*t.c[1]},{c[0]*t.a[2]+c[1]*t.b[2]+c[2]*t.c[2]}};
+      if ((std::abs(p[0]-p_h[0]) > eps) || std::abs(p[1]-p_h[1]) > eps || std::abs(p[2]-p_h[2]) > eps)
+      {
+        std::cout << "coeffs for point " << i << " are wrong!\n";
+      }
+    }
 
     std::cout << "Checking results successful.\n";
   }
