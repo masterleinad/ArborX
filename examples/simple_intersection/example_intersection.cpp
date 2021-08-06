@@ -263,7 +263,7 @@ int main()
     auto offsets_host =
         Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, offsets);
 
-    for (int i = 0; i < static_cast<int>(n + 1); ++i)
+    for (int i = 0; i < n; ++i)
       if (offsets_host(i) != i)
       {
         std ::cout << offsets_host(i) << " should be " << i << std::endl;      
