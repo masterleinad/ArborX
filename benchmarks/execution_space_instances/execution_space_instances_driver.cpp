@@ -215,8 +215,8 @@ int main(int argc, char *argv[])
   query_time.reset();
 
   tree.query(
-      instances[0], predicates, CountCallback<MemorySpace>{counts},
-      ArborX::Experimental::TraversalPolicy().setPredicateSorting(false));
+      instances[0], predicates, CountCallback<MemorySpace>{counts});
+  //, ArborX::Experimental::TraversalPolicy().setPredicateSorting(false));
 
   Kokkos::fence();
   std::cout << "Time single(s): " << query_time.seconds() << '\n';
