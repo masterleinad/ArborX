@@ -26,6 +26,12 @@
 // |x\|x\|x\|
 // __________
 
+struct Triangle
+{
+  ArborX::Point a;
+  ArborX::Point b;
+  ArborX::Point c;
+};
 
 struct Mapping
 {
@@ -39,13 +45,26 @@ struct Mapping
     float beta_coeff = beta[0]*(p[0]-p0[0])+beta[1]*(p[1]-p0[1])+beta[2]*(p[2]-p0[2]);
     return {1-alpha_coeff-beta_coeff, alpha_coeff, beta_coeff};
   }
-};
 
-struct Triangle
-{
-  ArborX::Point a;
-  ArborX::Point b;
-  ArborX::Point c;
+  // x = a + alpha * (b - a) + beta * (c - a)
+  //   = (1-beta-alpha) * a + alpha * b + beta * c
+  //
+  // FIXME Only works for 2D reliably
+  void compute(const Triangle& triangle)
+  {
+    const auto& a = triangle.a;
+    const auto& b = triangle.b;
+    const auto& c = triangle.c;
+
+    ArborX::Point u = {b[0]-a[0], b[1]-a[1], b[2]-a[2]};
+    ArborX::Point v = {c[0]-a[0], c[1]-a[1], c[2]-a[2]};
+
+    const float inv_det = 1./(v[1]*u[0]-v[0]*u[1]);
+
+    alpha = ArborX::Point{v[1]*inv_det, -v[0]*inv_det,0};
+    beta = ArborX::Point{-u[1]*inv_det, u[0]*inv_det,0};
+    p0 = a;
+  }
 };
 
 template <typename DeviceType>
@@ -56,8 +75,8 @@ public:
   {
     float Lx = 100.0;
     float Ly = 100.0;
-    int nx = 2;
-    int ny = 2;
+    int nx = 101;
+    int ny = 101;
     int n = nx * ny;
     float hx = Lx / (nx - 1);
     float hy = Ly / (ny - 1);
@@ -104,8 +123,8 @@ public:
   {
     float Lx = 100.0;
     float Ly = 100.0;
-    int nx = 2;
-    int ny = 2;
+    int nx = 101;
+    int ny = 101;
     int n = nx * ny;
     float hx = Lx / (nx - 1);
     float hy = Ly / (ny - 1);
@@ -136,19 +155,7 @@ public:
   
     for (int k=0; k<2*n; ++k)
     {
-      mappings_host[k] = get_mapping(triangles_host[k]);
-/*
-      const auto t = triangles_host[k];
-      std::cout << "triangle " << k << ":\n";
-      std::cout << "a: " << t.a[0] << ' ' << t.a[1] << ' '  << t.a[2] << '\n';
-      std::cout << "b: " << t.b[0] << ' ' << t.b[1] << ' '  << t.b[2] << '\n';
-      std::cout << "c: " << t.c[0] << ' ' << t.c[1] << ' '  << t.c[2] << '\n'; 
-      const auto m = mappings_host[k];
-      std::cout << "mapping " << k << ":\n";
-      std::cout << "p0:    " << m.p0[0]    << ' ' << m.p0[1]    << ' '  << m.p0[2]    << '\n';
-      std::cout << "alpha: " << m.alpha[0] << ' ' << m.alpha[1] << ' '  << m.alpha[2] << '\n';
-      std::cout << "beta:  " << m.beta[0]  << ' ' << m.beta[1]  << ' '  << m.beta[2]  << '\n';
-*/
+      mappings_host[k].compute(triangles_host[k]);
     }
     Kokkos::deep_copy(execution_space, _triangles, triangles_host);
   }
@@ -164,29 +171,6 @@ public:
 private:
   Kokkos::View<Triangle *, typename DeviceType::memory_space> _triangles;
   Kokkos::View<Mapping *, typename DeviceType::memory_space> _mappings;
-
-  // x = a + alpha * (b - a) + beta * (c - a) 
-  //   = (1-beta-alpha) * a + alpha * b + beta * c
-  //
-  // FIXME Only works for 2D reliably  
-  static Mapping get_mapping(const Triangle& triangle) 
-  {
-    const auto& a = triangle.a;
-    const auto& b = triangle.b;
-    const auto& c = triangle.c;
-
-    ArborX::Point u = {b[0]-a[0], b[1]-a[1], b[2]-a[2]};
-    ArborX::Point v = {c[0]-a[0], c[1]-a[1], c[2]-a[2]};
-    
-    const float inv_det = 1./(v[1]*u[0]-v[0]*u[1]);
-
-    Mapping mapping;
-    mapping.alpha = ArborX::Point{v[1]*inv_det, -v[0]*inv_det,0};
-    mapping.beta = ArborX::Point{-u[1]*inv_det, u[0]*inv_det,0};
-    mapping.p0 = a;
-
-    return mapping;
-  }
 };
 
 // For creating the bounding volume hierarchy given a Triangles object, we
@@ -201,10 +185,6 @@ struct ArborX::AccessTraits<Triangles<DeviceType>, ArborX::PrimitivesTag>
   {
     return triangles.size();
   }
-/*  static KOKKOS_FUNCTION auto get(Triangles<DeviceType> const &triangles, int i)
-  {
-    return triangles.get_triangle(i);
-  }*/
   static KOKKOS_FUNCTION auto get(Triangles<DeviceType> const &triangles, int i)
   {
     const auto& triangle = triangles.get_triangle(i);
@@ -234,32 +214,6 @@ struct ArborX::AccessTraits<Points<DeviceType>, ArborX::PredicatesTag>
 };
 
 
-KOKKOS_FUNCTION bool intersects(const ArborX::Point& point, const Triangle& triangle, const Mapping& mapping)
-{
-  auto sign = [](const ArborX::Point& p1, const ArborX::Point& p2, const ArborX::Point& p3)
-  {
-    return (p1[0] - p3[0]) * (p2[1] - p3[1]) - (p2[0] - p3[0]) * (p1[1] - p3[1]);
-  };
-
-  const float d1 = sign(point, triangle.a, triangle.b);
-  const float d2 = sign(point, triangle.b, triangle.c);
-  const float d3 = sign(point, triangle.c, triangle.a);
-
-  const bool has_neg = (d1 < 0) || (d2 < 0) || (d3 < 0);
-  const bool has_pos = (d1 > 0) || (d2 > 0) || (d3 > 0);
-
-  bool first_check = !(has_neg && has_pos);
-
-  const auto coeffs = mapping.get_coeff(point);
-  bool second_check = (std::min({coeffs[0], coeffs[1], coeffs[2]}) >= 0);
-
-  if(first_check != second_check)
-	  abort();
-  return first_check;
-}
-
-
-
 template <typename DeviceType>
 class PrintfCallback
 {
@@ -275,7 +229,11 @@ public:
   {
     auto const triangle_index = ArborX::getData(query);
 
-    if (intersects(points_.get_point(point_index), triangles_.get_triangle(triangle_index), triangles_.get_mapping(triangle_index)))
+    auto const& point = points_.get_point(point_index);
+    const auto coeffs = triangles_.get_mapping(triangle_index).get_coeff(point);
+    bool intersects = coeffs[0]>=0 && coeffs[1]>=0 && coeffs[2]>=0;
+
+    if (intersects)
       results_(point_index) = triangle_index;
   }
 private:
@@ -329,7 +287,7 @@ int main()
     int const n = triangles.size();
     Kokkos::View<int *, MemorySpace> offsets("offsets", n);
 
-    tree.query(execution_space, points, PrintfCallback<DeviceType>{offsets, points, triangles});//indices, offsets);
+    tree.query(execution_space, points, PrintfCallback<DeviceType>{offsets, points, triangles});
     std::cout << "Queries done.\n";
 
     std::cout << "Starting checking results.\n";
@@ -340,7 +298,6 @@ int main()
       if (offsets_host(i) != i)
       {
         std ::cout << offsets_host(i) << " should be " << i << std::endl;      
-        //Kokkos::abort("Wrong entry in the offsets View!\n");
       }
 
     std::cout << "Checking results successful.\n";
