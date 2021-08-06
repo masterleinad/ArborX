@@ -292,7 +292,12 @@ int main()
     Kokkos::View<int *, MemorySpace> offsets("offsets", n);
     Kokkos::View<ArborX::Point *, MemorySpace> coefficients("coefficients", n);
 
+    //Kokkos::parallel_for<(Kokkos::RangePolicy<ExecutionSpace>(exec_space, 0, n), KOKKOS_LAMBDA(int i) {
     tree.query(execution_space, points, PrintfCallback<DeviceType>{offsets, coefficients, points, triangles});
+//    }
+
+    ArborX::Details::TreeTraversal<ArborX::BVH<MemorySpace>, decltype(points), PrintfCallback<DeviceType>, ArborX::Details::SpatialPredicateTag> tree_traversal(tree, points, PrintfCallback<DeviceType>{offsets, coefficients, points, triangles});
+
     std::cout << "Queries done.\n";
 
     std::cout << "Starting checking results.\n";
