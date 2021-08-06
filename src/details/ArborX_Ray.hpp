@@ -159,6 +159,7 @@ Point returnCentroid(Ray const &ray) { return ray.origin(); }
 KOKKOS_INLINE_FUNCTION
 bool intersects(Ray const &ray, Box const &box)
 {
+	abort();
   auto const &minCorner = box.minCorner();
   auto const &maxCorner = box.maxCorner();
   auto const &origin = ray.origin();
