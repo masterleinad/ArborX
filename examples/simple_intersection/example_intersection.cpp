@@ -234,7 +234,7 @@ struct ArborX::AccessTraits<Points<DeviceType>, ArborX::PredicatesTag>
 };
 
 
-KOKKOS_FUNCTION bool intersects(const ArborX::Point& point, const Triangle& triangle)
+KOKKOS_FUNCTION bool intersects(const ArborX::Point& point, const Triangle& triangle, const Mapping& mapping)
 {
   auto sign = [](const ArborX::Point& p1, const ArborX::Point& p2, const ArborX::Point& p3)
   {
@@ -248,7 +248,14 @@ KOKKOS_FUNCTION bool intersects(const ArborX::Point& point, const Triangle& tria
   const bool has_neg = (d1 < 0) || (d2 < 0) || (d3 < 0);
   const bool has_pos = (d1 > 0) || (d2 > 0) || (d3 > 0);
 
-  return !(has_neg && has_pos);
+  bool first_check = !(has_neg && has_pos);
+
+  const auto coeffs = mapping.get_coeff(point);
+  bool second_check = (std::min({coeffs[0], coeffs[1], coeffs[2]}) >= 0);
+
+  if(first_check != second_check)
+	  abort();
+  return first_check;
 }
 
 
@@ -268,7 +275,7 @@ public:
   {
     auto const triangle_index = ArborX::getData(query);
 
-    if (intersects(points_.get_point(point_index), triangles_.get_triangle(triangle_index)))
+    if (intersects(points_.get_point(point_index), triangles_.get_triangle(triangle_index), triangles_.get_mapping(triangle_index)))
       results_(point_index) = triangle_index;
   }
 private:
