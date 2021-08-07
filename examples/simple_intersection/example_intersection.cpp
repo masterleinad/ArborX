@@ -65,6 +65,15 @@ struct Mapping
     beta = ArborX::Point{-u[1]*inv_det, u[0]*inv_det,0};
     p0 = a;
   }
+
+  Triangle get_triangle() const
+  {
+    const float inv_det = 1./(alpha[0]*beta[1]-alpha[1]*beta[0]);
+    ArborX::Point a = p0;
+    ArborX::Point b = {{p0[0]+inv_det*beta[1], p0[1]-inv_det*beta[0]}};
+    ArborX::Point c = {{p0[0]-inv_det*alpha[1], p0[1]+inv_det*alpha[0]}};
+    return {a,b,c};    
+  }
 };
 
 template <typename DeviceType>
@@ -155,6 +164,21 @@ public:
     for (int k=0; k<2*n; ++k)
     {
       mappings_host[k].compute(triangles_host[k]);
+
+      Triangle recover_triangle = mappings_host[k].get_triangle();
+
+      for (unsigned int i=0; i<3; ++i)
+        if(std::abs(triangles_host[k].a[i]-recover_triangle.a[i]) > 1.e-3)
+		abort();
+
+      for (unsigned int i=0; i<3; ++i)
+        if(std::abs(triangles_host[k].b[i]-recover_triangle.b[i]) > 1.e-3)
+                abort();
+
+      for (unsigned int i=0; i<3; ++i)
+        if(std::abs(triangles_host[k].c[i]-recover_triangle.c[i]) > 1.e-3)
+                abort();
+
     }
     Kokkos::deep_copy(execution_space, triangles_, triangles_host);
   }
