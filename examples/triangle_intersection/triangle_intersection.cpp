@@ -236,10 +236,10 @@ struct ArborX::AccessTraits<Points<DeviceType>, ArborX::PredicatesTag>
 };
 
 template <typename DeviceType>
-class PrintfCallback
+class TriangleIntersectionCallback
 {
 public:
-  PrintfCallback(
+  TriangleIntersectionCallback(
       Kokkos::View<int *, typename DeviceType::memory_space> results,
       Kokkos::View<ArborX::Point *, typename DeviceType::memory_space>
           coefficients,
@@ -322,23 +322,16 @@ int main()
     std::cout << "Points for queries set up.\n";
 
     std::cout << "Starting the queries.\n";
-    // The query will resize indices and offsets accordingly
     int const n = points.size();
     Kokkos::View<int *, MemorySpace> offsets("offsets", n);
     Kokkos::View<ArborX::Point *, MemorySpace> coefficients("coefficients", n);
 
-    // Kokkos::parallel_for<(Kokkos::RangePolicy<ExecutionSpace>(exec_space, 0,
-    // n), KOKKOS_LAMBDA(int i) {
-    //    tree.query(execution_space, points,
-    //    PrintfCallback<DeviceType>{offsets, coefficients, points, triangles});
-    //    }
-
     ArborX::Details::TreeTraversal<ArborX::BVH<MemorySpace>, decltype(points),
-                                   PrintfCallback<DeviceType>,
+                                   TriangleIntersectionCallback<DeviceType>,
                                    ArborX::Details::SpatialPredicateTag>
         tree_traversal(tree, points,
-                       PrintfCallback<DeviceType>{offsets, coefficients, points,
-                                                  triangles});
+                       TriangleIntersectionCallback<DeviceType>{
+                           offsets, coefficients, points, triangles});
 
     Kokkos::parallel_for(
         "ArborX::TreeTraversal::spatial",

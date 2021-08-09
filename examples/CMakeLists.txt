@@ -9,7 +9,7 @@ add_subdirectory(access_traits)
 
 add_subdirectory(callback)
 
-add_subdirectory(simple_intersection)
+add_subdirectory(triangle_intersection)
 
 find_package(Boost COMPONENTS program_options)
 if(Boost_FOUND)
