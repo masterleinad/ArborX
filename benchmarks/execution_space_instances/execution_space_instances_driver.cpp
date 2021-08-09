@@ -214,8 +214,7 @@ int main(int argc, char *argv[])
   Kokkos::deep_copy(counts, 0);
   query_time.reset();
 
-  tree.query(
-      instances[0], predicates, CountCallback<MemorySpace>{counts});
+  tree.query(instances[0], predicates, CountCallback<MemorySpace>{counts});
   //, ArborX::Experimental::TraversalPolicy().setPredicateSorting(false));
 
   Kokkos::fence();

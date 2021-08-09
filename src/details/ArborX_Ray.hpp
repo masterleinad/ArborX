@@ -117,7 +117,7 @@ struct Ray
   constexpr Experimental::Vector const &direction() const { return _direction; }
 
   // FIXME avoid breaking Wenjun's code
-  using Vector [[deprecated]] = ArborX::Experimental::Vector;
+  using Vector[[deprecated]] = ArborX::Experimental::Vector;
 };
 
 KOKKOS_INLINE_FUNCTION
@@ -159,7 +159,7 @@ Point returnCentroid(Ray const &ray) { return ray.origin(); }
 KOKKOS_INLINE_FUNCTION
 bool intersects(Ray const &ray, Box const &box)
 {
-	abort();
+  abort();
   auto const &minCorner = box.minCorner();
   auto const &maxCorner = box.maxCorner();
   auto const &origin = ray.origin();

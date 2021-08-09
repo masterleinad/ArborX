@@ -42,7 +42,8 @@ struct TreeTraversal<BVH, Predicates, Callback, SpatialPredicateTag>
   using Access = AccessTraits<Predicates, PredicatesTag>;
   using Node = HappyTreeFriends::node_t<BVH>;
 
-  TreeTraversal(BVH const &bvh, Predicates const &predicates, Callback const &callback)
+  TreeTraversal(BVH const &bvh, Predicates const &predicates,
+                Callback const &callback)
       : _bvh{bvh}
       , _predicates{predicates}
       , _callback{callback}
@@ -50,7 +51,7 @@ struct TreeTraversal<BVH, Predicates, Callback, SpatialPredicateTag>
   }
 
   template <typename ExecutionSpace>
-  void run(ExecutionSpace const & space) const
+  void run(ExecutionSpace const &space) const
   {
     if (_bvh.empty())
     {
@@ -240,14 +241,16 @@ struct TreeTraversal<BVH, Predicates, Callback, NearestPredicateTag>
     _buffer = BufferProvider{buffer, offset};
   }
 
-  TreeTraversal(BVH const &bvh, Predicates const &predicates, Callback const &callback)
+  TreeTraversal(BVH const &bvh, Predicates const &predicates,
+                Callback const &callback)
       : _bvh{bvh}
       , _predicates{predicates}
       , _callback{callback}
-  {}
+  {
+  }
 
   template <typename ExecutionSpace>
-  void run(ExecutionSpace const & space)
+  void run(ExecutionSpace const &space)
   {
     if (_bvh.empty())
     {
@@ -469,7 +472,7 @@ void traverse(ExecutionSpace const &space, BVH const &bvh,
   using Access = AccessTraits<Predicates, PredicatesTag>;
   using Tag = typename AccessTraitsHelper<Access>::tag;
   TreeTraversal<BVH, Predicates, Callback, Tag> tree_traversal(bvh, predicates,
-                                                callback);
+                                                               callback);
   tree_traversal.run(space);
 }
 
