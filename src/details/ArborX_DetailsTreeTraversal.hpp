@@ -101,7 +101,12 @@ struct TreeTraversal<BVH, Predicates, Callback, SpatialPredicateTag>
   operator()(int queryIndex) const
   {
     auto const &predicate = Access::get(_predicates, queryIndex);
+    search(predicate);
+  }
 
+  // Stack-based traversal
+  KOKKOS_FUNCTION void search(const std::decay_t<decltype(Access::get(_predicates, 0))> &predicate) const
+  {
     Node const *stack[64];
     Node const **stack_ptr = stack;
     *stack_ptr++ = nullptr;
