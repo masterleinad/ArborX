@@ -222,14 +222,8 @@ template <typename DeviceType>
 class TriangleIntersectionCallback
 {
 public:
-  TriangleIntersectionCallback(
-      Kokkos::View<int *, typename DeviceType::memory_space> results,
-      Kokkos::View<ArborX::Point *, typename DeviceType::memory_space>
-          coefficients,
-      Triangles<DeviceType> triangles)
-      : results_(results)
-      , coefficients_(coefficients)
-      , triangles_(triangles)
+  TriangleIntersectionCallback(Triangles<DeviceType> triangles)
+      : triangles_(triangles)
   {
   }
 
@@ -250,9 +244,6 @@ public:
   }
 
 private:
-  Kokkos::View<int *, typename DeviceType::memory_space> results_;
-  Kokkos::View<ArborX::Point *, typename DeviceType::memory_space>
-      coefficients_;
   Triangles<DeviceType> triangles_;
 };
 
@@ -323,8 +314,8 @@ int main()
                                    decltype(ArborX::attach(
                                        intersects(ArborX::Point{}),
                                        std::declval<Attachment>()))>
-        tree_traversal(tree, TriangleIntersectionCallback<DeviceType>{
-                                 offsets, coefficients, triangles});
+        tree_traversal(tree,
+                       TriangleIntersectionCallback<DeviceType>{triangles});
 
     std::cout << "n: " << n << std::endl;
 
