@@ -83,11 +83,6 @@ template <typename DeviceType>
 class Points
 {
 public:
-  Points()
-      : points_{"invalid", 0}
-  {
-  }
-
   Points(typename DeviceType::execution_space const &execution_space)
   {
     float Lx = 100.0;
@@ -331,7 +326,11 @@ int main()
     Kokkos::View<int *, MemorySpace> offsets("offsets", n);
     Kokkos::View<ArborX::Point *, MemorySpace> coefficients("coefficients", n);
 
-    ArborX::Details::TreeTraversal<ArborX::BVH<MemorySpace>, decltype(points),
+    struct Dummy
+    {
+    };
+
+    ArborX::Details::TreeTraversal<ArborX::BVH<MemorySpace>, Dummy,
                                    TriangleIntersectionCallback<DeviceType>,
                                    ArborX::Details::SpatialPredicateTag,
                                    decltype(ArborX::attach(
