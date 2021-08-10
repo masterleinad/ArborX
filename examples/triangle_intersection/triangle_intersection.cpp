@@ -237,15 +237,15 @@ public:
   KOKKOS_FUNCTION void operator()(Query const &query, int triangle_index) const
   {
     const ArborX::Point &point = getGeometry(getPredicate(query));
-    auto const point_index = ArborX::getData(query);
+    auto const &attachment = ArborX::getData(query);
 
     const auto coeffs = triangles_.get_mapping(triangle_index).get_coeff(point);
     bool intersects = coeffs[0] >= 0 && coeffs[1] >= 0 && coeffs[2] >= 0;
 
     if (intersects)
     {
-      results_(point_index) = triangle_index;
-      coefficients_(point_index) = coeffs;
+      attachment.triangle_index = triangle_index;
+      attachment.coeffs = coeffs;
     }
   }
 
@@ -311,11 +311,18 @@ int main()
     {
     };
 
+    struct Attachment
+    {
+      int &triangle_index;
+      ArborX::Point &coeffs;
+    };
+
     ArborX::Details::TreeTraversal<ArborX::BVH<MemorySpace>, Dummy,
                                    TriangleIntersectionCallback<DeviceType>,
                                    ArborX::Details::SpatialPredicateTag,
                                    decltype(ArborX::attach(
-                                       intersects(ArborX::Point{}), 0))>
+                                       intersects(ArborX::Point{}),
+                                       std::declval<Attachment>()))>
         tree_traversal(tree, TriangleIntersectionCallback<DeviceType>{
                                  offsets, coefficients, triangles});
 
@@ -326,7 +333,8 @@ int main()
         Kokkos::RangePolicy<ExecutionSpace>(execution_space, 0, n),
         KOKKOS_LAMBDA(int i) {
           tree_traversal.search(
-              ArborX::attach(intersects(points.get_point(i)), i));
+              ArborX::attach(intersects(points.get_point(i)),
+                             Attachment{offsets(i), coefficients(i)}));
         });
 
     std::cout << "Queries done.\n";
