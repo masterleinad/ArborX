@@ -218,18 +218,6 @@ struct ArborX::AccessTraits<Triangles<DeviceType>, ArborX::PrimitivesTag>
   }
 };
 
-// For performing the queries given a Points object, we need to define memory
-// space, how to get the total number of queries, and what the query with index
-// i should look like.
-/*template <typename DeviceType>
-struct ArborX::AccessTraits<Points<DeviceType>, ArborX::PredicatesTag>
-{
-  static KOKKOS_FUNCTION auto get(Points<DeviceType> const &points, int i)
-  {
-    return ArborX::attach(intersects(points.get_point(i)), i);
-  }
-};*/
-
 template <typename DeviceType>
 class TriangleIntersectionCallback
 {
@@ -261,17 +249,11 @@ public:
       coefficients_(point_index) = coeffs;
     }
   }
-  /*
-    KOKKOS_FUNCTION void set_point(const ArborX::Point &point) const
-    {
-     _point = point;
-    }*/
 
 private:
   Kokkos::View<int *, typename DeviceType::memory_space> results_;
   Kokkos::View<ArborX::Point *, typename DeviceType::memory_space>
       coefficients_;
-  //  mutable ArborX::Point _point;
   Triangles<DeviceType> triangles_;
 };
 
