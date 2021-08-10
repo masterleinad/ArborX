@@ -32,8 +32,8 @@ struct TreeTraversal
 {
 };
 
-template <typename BVH, typename Predicates, typename Callback>
-struct TreeTraversal<BVH, Predicates, Callback, SpatialPredicateTag>
+template <typename BVH, typename Predicates, typename Callback, typename Query>
+struct TreeTraversal<BVH, Predicates, Callback, SpatialPredicateTag, Query>
 {
   BVH _bvh;
   Predicates _predicates;
@@ -111,7 +111,7 @@ struct TreeTraversal<BVH, Predicates, Callback, SpatialPredicateTag>
   }
 
   // Stack-based traversal
-  KOKKOS_FUNCTION void search(const std::decay_t<decltype(Access::get(_predicates, 0))> &predicate) const
+  KOKKOS_FUNCTION void search(const Query &predicate) const
   {
     Node const *stack[64];
     Node const **stack_ptr = stack;

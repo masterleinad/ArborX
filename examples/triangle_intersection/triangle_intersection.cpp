@@ -223,14 +223,14 @@ struct ArborX::AccessTraits<Triangles<DeviceType>, ArborX::PrimitivesTag>
 // For performing the queries given a Points object, we need to define memory
 // space, how to get the total number of queries, and what the query with index
 // i should look like.
-template <typename DeviceType>
+/*template <typename DeviceType>
 struct ArborX::AccessTraits<Points<DeviceType>, ArborX::PredicatesTag>
 {
   static KOKKOS_FUNCTION auto get(Points<DeviceType> const &points, int i)
   {
     return ArborX::attach(intersects(points.get_point(i)), i);
   }
-};
+};*/
 
 template <typename DeviceType>
 class TriangleIntersectionCallback
@@ -329,7 +329,8 @@ int main()
 
     ArborX::Details::TreeTraversal<ArborX::BVH<MemorySpace>, decltype(points),
                                    TriangleIntersectionCallback<DeviceType>,
-                                   ArborX::Details::SpatialPredicateTag>
+                                   ArborX::Details::SpatialPredicateTag,
+				   decltype(ArborX::attach(intersects(ArborX::Point{}), 0))>
         tree_traversal(tree,
                        TriangleIntersectionCallback<DeviceType>{
                            offsets, coefficients, triangles});
