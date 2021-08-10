@@ -27,7 +27,7 @@ namespace ArborX
 namespace Details
 {
 
-template <typename BVH, typename Predicates, typename Callback, typename Tag>
+template <typename BVH, typename Predicates, typename Callback, typename Tag, typename Query = decltype(AccessTraits<Predicates, PredicatesTag>::get(std::declval<Predicates>(), 0))>
 struct TreeTraversal
 {
 };

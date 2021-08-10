@@ -226,11 +226,6 @@ struct ArborX::AccessTraits<Triangles<DeviceType>, ArborX::PrimitivesTag>
 template <typename DeviceType>
 struct ArborX::AccessTraits<Points<DeviceType>, ArborX::PredicatesTag>
 {
-  using memory_space = typename DeviceType::memory_space;
-  static KOKKOS_FUNCTION int size(Points<DeviceType> const &points)
-  {
-    return points.size();
-  }
   static KOKKOS_FUNCTION auto get(Points<DeviceType> const &points, int i)
   {
     return ArborX::attach(intersects(points.get_point(i)), i);
@@ -345,7 +340,6 @@ int main()
         "ArborX::TreeTraversal::spatial",
         Kokkos::RangePolicy<ExecutionSpace>(execution_space, 0, n),
         KOKKOS_LAMBDA(int i) {
-	  //tree_traversal._callback.set_point(points.get_point(i)); 
 	  tree_traversal.search(ArborX::attach(intersects(points.get_point(i)),i));
 	});
 
