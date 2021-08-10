@@ -345,7 +345,7 @@ int main()
         Kokkos::RangePolicy<ExecutionSpace>(execution_space, 0, n),
         KOKKOS_LAMBDA(int i) {
 	  tree_traversal._callback.set_point(points.get_point(i)); 
-	  tree_traversal(i);
+	  tree_traversal.search(ArborX::attach(intersects(points.get_point(i)),i));
 	});
 
     std::cout << "Queries done.\n";
