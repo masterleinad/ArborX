@@ -50,6 +50,12 @@ struct TreeTraversal<BVH, Predicates, Callback, SpatialPredicateTag>
   {
   }
 
+  TreeTraversal(BVH const &bvh, Callback const &callback)
+      : _bvh{bvh}
+      , _callback{callback}
+  {
+  }
+
   template <typename ExecutionSpace>
   void run(ExecutionSpace const &space) const
   {

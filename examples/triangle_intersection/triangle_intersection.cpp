@@ -83,6 +83,8 @@ template <typename DeviceType>
 class Points
 {
 public:
+  Points() : points_{"invalid", 0} {}
+
   Points(typename DeviceType::execution_space const &execution_space)
   {
     float Lx = 100.0;
@@ -243,21 +245,19 @@ public:
       Kokkos::View<int *, typename DeviceType::memory_space> results,
       Kokkos::View<ArborX::Point *, typename DeviceType::memory_space>
           coefficients,
-      Points<DeviceType> points, Triangles<DeviceType> triangles)
+      Triangles<DeviceType> triangles)
       : results_(results)
       , coefficients_(coefficients)
-      , points_(points)
       , triangles_(triangles)
   {
   }
 
   template <typename Query>
-  KOKKOS_FUNCTION void operator()(Query const &query, int point_index) const
+  KOKKOS_FUNCTION void operator()(Query const &query, int triangle_index) const
   {
-    auto const triangle_index = ArborX::getData(query);
+    auto const point_index = ArborX::getData(query);
 
-    auto const &point = points_.get_point(point_index);
-    const auto coeffs = triangles_.get_mapping(triangle_index).get_coeff(point);
+    const auto coeffs = triangles_.get_mapping(triangle_index).get_coeff(_point);
     bool intersects = coeffs[0] >= 0 && coeffs[1] >= 0 && coeffs[2] >= 0;
 
     if (intersects)
@@ -267,11 +267,16 @@ public:
     }
   }
 
+  KOKKOS_FUNCTION void set_point(const ArborX::Point &point) const
+  {
+   _point = point; 
+  }
+
 private:
   Kokkos::View<int *, typename DeviceType::memory_space> results_;
   Kokkos::View<ArborX::Point *, typename DeviceType::memory_space>
       coefficients_;
-  Points<DeviceType> points_;
+  mutable ArborX::Point _point;
   Triangles<DeviceType> triangles_;
 };
 
@@ -281,7 +286,7 @@ int main()
 {
   Kokkos::initialize();
   {
-    using ExecutionSpace = Kokkos::DefaultExecutionSpace;
+    using ExecutionSpace = Kokkos::Serial;
     using MemorySpace = typename ExecutionSpace::memory_space;
     using DeviceType = Kokkos::Device<ExecutionSpace, MemorySpace>;
     ExecutionSpace execution_space;
@@ -329,14 +334,19 @@ int main()
     ArborX::Details::TreeTraversal<ArborX::BVH<MemorySpace>, decltype(points),
                                    TriangleIntersectionCallback<DeviceType>,
                                    ArborX::Details::SpatialPredicateTag>
-        tree_traversal(tree, points,
+        tree_traversal(tree,
                        TriangleIntersectionCallback<DeviceType>{
-                           offsets, coefficients, points, triangles});
+                           offsets, coefficients, triangles});
+
+    std::cout << "n: " << n << std::endl;
 
     Kokkos::parallel_for(
         "ArborX::TreeTraversal::spatial",
         Kokkos::RangePolicy<ExecutionSpace>(execution_space, 0, n),
-        tree_traversal);
+        KOKKOS_LAMBDA(int i) {
+	  tree_traversal._callback.set_point(points.get_point(i)); 
+	  tree_traversal(i);
+	});
 
     std::cout << "Queries done.\n";
 
