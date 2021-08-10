@@ -236,8 +236,7 @@ public:
   template <typename Query>
   KOKKOS_FUNCTION void operator()(Query const &query, int triangle_index) const
   {
-    const ArborX::Point &point =
-        getGeometry(static_cast<ArborX::Intersects<ArborX::Point>>(query));
+    const ArborX::Point &point = getGeometry(getPredicate(query));
     auto const point_index = ArborX::getData(query);
 
     const auto coeffs = triangles_.get_mapping(triangle_index).get_coeff(point);
@@ -263,7 +262,7 @@ int main()
 {
   Kokkos::initialize();
   {
-    using ExecutionSpace = Kokkos::Serial;
+    using ExecutionSpace = Kokkos::DefaultExecutionSpace;
     using MemorySpace = typename ExecutionSpace::memory_space;
     using DeviceType = Kokkos::Device<ExecutionSpace, MemorySpace>;
     ExecutionSpace execution_space;
