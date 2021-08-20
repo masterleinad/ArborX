@@ -45,6 +45,8 @@ struct TreeTraversal<BVH, Predicates, Callback, SpatialPredicateTag, Query>
   using Access = AccessTraits<Predicates, PredicatesTag>;
   using Node = HappyTreeFriends::node_t<BVH>;
 
+  TreeTraversal() = default;
+
   TreeTraversal(BVH const &bvh, Predicates const &predicates,
                 Callback const &callback)
       : _bvh{bvh}
@@ -104,17 +106,17 @@ struct TreeTraversal<BVH, Predicates, Callback, SpatialPredicateTag, Query>
     }
   }
 
-  // Stack-based traversal
   template <typename Tag = typename Node::Tag>
-  KOKKOS_FUNCTION std::enable_if_t<std::is_same<Tag, NodeWithTwoChildrenTag>{}>
+  KOKKOS_FUNCTION void
   operator()(int queryIndex) const
   {
     auto const &predicate = Access::get(_predicates, queryIndex);
-    search(predicate);
+    search<Tag>(predicate);
   }
 
   // Stack-based traversal
-  KOKKOS_FUNCTION void search(const Query &predicate) const
+  template <typename Tag = typename Node::Tag>
+  KOKKOS_FUNCTION std::enable_if_t<std::is_same<Tag, NodeWithTwoChildrenTag>{}> search(const Query &predicate) const
   {
     Node const *stack[64];
     Node const **stack_ptr = stack;
@@ -163,12 +165,8 @@ struct TreeTraversal<BVH, Predicates, Callback, SpatialPredicateTag, Query>
 
   // Ropes-based traversal
   template <typename Tag = typename Node::Tag>
-  KOKKOS_FUNCTION
-      std::enable_if_t<std::is_same<Tag, NodeWithLeftChildAndRopeTag>{}>
-      operator()(int queryIndex) const
+  KOKKOS_FUNCTION std::enable_if_t<std::is_same<Tag, NodeWithLeftChildAndRopeTag>{}> search(const Query &predicate) const
   {
-    auto const &predicate = Access::get(_predicates, queryIndex);
-
     Node const *node;
     int next = 0; // start with root
     do
