@@ -552,6 +552,21 @@ KOKKOS_INLINE_FUNCTION float overlapDistance(Ray const &ray,
   return (tmax - tmin);
 }
 
+KOKKOS_INLINE_FUNCTION
+void overlapDistance(Ray const &ray, Box const &box, float &length,
+                     float &distance_to_origin)
+{
+  float tmin;
+  float tmax;
+  intersection(ray, box, tmin, tmax);
+  if (tmin <= tmax && (tmax >= 0))
+    length = tmax - tmin;
+  else
+    length = 0.0 / 0.0;
+
+  distance_to_origin = tmin;
+}
+
 } // namespace Experimental
 } // namespace ArborX
 #endif

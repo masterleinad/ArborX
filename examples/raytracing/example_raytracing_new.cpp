@@ -1,0 +1,312 @@
+/****************************************************************************
+ * Copyright (c) 2017-2021 by the ArborX authors                            *
+ * All rights reserved.                                                     *
+ *                                                                          *
+ * This file is part of the ArborX library. ArborX is                       *
+ * distributed under a BSD 3-clause license. For the licensing terms see    *
+ * the LICENSE file in the top-level directory.                             *
+ *                                                                          *
+ * SPDX-License-Identifier: BSD-3-Clause                                    *
+ ****************************************************************************/
+
+#include "ArborX_ExperimentalTreeTraversal.hpp"
+#include <ArborX.hpp>
+#include <ArborX_Ray.hpp>
+
+#include <Kokkos_Random.hpp>
+
+#include <boost/program_options.hpp>
+
+template <typename MemorySpace>
+struct Rays
+{
+  Kokkos::View<ArborX::Experimental::Ray *, MemorySpace> _rays;
+};
+
+template <typename MemorySpace>
+struct ArborX::AccessTraits<Rays<MemorySpace>, ArborX::PredicatesTag>
+{
+  using memory_space = MemorySpace;
+  using size_type = std::size_t;
+
+  KOKKOS_FUNCTION
+  static size_type size(const Rays<MemorySpace> &rays)
+  {
+    return rays._rays.extent(0);
+  }
+  KOKKOS_FUNCTION
+  static auto get(Rays<MemorySpace> const &rays, size_type i)
+  {
+    return attach(intersects(rays._rays(i)), (int)i);
+  }
+};
+
+struct IntersectedCell
+{
+  float key;                 // intersection ray distance
+  float optical_path_length; // optical distance through cell
+  int cid;                   // cell ID
+  int rid;                   // ray ID
+  friend KOKKOS_FUNCTION bool operator<(IntersectedCell const &l,
+                                        IntersectedCell const &r)
+  {
+    if (l.rid == r.rid)
+      return l.key < r.key;
+    return l.rid < r.rid;
+  }
+};
+
+template <typename MemorySpace>
+struct AccumRaySphereOptDist
+{
+  Kokkos::View<ArborX::Box *, MemorySpace> _cells;
+
+  template <typename Predicate, typename OutputFunctor>
+  KOKKOS_FUNCTION void operator()(Predicate const &predicate,
+                                  int const primitive_index,
+                                  OutputFunctor const &out) const
+  {
+    float length;
+    float entrylength;
+    auto const &ray = ArborX::getGeometry(predicate);
+    auto const &cell = _cells(primitive_index);
+    int const predicate_index = ArborX::getData(predicate);
+    float const kappa = 1.; // NOTE may depend on cell
+    ArborX::Experimental::overlapDistance(ray, cell, length, entrylength);
+    out(IntersectedCell{/*key*/ entrylength,
+                        /*optical_path_length*/ kappa * length,
+                        /*cid*/ primitive_index,
+                        /*rid*/ predicate_index});
+  }
+};
+
+template <typename MemorySpace>
+struct DepositEnergy
+{
+  Kokkos::View<ArborX::Box *, MemorySpace> _cells;
+  Kokkos::View<float *, MemorySpace> _ray_energy;
+  Kokkos::View<float *, MemorySpace> _energy;
+
+  template <typename Predicate>
+  KOKKOS_FUNCTION void operator()(Predicate const &predicate,
+                                  int const primitive_index) const
+  {
+    using Kokkos::Experimental::expm1;
+    float length;
+    float entrylength;
+    auto const &ray = ArborX::getGeometry(predicate);
+    auto const &cell = _cells(primitive_index);
+    int const predicate_index = ArborX::getData(predicate);
+    float const kappa = 1.; // NOTE may depend on cell
+    ArborX::Experimental::overlapDistance(ray, cell, length, entrylength);
+    float const optical_path_length = kappa * length;
+
+    float const energy_deposited =
+        -_ray_energy(predicate_index) * expm1(-optical_path_length);
+    _ray_energy(predicate_index) += energy_deposited;
+    Kokkos::atomic_add(&_energy(primitive_index), energy_deposited);
+  }
+};
+
+int main(int argc, char *argv[])
+{
+  using ExecutionSpace = Kokkos::DefaultExecutionSpace;
+  using MemorySpace = ExecutionSpace::memory_space;
+
+  Kokkos::ScopeGuard guard(argc, argv);
+
+  namespace bpo = boost::program_options;
+
+  int Nx, Ny, Nz;
+  int num_rays;
+  float Lx, Ly, Lz;
+
+  bpo::options_description desc("Allowed options");
+  desc.add_options()("help", "help message")(
+      "rays", bpo::value<int>(&num_rays)->default_value(10000),
+      "number of rays")("Lx", bpo::value<float>(&Lx)->default_value(1.0),
+                        "Length of X side")(
+      "Ly", bpo::value<float>(&Ly)->default_value(1.0), "Length of Y side")(
+      "Lz", bpo::value<float>(&Lz)->default_value(1.0), "Length of Z side")(
+      "Nx", bpo::value<int>(&Nx)->default_value(1000), "number of X cells")(
+      "Ny", bpo::value<int>(&Ny)->default_value(1000), "number of Y cells")(
+      "Nz", bpo::value<int>(&Nz)->default_value(1000), "number of Z cells");
+  bpo::variables_map vm;
+  bpo::store(bpo::command_line_parser(argc, argv).options(desc).run(), vm);
+  bpo::notify(vm);
+
+  if (vm.count("help") > 0)
+  {
+    std::cout << desc << '\n';
+    return 1;
+  }
+
+  int num_cells = Nx * Ny * Nz;
+  float dx = Lx / (float)Nx;
+  float dy = Ly / (float)Ny;
+  float dz = Lz / (float)Nz;
+
+  // TEST
+  if (num_rays % num_cells != 0)
+    std::cout << "ERROR: num_rays not divisible by num_cells" << std::endl;
+
+  ExecutionSpace exec_space{};
+
+  Kokkos::Profiling::pushRegion("problem_setup");
+  Kokkos::Profiling::pushRegion("make_grid");
+  Kokkos::View<ArborX::Box *, MemorySpace> cells(
+      Kokkos::view_alloc(Kokkos::WithoutInitializing, "cells"), num_cells);
+  Kokkos::parallel_for(
+      "initialize_cells",
+      Kokkos::MDRangePolicy<Kokkos::Rank<3>, ExecutionSpace>(
+          exec_space, {0, 0, 0}, {Nx, Ny, Nz}),
+      KOKKOS_LAMBDA(int i, int j, int k)
+      {
+        int const cell_id = i + Nx * j + Nx * Ny * k;
+        cells(cell_id) = {{i * dx, j * dy, k * dz},
+                          {(i + 1) * dx, (j + 1) * dy, (k + 1) * dz}};
+      });
+  Kokkos::Profiling::popRegion();
+
+  // TODO ray may contain a wavelength and an intensity.
+  Kokkos::Profiling::pushRegion("make_rays");
+  Kokkos::View<ArborX::Experimental::Ray *, MemorySpace> rays(
+      Kokkos::view_alloc(Kokkos::WithoutInitializing, "rays"), num_rays);
+  {
+    using RandPoolType = Kokkos::Random_XorShift64_Pool<>;
+    RandPoolType rand_pool(5374857);
+    using GeneratorType = RandPoolType::generator_type;
+
+    Kokkos::parallel_for(
+        "initialize_rays",
+        Kokkos::MDRangePolicy<Kokkos::Rank<2>, ExecutionSpace>(
+            exec_space, {0, 0}, {num_cells, num_rays / num_cells}),
+        KOKKOS_LAMBDA(const size_t i, const size_t j)
+        {
+          GeneratorType random_generator = rand_pool.get_state();
+          using Kokkos::Experimental::cos;
+          using Kokkos::Experimental::sin;
+          using Kokkos::Experimental::acos;
+
+          float xi_1 =
+              Kokkos::rand<GeneratorType, float>::draw(random_generator);
+          float xi_2 =
+              Kokkos::rand<GeneratorType, float>::draw(random_generator);
+          float xi_3 =
+              Kokkos::rand<GeneratorType, float>::draw(random_generator);
+          float xi_4 =
+              Kokkos::rand<GeneratorType, float>::draw(random_generator);
+          float xi_5 =
+              Kokkos::rand<GeneratorType, float>::draw(random_generator);
+
+          float upsilon = 2 * M_PI * xi_1;
+          float theta = acos(1 - 2 * xi_2);
+
+          rays(j + i * num_rays /
+                       num_cells) = {{xi_3 * dx + cells(i).minCorner()[0],
+                                      xi_4 * dy + cells(i).minCorner()[1],
+                                      xi_5 * dz + cells(i).minCorner()[2]},
+                                     {cos(upsilon) * sin(theta),
+                                      sin(upsilon) * sin(theta), cos(theta)}};
+
+          rand_pool.free_state(random_generator);
+        });
+  }
+  Kokkos::Profiling::popRegion();
+  Kokkos::Profiling::popRegion();
+
+  // Construct BVH
+  ArborX::BVH<MemorySpace> bvh{exec_space, cells};
+
+  // Trace Rays
+  Kokkos::View<float *, MemorySpace> ray_energy(
+      Kokkos::view_alloc("ray_energy", Kokkos::WithoutInitializing), num_rays);
+  Kokkos::parallel_for(
+      "init_ray_energy",
+      Kokkos::RangePolicy<ExecutionSpace>(exec_space, 0, num_rays),
+      KOKKOS_LAMBDA(int i)
+      {
+        constexpr float temperature = 2000.f;
+        constexpr float sigma = 5.67e-8; // Boltzmann constant
+        constexpr float ABSCO = 10.f;    // FIXME absorption coefficient?
+        float const cell_volume = dx * dy * dz;
+        using Kokkos::Experimental::pow;
+        ray_energy(i) = 4 * ABSCO * sigma * pow(temperature, 4) * cell_volume /
+                        (num_rays / num_cells);
+      });
+  Kokkos::View<float *, MemorySpace> my_energy("energy", num_cells);
+  ArborX::Experimental::traverse(
+      exec_space, bvh, Rays<MemorySpace>{rays},
+      DepositEnergy<MemorySpace>{cells, ray_energy, my_energy});
+
+  Kokkos::View<IntersectedCell *> values("values", 0);
+  Kokkos::View<int *> offsets("offsets", 0);
+  bvh.query(exec_space, Rays<MemorySpace>{rays},
+            AccumRaySphereOptDist<MemorySpace>{cells}, values,
+            offsets);
+
+  Kokkos::Profiling::pushRegion("sort_and_deposit");
+  Kokkos::Profiling::pushRegion("sort");
+#if 1
+  Kokkos::parallel_for(
+      "batched_sorting",
+      Kokkos::RangePolicy<ExecutionSpace>(exec_space, 0, num_rays),
+      KOKKOS_LAMBDA(int i)
+      {
+        auto *first = &values(offsets(i));
+        auto *last = &values(offsets(i + 1));
+        ArborX::Details::Less<IntersectedCell> compare;
+        ArborX::Details::makeHeap(first, last, compare);
+        ArborX::Details::sortHeap(first, last, compare);
+      });
+#else
+  ArborX::Details::sortObjects(exec_space, values);
+#endif
+  Kokkos::Profiling::popRegion();
+
+  Kokkos::Profiling::pushRegion("deposit");
+  Kokkos::View<float *, MemorySpace> energy("energy", num_cells);
+  Kokkos::parallel_for(
+      "poor_man_scan",
+      Kokkos::RangePolicy<ExecutionSpace>(exec_space, 0, num_rays),
+      KOKKOS_LAMBDA(int i)
+      {
+        constexpr float temperature = 2000.f;
+        constexpr float sigma = 5.67e-8; // Boltzmann constant
+        constexpr float ABSCO = 10.f;    // FIXME absorption coefficient?
+        float const cell_volume = dx * dy * dz;
+        using Kokkos::Experimental::pow;
+        using Kokkos::Experimental::expm1;
+        float ray_energy = 4 * ABSCO * sigma * pow(temperature, 4) *
+                           cell_volume / (num_rays / num_cells);
+        for (int j = offsets(i); j < offsets(i + 1); ++j)
+        {
+          float const energy_deposited =
+              -ray_energy * expm1(-values(j).optical_path_length);
+          ray_energy += energy_deposited;
+          Kokkos::atomic_add(&energy(values(j).cid), energy_deposited);
+        }
+      });
+  Kokkos::Profiling::popRegion();
+  Kokkos::Profiling::popRegion();
+
+#if 1
+  int n_errors = 0;
+  Kokkos::parallel_reduce(
+      "compare", Kokkos::RangePolicy<ExecutionSpace>(exec_space, 0, num_cells),
+      KOKKOS_LAMBDA(int i, int &error)
+      {
+        using Kokkos::Experimental::fabs;
+        if (energy(i) != 0. &&
+            fabs(my_energy(i) - energy(i)) / fabs(energy(i)) > 1e-6)
+        {
+          printf("%f != %f\n", my_energy(i), energy(i));
+          ++error;
+        }
+      },
+      n_errors);
+  std::cout << "errors = " << n_errors << '\n';
+#endif
+
+  return EXIT_SUCCESS;
+}
