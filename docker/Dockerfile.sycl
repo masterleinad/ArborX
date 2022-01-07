@@ -60,7 +60,7 @@ ENV PATH=${SYCL_DIR}/bin:$PATH
 
 # Install oneDPL
 ENV ONE_DPL_DIR=/opt/onedpl
-RUN ONE_DPL_VERSION=oneDPL-2021.3.0-release && \
+RUN ONE_DPL_VERSION=oneDPL-2021.6.0-release && \
     ONE_DPL_URL=https://github.com/oneapi-src/oneDPL/archive && \
     ONE_DPL_ARCHIVE=${ONE_DPL_VERSION}.tar.gz && \
     SCRATCH_DIR=/scratch && mkdir -p ${SCRATCH_DIR} && cd ${SCRATCH_DIR} && \
