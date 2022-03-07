@@ -69,8 +69,8 @@ BuildArborXMaster:
   script:
     - git fetch
     - export BRANCH_HASH=`git rev-parse HEAD`
-    - git worktree add -f ${CI_PROJECT_DIR}/arborx-master origin/arborx/ArborX/master
-    - cd ${CI_PROJECT_DIR}/arborx-master
+    - git worktree add -f ${CI_PROJECT_DIR}/arborx-master${BRANCH_HASH} origin/arborx/ArborX/master
+    - cd ${CI_PROJECT_DIR}/arborx-master${BRANCH_HASH}
     - mkdir build_master && cd build_master &&
       cmake -DCMAKE_PREFIX_PATH="/ccsopen/proj/csc333/kokkos.install;/ccsopen/proj/csc333/benchmark.install"
             -DCMAKE_CXX_COMPILER=/ccsopen/proj/csc333/kokkos.install/bin/nvcc_wrapper
@@ -80,6 +80,7 @@ BuildArborXMaster:
             -DARBORX_PERFORMANCE_TESTING=ON .. &&
       make ArborX_BoundingVolumeHierarchy.exe
     - cp ./benchmarks/bvh_driver/ArborX_BoundingVolumeHierarchy.exe /ccsopen/proj/csc333/ArborX_BoundingVolumeHierarchyMaster${BRANCH_HASH}.exe
+    - git worktree remove ${CI_PROJECT_DIR}/arborx-master${BRANCH_HASH}
   tags:
     - nobatch
 
