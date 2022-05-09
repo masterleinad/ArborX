@@ -3,8 +3,7 @@ FROM $BASE
 
 ARG NPROCS=4
 
-RUN apt-key del 8fa2af80 && \
-    apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/3bf863cc.pub
+RUN apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/3bf863cc.pub
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -yq \
         bc \
