@@ -3,7 +3,11 @@ FROM $BASE
 
 ARG NPROCS=4
 
-RUN apt-get update && apt-get install -y \
+RUN sudo apt-key del 7fa2af80 && \
+    wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/cuda-keyring_1.0-1_all.deb && \
+    sudo dpkg -i cuda-keyring_1.0-1_all.deb
+
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -yq \
         build-essential \
         bc \
         curl \
