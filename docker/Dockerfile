@@ -3,7 +3,7 @@ FROM $BASE
 
 ARG NPROCS=4
 
-RUN if [[ -z "{$NV_CUDA_LIB_VERSION}" ]]; then apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/3bf863cc.pub; fi
+RUN if test ${NV_CUDA_LIB_VERSION}; then apt-key adv --fetch-keys https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/3bf863cc.pub; fi
 
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -yq \
         build-essential \
