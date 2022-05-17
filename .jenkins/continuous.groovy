@@ -203,6 +203,7 @@ pipeline {
                                         -D CMAKE_CXX_COMPILER_LAUNCHER=ccache \
                                         -D CMAKE_CXX_COMPILER=clang++ \
                                         -D CMAKE_CXX_EXTENSIONS=OFF \
+                                        -D CMAKE_CXX_FLAGS="-DCUB_USE_COOPERATIVE_GROUPS" \
                                         -D CMAKE_PREFIX_PATH="$KOKKOS_DIR;$ARBORX_DIR" \
                                     examples \
                                 '''
