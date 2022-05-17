@@ -44,7 +44,7 @@ public:
   class Timer
   {
     entry_reference_type _entry;
-    bool _started;
+    bool _started = false;
     std::chrono::high_resolution_clock::time_point _tick;
 
   public:
