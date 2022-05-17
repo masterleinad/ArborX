@@ -48,7 +48,7 @@ public:
   {
     _streams.resize(n_instances);
     _instances.reserve(n_instances);
-    for (auto& stream: _streams)
+    for (auto &stream : _streams)
     {
       cudaStreamCreate(&stream);
       _instances.emplace_back(stream);
@@ -57,7 +57,7 @@ public:
 
   ~InstanceManager()
   {
-    for (auto& stream: _streams)
+    for (auto &stream : _streams)
       cudaStreamDestroy(stream);
   }
 
