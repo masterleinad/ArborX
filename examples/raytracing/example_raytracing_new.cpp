@@ -100,8 +100,8 @@ struct DepositEnergy
     float const optical_path_length = kappa * length;
 
     float const energy_deposited =
-        _ray_energy(predicate_index) * expm1(-optical_path_length);
-    _ray_energy(predicate_index) -= energy_deposited;
+        -_ray_energy(predicate_index) * expm1(-optical_path_length);
+    _ray_energy(predicate_index) += energy_deposited;
     Kokkos::atomic_add(&_energy(primitive_index), energy_deposited);
   }
 };
@@ -145,8 +145,11 @@ int main(int argc, char *argv[])
   float dz = Lz / (float)Nz;
 
   // TEST
-  if (num_rays % num_cells != 0)
-    std::cout << "ERROR: num_rays not divisible by num_cells" << std::endl;
+  if (num_rays % num_cells != 0) 
+  {
+    std::cerr << "num_rays: " << num_rays << ", num_cells: " << num_cells << '\n';	  
+    Kokkos::abort("ERROR: num_rays not divisible by num_cells\n");
+  }
 
   ExecutionSpace exec_space{};
 
@@ -233,17 +236,20 @@ int main(int argc, char *argv[])
                         (num_rays / num_cells);
       });
   Kokkos::View<float *, MemorySpace> my_energy("energy", num_cells);
+
+  Kokkos::Profiling::pushRegion("new_approach");
   ArborX::Experimental::traverse(
       exec_space, bvh, Rays<MemorySpace>{rays},
       DepositEnergy<MemorySpace>{cells, ray_energy, my_energy});
+  Kokkos::Profiling::popRegion();
 
+  Kokkos::Profiling::pushRegion("sort_and_deposit");
   Kokkos::View<IntersectedCell *> values("values", 0);
   Kokkos::View<int *> offsets("offsets", 0);
   bvh.query(exec_space, Rays<MemorySpace>{rays},
             AccumRaySphereOptDist<MemorySpace>{cells}, values,
             offsets);
 
-  Kokkos::Profiling::pushRegion("sort_and_deposit");
   Kokkos::Profiling::pushRegion("sort");
 #if 1
   Kokkos::parallel_for(
@@ -280,8 +286,8 @@ int main(int argc, char *argv[])
         for (int j = offsets(i); j < offsets(i + 1); ++j)
         {
           float const energy_deposited =
-              ray_energy * expm1(-values(j).optical_path_length);
-          ray_energy -= energy_deposited;
+              -ray_energy * expm1(-values(j).optical_path_length);
+          ray_energy += energy_deposited;
           Kokkos::atomic_add(&energy(values(j).cid), energy_deposited);
         }
       });
