@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
 
   bpo::options_description desc("Allowed options");
   desc.add_options()("help", "help message")(
-      "rays per box", bpo::value<int>(&num_rays)->default_value(100),
+      "rays per box", bpo::value<int>(&num_rays)->default_value(10),
       "number of rays")("Lx", bpo::value<float>(&Lx)->default_value(1.0),
                         "Length of X side")(
       "Ly", bpo::value<float>(&Ly)->default_value(1.0), "Length of Y side")(
@@ -239,19 +239,7 @@ int main(int argc, char *argv[])
   // Trace Rays
   Kokkos::View<float *, MemorySpace> ray_energy(
       Kokkos::view_alloc("ray_energy", Kokkos::WithoutInitializing), num_rays * num_cells);
-  Kokkos::parallel_for(
-      "init_ray_energy",
-      Kokkos::RangePolicy<ExecutionSpace>(exec_space, 0, num_rays * num_cells),
-      KOKKOS_LAMBDA(int i)
-      {
-        constexpr float temperature = 2000.f;
-        constexpr float sigma = 5.67e-8; // Boltzmann constant
-        constexpr float ABSCO = 10.f;    // FIXME absorption coefficient?
-        float const cell_volume = dx * dy * dz;
-        using Kokkos::Experimental::pow;
-        ray_energy(i) = 4 * ABSCO * sigma * pow(temperature, 4) * cell_volume /
-                        num_rays;
-      });
+  Kokkos::deep_copy(ray_energy, (4000.* dx*dy*dz)/num_rays);
   Kokkos::View<float *, MemorySpace> my_energy("energy", num_cells);
 
   Kokkos::Profiling::pushRegion("new_approach");
@@ -292,14 +280,7 @@ int main(int argc, char *argv[])
       Kokkos::RangePolicy<ExecutionSpace>(exec_space, 0, num_rays * num_cells),
       KOKKOS_LAMBDA(int i)
       {
-        constexpr float temperature = 2000.f;
-        constexpr float sigma = 5.67e-8; // Boltzmann constant
-        constexpr float ABSCO = 10.f;    // FIXME absorption coefficient?
-        float const cell_volume = dx * dy * dz;
-        using Kokkos::Experimental::pow;
-        using Kokkos::Experimental::expm1;
-        float ray_energy = 4 * ABSCO * sigma * pow(temperature, 4) *
-                           cell_volume / num_rays;
+        float ray_energy = (4000.* dx*dy*dz)/num_rays;
         for (int j = offsets(i); j < offsets(i + 1); ++j)
         {
           float const energy_deposited =
