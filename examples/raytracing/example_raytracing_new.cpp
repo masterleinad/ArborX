@@ -9,12 +9,12 @@
  * SPDX-License-Identifier: BSD-3-Clause                                    *
  ****************************************************************************/
 
-#include "ArborX_ExperimentalTreeTraversal.hpp"
 #include <ArborX.hpp>
 #include <ArborX_Ray.hpp>
 
 #include <Kokkos_Random.hpp>
 
+#include "ArborX_ExperimentalTreeTraversal.hpp"
 #include <boost/program_options.hpp>
 
 template <typename MemorySpace>
@@ -92,18 +92,16 @@ struct DepositEnergy
                                   int const primitive_index) const
   {
     using Kokkos::Experimental::expm1;
-    float length;
-    float entrylength;
     auto const &ray = ArborX::getGeometry(predicate);
     auto const &cell = _cells(primitive_index);
     int const predicate_index = ArborX::getData(predicate);
     float const kappa = 1.; // NOTE may depend on cell
-    ArborX::Experimental::overlapDistance(ray, cell, length, entrylength);
+    float const length = ArborX::Experimental::overlapDistance(ray, cell);
     float const optical_path_length = kappa * length;
 
     float const energy_deposited =
-        -_ray_energy(predicate_index) * expm1(-optical_path_length);
-    _ray_energy(predicate_index) += energy_deposited;
+        _ray_energy(predicate_index) * expm1(-optical_path_length);
+    _ray_energy(predicate_index) -= energy_deposited;
     Kokkos::atomic_add(&_energy(primitive_index), energy_deposited);
   }
 };
@@ -282,8 +280,8 @@ int main(int argc, char *argv[])
         for (int j = offsets(i); j < offsets(i + 1); ++j)
         {
           float const energy_deposited =
-              -ray_energy * expm1(-values(j).optical_path_length);
-          ray_energy += energy_deposited;
+              ray_energy * expm1(-values(j).optical_path_length);
+          ray_energy -= energy_deposited;
           Kokkos::atomic_add(&energy(values(j).cid), energy_deposited);
         }
       });

@@ -534,12 +534,13 @@ KOKKOS_INLINE_FUNCTION bool intersection(Ray const &ray, Sphere const &sphere,
   return false;
 }
 
+template <typename Geometry>
 KOKKOS_INLINE_FUNCTION float overlapDistance(Ray const &ray,
-                                             Sphere const &sphere)
+                                             Geometry const &geometry)
 {
   float tmin;
   float tmax;
-  if (!intersection(ray, sphere, tmin, tmax) || (tmax < 0))
+  if (!intersection(ray, geometry, tmin, tmax) || (tmax < 0))
   {
     return 0.f;
   }

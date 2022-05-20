@@ -83,13 +83,9 @@ struct PriorityBasedTreeTraversal
 
     auto const distance = [ray = getGeometry(predicate), bvh = _bvh](int node)
     {
-      float tmin;
-      float tmax;
       auto const &box = HappyTreeFriends::getBoundingVolume(bvh, node);
-      bool const ray_intersects_box = intersection(ray, box, tmin, tmax);
-      assert(ray_intersects_box);
-      (void)ray_intersects_box;
-      return tmin;
+      using Details::distance;
+      return distance(ray, box);
     };
 
     using PairIndexDistance = Kokkos::pair<int, float>;
@@ -164,7 +160,7 @@ struct PriorityBasedTreeTraversal
                    : right_child;
         if (traverse_left && traverse_right)
         {
-          *heap_last++ = node == left_child
+          *heap_last++ = (node == left_child)
                              ? Kokkos::make_pair(right_child, distance_right)
                              : Kokkos::make_pair(left_child, distance_left);
           pushHeap(heap, heap_last, compare);
