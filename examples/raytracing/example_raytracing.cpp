@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2017-2022 by the ArborX authors                            *
+ * Copyright (c) 2017-2021 by the ArborX authors                            *
  * All rights reserved.                                                     *
  *                                                                          *
  * This file is part of the ArborX library. ArborX is                       *
@@ -9,43 +9,31 @@
  * SPDX-License-Identifier: BSD-3-Clause                                    *
  ****************************************************************************/
 
+/* 
+ * This example demonstrates how to use ArborX for a raytracing example where
+ * rays carry energy that they are deposit onto given boxes as they hit 
+ * them. The order in which these rays (which originate from one of the boxes)
+ * hit the boxes is important in this case,
+ * since the Ray loses energy on intersection.
+ * The example shows two different ways to do that:
+ * 1.) using a specialized traversal that orders all intersection in a heap
+ *     so that the callbacks for a sepcific ray are called in the correct order
+ * 2.) storing all intersections and doing the deposition of energy in a
+ *     postprocessing step.
+ */
+
 #include <ArborX.hpp>
 #include <ArborX_Ray.hpp>
-#include <ArborX_Version.hpp>
 
-#include <Kokkos_Core.hpp>
+#include <Kokkos_Random.hpp>
 
+#include "ArborX_ExperimentalTreeTraversal.hpp"
 #include <boost/program_options.hpp>
 
-#include <iostream>
-#include <random>
 
-template <typename MemorySpace>
-struct SpheresToBoxes
-{
-  Kokkos::View<ArborX::Sphere *, MemorySpace> _spheres;
-};
-
-template <typename MemorySpace>
-struct ArborX::AccessTraits<SpheresToBoxes<MemorySpace>, ArborX::PrimitivesTag>
-{
-  using memory_space = MemorySpace;
-
-  KOKKOS_FUNCTION static std::size_t
-  size(const SpheresToBoxes<MemorySpace> &stob)
-  {
-    return stob._spheres.extent(0);
-  }
-  KOKKOS_FUNCTION static ArborX::Box
-  get(SpheresToBoxes<MemorySpace> const &stobs, std::size_t const i)
-  {
-    auto const &sphere = stobs._spheres(i);
-    auto const &c = sphere.centroid();
-    auto const r = sphere.radius();
-    return {{c[0] - r, c[1] - r, c[2] - r}, {c[0] + r, c[1] + r, c[2] + r}};
-  }
-};
-
+/* 
+ * Storage for the rays and access traits used in the query/traverse 
+ */
 template <typename MemorySpace>
 struct Rays
 {
@@ -56,34 +44,92 @@ template <typename MemorySpace>
 struct ArborX::AccessTraits<Rays<MemorySpace>, ArborX::PredicatesTag>
 {
   using memory_space = MemorySpace;
+  using size_type = std::size_t;
 
-  KOKKOS_FUNCTION static std::size_t size(const Rays<MemorySpace> &rays)
+  KOKKOS_FUNCTION
+  static size_type size(const Rays<MemorySpace> &rays)
   {
     return rays._rays.extent(0);
   }
-  KOKKOS_FUNCTION static auto get(Rays<MemorySpace> const &rays, std::size_t i)
+  KOKKOS_FUNCTION
+  static auto get(Rays<MemorySpace> const &rays, size_type i)
   {
     return attach(intersects(rays._rays(i)), (int)i);
   }
 };
 
-template <typename MemorySpace>
-struct AccumRaySphereInterDist
+/*
+ * In the second approach, the IntersectedCell struct is used for storing all
+ * intersection between rays and boxes that are detected when calling the 
+ * AccumRaySphereOptDist struct.
+ */
+struct IntersectedCell
 {
-  Kokkos::View<ArborX::Sphere *, MemorySpace> _spheres;
-  Kokkos::View<float *, MemorySpace> _accumulator;
+  float key;                 // distance between origin of ray and first intersection
+  float optical_path_length; // optical distance through box
+  int cid;                   // box ID
+  int rid;                   // ray ID
+  friend KOKKOS_FUNCTION bool operator<(IntersectedCell const &l,
+                                        IntersectedCell const &r)
+  {
+    if (l.rid == r.rid)
+      return l.key < r.key;
+    return l.rid < r.rid;
+  }
+};
+
+template <typename MemorySpace>
+struct AccumRaySphereOptDist
+{
+  Kokkos::View<ArborX::Box *, MemorySpace> _boxes;
+
+  template <typename Predicate, typename OutputFunctor>
+  KOKKOS_FUNCTION void operator()(Predicate const &predicate,
+                                  int const primitive_index,
+                                  OutputFunctor const &out) const
+  {
+    float length;
+    float entrylength;
+    auto const &ray = ArborX::getGeometry(predicate);
+    auto const &box = _boxes(primitive_index);
+    int const predicate_index = ArborX::getData(predicate);
+    float const kappa = 1.; // NOTE may depend on box
+    ArborX::Experimental::overlapDistance(ray, box, length, entrylength);
+    out(IntersectedCell{/*key*/ entrylength,
+                        /*optical_path_length*/ kappa * length,
+                        /*cid*/ primitive_index,
+                        /*rid*/ predicate_index});
+  }
+};
+
+/*
+ * The DepositEnergy struct is used in the first approach to dircetly deposit energy.
+ */
+template <typename MemorySpace>
+struct DepositEnergy
+{
+  Kokkos::View<ArborX::Box *, MemorySpace> _boxes;
+  Kokkos::View<float *, MemorySpace> _ray_energy;
+  Kokkos::View<float *, MemorySpace> _energy;
 
   template <typename Predicate>
   KOKKOS_FUNCTION void operator()(Predicate const &predicate,
                                   int const primitive_index) const
   {
+    float length;
+    float entrylength;
+    using Kokkos::Experimental::expm1;
     auto const &ray = ArborX::getGeometry(predicate);
-    auto const &sphere = _spheres(primitive_index);
+    auto const &box = _boxes(primitive_index);
+    int const predicate_index = ArborX::getData(predicate);
+    float const kappa = 1.; // NOTE may depend on box
+    ArborX::Experimental::overlapDistance(ray, box, length, entrylength);
+    float const optical_path_length = kappa * length;
 
-    float const length = overlapDistance(ray, sphere);
-    int const i = getData(predicate);
-
-    Kokkos::atomic_add(&_accumulator(i), length);
+    float const energy_deposited =
+        -_ray_energy(predicate_index) * expm1(-optical_path_length);
+    _ray_energy(predicate_index) += energy_deposited;
+    Kokkos::atomic_add(&_energy(primitive_index), energy_deposited);
   }
 };
 
@@ -96,19 +142,20 @@ int main(int argc, char *argv[])
 
   namespace bpo = boost::program_options;
 
-  int num_spheres;
+  int Nx, Ny, Nz;
   int num_rays;
-  float L;
+  float Lx, Ly, Lz;
 
   bpo::options_description desc("Allowed options");
-  // clang-format off
-  desc.add_options()
-    ( "help", "help message" )
-    ("spheres", bpo::value<int>(&num_spheres)->default_value(100), "number of spheres")
-    ("rays", bpo::value<int>(&num_rays)->default_value(10000), "number of rays")
-    ("L", bpo::value<float>(&L)->default_value(100.0), "size of the domain")
-    ;
-  // clang-format on
+  desc.add_options()("help", "help message")(
+      "rays per box", bpo::value<int>(&num_rays)->default_value(10),
+      "number of rays")("Lx", bpo::value<float>(&Lx)->default_value(1.0),
+                        "Length of X side")(
+      "Ly", bpo::value<float>(&Ly)->default_value(1.0), "Length of Y side")(
+      "Lz", bpo::value<float>(&Lz)->default_value(1.0), "Length of Z side")(
+      "Nx", bpo::value<int>(&Nx)->default_value(1000), "number of X boxes")(
+      "Ny", bpo::value<int>(&Ny)->default_value(1000), "number of Y boxes")(
+      "Nz", bpo::value<int>(&Nz)->default_value(1000), "number of Z boxes");
   bpo::variables_map vm;
   bpo::store(bpo::command_line_parser(argc, argv).options(desc).run(), vm);
   bpo::notify(vm);
@@ -119,83 +166,148 @@ int main(int argc, char *argv[])
     return 1;
   }
 
-  std::cout << "ArborX version: " << ArborX::version() << std::endl;
-  std::cout << "ArborX hash   : " << ArborX::gitCommitHash() << std::endl;
-  std::cout << "Kokkos version: " << KokkosExt::version() << std::endl;
-
-  std::uniform_real_distribution<float> uniform{0.0, 1.0};
-  std::default_random_engine gen;
-  auto rand_uniform = [&]() { return uniform(gen); };
-
-  // Random parameters for Gaussian distribution of radii
-  const float mu_R = 1.0;
-  const float sigma_R = mu_R / 3.0;
-
-  std::normal_distribution<> normal{mu_R, sigma_R};
-  auto rand_normal = [&]() { return std::max(normal(gen), 0.0); };
-
-  // Construct spheres
-  //
-  // The centers of spheres are uniformly sampling the domain. The radii of
-  // spheres have Gaussian (mu_R, sigma_R) sampling.
-  Kokkos::View<ArborX::Sphere *, MemorySpace> spheres(
-      Kokkos::view_alloc(Kokkos::WithoutInitializing, "spheres"), num_spheres);
-  auto spheres_host = Kokkos::create_mirror_view(spheres);
-  for (int i = 0; i < num_spheres; ++i)
-  {
-    spheres_host(i) = {
-        {rand_uniform() * L, rand_uniform() * L, rand_uniform() * L},
-        rand_normal()};
-  }
-  Kokkos::deep_copy(spheres, spheres_host);
-
-  // Construct rays
-  //
-  // The origins of rays are uniformly sampling the bottom surface of the
-  // domain. The direction vectors are uniformly sampling of a cosine-weighted
-  // hemisphere, It requires expressing the direction vector in the spherical
-  // coordinates as:
-  //    {sinpolar * cosazimuth, sinpolar * sinazimuth, cospolar}
-  // A detailed description can be found in the slides here (slide 47):
-  // https://cg.informatik.uni-freiburg.de/course_notes/graphics2_08_renderingEquation.pdf
-  Kokkos::View<ArborX::Experimental::Ray *, MemorySpace> rays(
-      Kokkos::view_alloc(Kokkos::WithoutInitializing, "rays"), num_rays);
-  auto rays_host = Kokkos::create_mirror_view(rays);
-
-  for (int i = 0; i < num_rays; ++i)
-  {
-    float xi_1 = rand_uniform();
-    float xi_2 = rand_uniform();
-
-    rays_host(i) = {ArborX::Point{rand_uniform() * L, rand_uniform() * L, 0.f},
-                    ArborX::Experimental::Vector{
-                        float(std::cos(2 * M_PI * xi_2) * std::sqrt(xi_1)),
-                        float(std::sin(2 * M_PI * xi_2) * std::sqrt(xi_1)),
-                        std::sqrt(1.f - xi_1)}};
-  }
-  Kokkos::deep_copy(rays, rays_host);
-
-  Kokkos::Timer timer;
+  int num_boxes = Nx * Ny * Nz;
+  float dx = Lx / (float)Nx;
+  float dy = Ly / (float)Ny;
+  float dz = Lz / (float)Nz;
 
   ExecutionSpace exec_space{};
 
-  exec_space.fence();
-  timer.reset();
-  ArborX::BVH<MemorySpace> bvh{exec_space,
-                               SpheresToBoxes<MemorySpace>{spheres}};
+  Kokkos::Profiling::pushRegion("problem_setup");
+  Kokkos::Profiling::pushRegion("make_grid");
+  Kokkos::View<ArborX::Box *, MemorySpace> boxes(
+      Kokkos::view_alloc(exec_space, Kokkos::WithoutInitializing, "boxes"), num_boxes);
+  Kokkos::parallel_for(
+      "initialize_boxes",
+      Kokkos::MDRangePolicy<Kokkos::Rank<3>, ExecutionSpace>(
+          exec_space, {0, 0, 0}, {Nx, Ny, Nz}),
+      KOKKOS_LAMBDA(int i, int j, int k)
+      {
+        int const box_id = i + Nx * j + Nx * Ny * k;
+        boxes(box_id) = {{i * dx, j * dy, k * dz},
+                          {(i + 1) * dx, (j + 1) * dy, (k + 1) * dz}};
+      });
+  Kokkos::Profiling::popRegion();
 
-  Kokkos::View<float *, MemorySpace> accumulator("accumulator", num_rays);
+  // For every box shoot rays from random (uniformly distributed) points inside
+  // the box in random (uniformly distributed) directions.
+  Kokkos::Profiling::pushRegion("make_rays");
+  Kokkos::View<ArborX::Experimental::Ray *, MemorySpace> rays(
+      Kokkos::view_alloc(Kokkos::WithoutInitializing, "rays"), num_rays * num_boxes);
+  {
+    using RandPoolType = Kokkos::Random_XorShift64_Pool<>;
+    RandPoolType rand_pool(5374857);
+    using GeneratorType = RandPoolType::generator_type;
+
+    Kokkos::parallel_for(
+        "initialize_rays",
+        Kokkos::MDRangePolicy<Kokkos::Rank<2>, ExecutionSpace>(
+            exec_space, {0, 0}, {num_boxes, num_rays}),
+        KOKKOS_LAMBDA(const size_t i, const size_t j)
+        {
+          GeneratorType random_generator = rand_pool.get_state();
+          using Kokkos::Experimental::cos;
+          using Kokkos::Experimental::sin;
+          using Kokkos::Experimental::acos;
+
+          float xi_1 =
+              Kokkos::rand<GeneratorType, float>::draw(random_generator);
+          float xi_2 =
+              Kokkos::rand<GeneratorType, float>::draw(random_generator);
+          float xi_3 =
+              Kokkos::rand<GeneratorType, float>::draw(random_generator);
+          float xi_4 =
+              Kokkos::rand<GeneratorType, float>::draw(random_generator);
+          float xi_5 =
+              Kokkos::rand<GeneratorType, float>::draw(random_generator);
+
+          float upsilon = 2 * M_PI * xi_1;
+          float theta = acos(1 - 2 * xi_2);
+
+          rays(j + i * num_rays) = {{xi_3 * dx + boxes(i).minCorner()[0],
+                                      xi_4 * dy + boxes(i).minCorner()[1],
+                                      xi_5 * dz + boxes(i).minCorner()[2]},
+                                     {cos(upsilon) * sin(theta),
+                                      sin(upsilon) * sin(theta), cos(theta)}};
+
+          rand_pool.free_state(random_generator);
+        });
+  }
+  Kokkos::Profiling::popRegion();
+  Kokkos::Profiling::popRegion();
+
+  // Construct BVH
+  ArborX::BVH<MemorySpace> bvh{exec_space, boxes};
+
+  // Trace Rays
+  Kokkos::View<float *, MemorySpace> ray_energy(
+      Kokkos::view_alloc("ray_energy", Kokkos::WithoutInitializing), num_rays * num_boxes);
+  Kokkos::deep_copy(ray_energy, (4000.* dx*dy*dz)/num_rays);
+  Kokkos::View<float *, MemorySpace> my_energy("energy", num_boxes);
+
+  Kokkos::Profiling::pushRegion("first_approach");
+  ArborX::Experimental::traverse(
+      exec_space, bvh, Rays<MemorySpace>{rays},
+      DepositEnergy<MemorySpace>{boxes, ray_energy, my_energy});
+  Kokkos::Profiling::popRegion();
+
+  Kokkos::Profiling::pushRegion("second_approach");
+  Kokkos::View<IntersectedCell *> values("values", 0);
+  Kokkos::View<int *> offsets("offsets", 0);
   bvh.query(exec_space, Rays<MemorySpace>{rays},
-            AccumRaySphereInterDist<MemorySpace>{spheres, accumulator});
-  exec_space.fence();
-  auto time = timer.seconds();
+            AccumRaySphereOptDist<MemorySpace>{boxes}, values,
+            offsets);
 
-  auto accumulator_avg =
-      ArborX::accumulate(exec_space, accumulator, 0.f) / num_rays;
+  Kokkos::parallel_for(
+      "batched_sorting",
+      Kokkos::RangePolicy<ExecutionSpace>(exec_space, 0, num_rays * num_boxes),
+      KOKKOS_LAMBDA(int i)
+      {
+        auto *first = &values(offsets(i));
+        auto *last = &values(offsets(i + 1));
+        ArborX::Details::Less<IntersectedCell> compare;
+        ArborX::Details::makeHeap(first, last, compare);
+        ArborX::Details::sortHeap(first, last, compare);
+      });
 
-  printf("time          : %.3f   [%.3fM ray/sec]\n", time,
-         num_rays / (1000000 * time));
-  printf("ray avg       : %.3f\n", accumulator_avg);
+  Kokkos::View<float *, MemorySpace> energy("energy", num_boxes);
+  Kokkos::parallel_for(
+      "deposit_energy",
+      Kokkos::RangePolicy<ExecutionSpace>(exec_space, 0, num_rays * num_boxes),
+      KOKKOS_LAMBDA(int i)
+      {
+        float ray_energy = (4000.* dx*dy*dz)/num_rays;
+        for (int j = offsets(i); j < offsets(i + 1); ++j)
+        {
+          float const energy_deposited =
+              -ray_energy * expm1(-values(j).optical_path_length);
+          ray_energy += energy_deposited;
+          Kokkos::atomic_add(&energy(values(j).cid), energy_deposited);
+        }
+      });
+  Kokkos::Profiling::popRegion();
+
+  // Now check that the results we got are the same apart from numerical errors
+  // introduced by depositing energy to a particular cell from differnt rays
+  // in different order.
+  int n_errors = 0;
+  float rel_tol = 1.e-5; 
+  Kokkos::parallel_reduce(
+      "compare", Kokkos::RangePolicy<ExecutionSpace>(exec_space, 0, num_boxes),
+      KOKKOS_LAMBDA(int i, int &error)
+      {
+        using Kokkos::Experimental::fabs;
+	float const rel_error = (energy(i) == 0.f)?0.f: fabs(my_energy(i) - energy(i)) / fabs(energy(i));
+        if (rel_error > rel_tol)
+        {
+#ifndef KOKKOS_ENABLE_SYCL
+          printf("%d: %f != %f, relative error: %f\n", i, my_energy(i), energy(i), rel_error);
+#endif
+          ++error;
+        }
+      },
+      n_errors);
+  std::cout << "errors = " << n_errors << '\n';
 
   return EXIT_SUCCESS;
 }
