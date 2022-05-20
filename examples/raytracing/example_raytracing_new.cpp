@@ -245,21 +245,19 @@ int main(int argc, char *argv[])
   Kokkos::deep_copy(ray_energy, (4000.* dx*dy*dz)/num_rays);
   Kokkos::View<float *, MemorySpace> my_energy("energy", num_boxes);
 
-  Kokkos::Profiling::pushRegion("new_approach");
+  Kokkos::Profiling::pushRegion("first_approach");
   ArborX::Experimental::traverse(
       exec_space, bvh, Rays<MemorySpace>{rays},
       DepositEnergy<MemorySpace>{boxes, ray_energy, my_energy});
   Kokkos::Profiling::popRegion();
 
-  Kokkos::Profiling::pushRegion("sort_and_deposit");
+  Kokkos::Profiling::pushRegion("second_approach");
   Kokkos::View<IntersectedCell *> values("values", 0);
   Kokkos::View<int *> offsets("offsets", 0);
   bvh.query(exec_space, Rays<MemorySpace>{rays},
             AccumRaySphereOptDist<MemorySpace>{boxes}, values,
             offsets);
 
-  Kokkos::Profiling::pushRegion("sort");
-#if 1
   Kokkos::parallel_for(
       "batched_sorting",
       Kokkos::RangePolicy<ExecutionSpace>(exec_space, 0, num_rays * num_boxes),
@@ -271,15 +269,10 @@ int main(int argc, char *argv[])
         ArborX::Details::makeHeap(first, last, compare);
         ArborX::Details::sortHeap(first, last, compare);
       });
-#else
-  ArborX::Details::sortObjects(exec_space, values);
-#endif
-  Kokkos::Profiling::popRegion();
 
-  Kokkos::Profiling::pushRegion("deposit");
   Kokkos::View<float *, MemorySpace> energy("energy", num_boxes);
   Kokkos::parallel_for(
-      "poor_man_scan",
+      "deposit_energy",
       Kokkos::RangePolicy<ExecutionSpace>(exec_space, 0, num_rays * num_boxes),
       KOKKOS_LAMBDA(int i)
       {
@@ -293,25 +286,28 @@ int main(int argc, char *argv[])
         }
       });
   Kokkos::Profiling::popRegion();
-  Kokkos::Profiling::popRegion();
 
-#if 1
+  // Now check that the results we got are the same apart from numerical errors
+  // introduced by depositing energy to a particular cell from differnt rays
+  // in different order.
   int n_errors = 0;
+  float rel_tol = 1.e-5; 
   Kokkos::parallel_reduce(
       "compare", Kokkos::RangePolicy<ExecutionSpace>(exec_space, 0, num_boxes),
       KOKKOS_LAMBDA(int i, int &error)
       {
         using Kokkos::Experimental::fabs;
-        if (energy(i) != 0. &&
-            fabs(my_energy(i) - energy(i)) / fabs(energy(i)) > 1e-5)
+	float const rel_error = (energy(i) == 0.f)?0.f: fabs(my_energy(i) - energy(i)) / fabs(energy(i));
+        if (rel_error > rel_tol)
         {
-          printf("%f != %f, relative error: %f\n", my_energy(i), energy(i), std::abs(my_energy(i)-energy(i))/energy(i));
+#ifndef KOKKOS_ENABLE_SYCL
+          printf("%d: %f != %f, relative error: %f\n", i, my_energy(i), energy(i), rel_error);
+#endif
           ++error;
         }
       },
       n_errors);
   std::cout << "errors = " << n_errors << '\n';
-#endif
 
   return EXIT_SUCCESS;
 }
