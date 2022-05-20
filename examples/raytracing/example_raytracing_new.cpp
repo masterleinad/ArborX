@@ -9,6 +9,18 @@
  * SPDX-License-Identifier: BSD-3-Clause                                    *
  ****************************************************************************/
 
+/* 
+ * This example demonstrates how to use ArborX for a raytracing examplei where
+ * the rays carry energy that they are deposit onto given cells as they hit 
+ * them. The order in which a ray hits the cells is important in this case,
+ * since the Ray loses energy on intersection.
+ * The example shows two different ways to do that:
+ * 1.) using a specialized traversal that orders all intersection in a heap
+ *     so that the callbacks for a sepcific ray are called in the correct order
+ * 2.) storing all intersections and doing the deposition of energy in a
+ *     postprocessing step.
+ */
+
 #include <ArborX.hpp>
 #include <ArborX_Ray.hpp>
 
@@ -17,6 +29,10 @@
 #include "ArborX_ExperimentalTreeTraversal.hpp"
 #include <boost/program_options.hpp>
 
+
+/* 
+ * Storage for the rays and access traits used in the query/traverse 
+ */
 template <typename MemorySpace>
 struct Rays
 {
@@ -41,9 +57,14 @@ struct ArborX::AccessTraits<Rays<MemorySpace>, ArborX::PredicatesTag>
   }
 };
 
+/*
+ * In the second approach, the IntersectedCell struct is used for storing all
+ * intersection between rays and cells that are detected when calling the 
+ * AccumRaySphereOptDist struct.
+ */
 struct IntersectedCell
 {
-  float key;                 // intersection ray distance
+  float key;                 // distance between origin of ray and first intersection
   float optical_path_length; // optical distance through cell
   int cid;                   // cell ID
   int rid;                   // ray ID
@@ -80,6 +101,9 @@ struct AccumRaySphereOptDist
   }
 };
 
+/*
+ * The DepositEnergy struct is used in the first approach to dircetly deposit energy.
+ */
 template <typename MemorySpace>
 struct DepositEnergy
 {
@@ -123,7 +147,7 @@ int main(int argc, char *argv[])
 
   bpo::options_description desc("Allowed options");
   desc.add_options()("help", "help message")(
-      "rays", bpo::value<int>(&num_rays)->default_value(10000),
+      "rays per box", bpo::value<int>(&num_rays)->default_value(100),
       "number of rays")("Lx", bpo::value<float>(&Lx)->default_value(1.0),
                         "Length of X side")(
       "Ly", bpo::value<float>(&Ly)->default_value(1.0), "Length of Y side")(
@@ -146,14 +170,6 @@ int main(int argc, char *argv[])
   float dy = Ly / (float)Ny;
   float dz = Lz / (float)Nz;
 
-  // TEST
-  std::cerr << "num_rays: " << num_rays << ", num_cells: " << num_cells << '\n';
-  if (num_rays % num_cells != 0) 
-  {
-    std::cerr << "num_rays: " << num_rays << ", num_cells: " << num_cells << '\n';	  
-    Kokkos::abort("ERROR: num_rays not divisible by num_cells\n");
-  }
-
   ExecutionSpace exec_space{};
 
   Kokkos::Profiling::pushRegion("problem_setup");
@@ -172,10 +188,9 @@ int main(int argc, char *argv[])
       });
   Kokkos::Profiling::popRegion();
 
-  // TODO ray may contain a wavelength and an intensity.
   Kokkos::Profiling::pushRegion("make_rays");
   Kokkos::View<ArborX::Experimental::Ray *, MemorySpace> rays(
-      Kokkos::view_alloc(Kokkos::WithoutInitializing, "rays"), num_rays);
+      Kokkos::view_alloc(Kokkos::WithoutInitializing, "rays"), num_rays * num_cells);
   {
     using RandPoolType = Kokkos::Random_XorShift64_Pool<>;
     RandPoolType rand_pool(5374857);
@@ -184,7 +199,7 @@ int main(int argc, char *argv[])
     Kokkos::parallel_for(
         "initialize_rays",
         Kokkos::MDRangePolicy<Kokkos::Rank<2>, ExecutionSpace>(
-            exec_space, {0, 0}, {num_cells, num_rays / num_cells}),
+            exec_space, {0, 0}, {num_cells, num_rays}),
         KOKKOS_LAMBDA(const size_t i, const size_t j)
         {
           GeneratorType random_generator = rand_pool.get_state();
@@ -206,8 +221,7 @@ int main(int argc, char *argv[])
           float upsilon = 2 * M_PI * xi_1;
           float theta = acos(1 - 2 * xi_2);
 
-          rays(j + i * num_rays /
-                       num_cells) = {{xi_3 * dx + cells(i).minCorner()[0],
+          rays(j + i * num_rays) = {{xi_3 * dx + cells(i).minCorner()[0],
                                       xi_4 * dy + cells(i).minCorner()[1],
                                       xi_5 * dz + cells(i).minCorner()[2]},
                                      {cos(upsilon) * sin(theta),
@@ -224,10 +238,10 @@ int main(int argc, char *argv[])
 
   // Trace Rays
   Kokkos::View<float *, MemorySpace> ray_energy(
-      Kokkos::view_alloc("ray_energy", Kokkos::WithoutInitializing), num_rays);
+      Kokkos::view_alloc("ray_energy", Kokkos::WithoutInitializing), num_rays * num_cells);
   Kokkos::parallel_for(
       "init_ray_energy",
-      Kokkos::RangePolicy<ExecutionSpace>(exec_space, 0, num_rays),
+      Kokkos::RangePolicy<ExecutionSpace>(exec_space, 0, num_rays * num_cells),
       KOKKOS_LAMBDA(int i)
       {
         constexpr float temperature = 2000.f;
@@ -236,7 +250,7 @@ int main(int argc, char *argv[])
         float const cell_volume = dx * dy * dz;
         using Kokkos::Experimental::pow;
         ray_energy(i) = 4 * ABSCO * sigma * pow(temperature, 4) * cell_volume /
-                        (num_rays / num_cells);
+                        num_rays;
       });
   Kokkos::View<float *, MemorySpace> my_energy("energy", num_cells);
 
@@ -257,7 +271,7 @@ int main(int argc, char *argv[])
 #if 1
   Kokkos::parallel_for(
       "batched_sorting",
-      Kokkos::RangePolicy<ExecutionSpace>(exec_space, 0, num_rays),
+      Kokkos::RangePolicy<ExecutionSpace>(exec_space, 0, num_rays * num_cells),
       KOKKOS_LAMBDA(int i)
       {
         auto *first = &values(offsets(i));
@@ -275,7 +289,7 @@ int main(int argc, char *argv[])
   Kokkos::View<float *, MemorySpace> energy("energy", num_cells);
   Kokkos::parallel_for(
       "poor_man_scan",
-      Kokkos::RangePolicy<ExecutionSpace>(exec_space, 0, num_rays),
+      Kokkos::RangePolicy<ExecutionSpace>(exec_space, 0, num_rays * num_cells),
       KOKKOS_LAMBDA(int i)
       {
         constexpr float temperature = 2000.f;
@@ -285,7 +299,7 @@ int main(int argc, char *argv[])
         using Kokkos::Experimental::pow;
         using Kokkos::Experimental::expm1;
         float ray_energy = 4 * ABSCO * sigma * pow(temperature, 4) *
-                           cell_volume / (num_rays / num_cells);
+                           cell_volume / num_rays;
         for (int j = offsets(i); j < offsets(i + 1); ++j)
         {
           float const energy_deposited =
