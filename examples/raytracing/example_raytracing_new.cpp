@@ -91,12 +91,14 @@ struct DepositEnergy
   KOKKOS_FUNCTION void operator()(Predicate const &predicate,
                                   int const primitive_index) const
   {
+    float length;
+    float entrylength;
     using Kokkos::Experimental::expm1;
     auto const &ray = ArborX::getGeometry(predicate);
     auto const &cell = _cells(primitive_index);
     int const predicate_index = ArborX::getData(predicate);
     float const kappa = 1.; // NOTE may depend on cell
-    float const length = ArborX::Experimental::overlapDistance(ray, cell);
+    ArborX::Experimental::overlapDistance(ray, cell, length, entrylength);
     float const optical_path_length = kappa * length;
 
     float const energy_deposited =
@@ -145,6 +147,7 @@ int main(int argc, char *argv[])
   float dz = Lz / (float)Nz;
 
   // TEST
+  std::cerr << "num_rays: " << num_rays << ", num_cells: " << num_cells << '\n';
   if (num_rays % num_cells != 0) 
   {
     std::cerr << "num_rays: " << num_rays << ", num_cells: " << num_cells << '\n';	  
@@ -302,9 +305,9 @@ int main(int argc, char *argv[])
       {
         using Kokkos::Experimental::fabs;
         if (energy(i) != 0. &&
-            fabs(my_energy(i) - energy(i)) / fabs(energy(i)) > 1e-6)
+            fabs(my_energy(i) - energy(i)) / fabs(energy(i)) > 1e-5)
         {
-          printf("%f != %f\n", my_energy(i), energy(i));
+          printf("%f != %f, relative error: %f\n", my_energy(i), energy(i), std::abs(my_energy(i)-energy(i))/energy(i));
           ++error;
         }
       },
