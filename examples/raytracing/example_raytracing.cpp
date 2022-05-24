@@ -54,7 +54,7 @@ struct ArborX::AccessTraits<Rays<MemorySpace>, ArborX::PredicatesTag>
   KOKKOS_FUNCTION
   static auto get(Rays<MemorySpace> const &rays, size_type i)
   {
-    return attach(intersects(rays._rays(i)), (int)i);
+    return attach(nearest(rays._rays(i), 1000000), (int)i);
   }
 };
 
@@ -148,14 +148,14 @@ int main(int argc, char *argv[])
 
   bpo::options_description desc("Allowed options");
   desc.add_options()("help", "help message")(
-      "rays per box", bpo::value<int>(&num_rays)->default_value(10),
+      "rays per box", bpo::value<int>(&num_rays)->default_value(1000),
       "number of rays")("Lx", bpo::value<float>(&Lx)->default_value(1.0),
                         "Length of X side")(
-      "Ly", bpo::value<float>(&Ly)->default_value(1.0), "Length of Y side")(
-      "Lz", bpo::value<float>(&Lz)->default_value(1.0), "Length of Z side")(
-      "Nx", bpo::value<int>(&Nx)->default_value(1000), "number of X boxes")(
-      "Ny", bpo::value<int>(&Ny)->default_value(1000), "number of Y boxes")(
-      "Nz", bpo::value<int>(&Nz)->default_value(1000), "number of Z boxes");
+      "Ly", bpo::value<float>(&Ly)->default_value(100000.0), "Length of Y side")(
+      "Lz", bpo::value<float>(&Lz)->default_value(100000.0), "Length of Z side")(
+      "Nx", bpo::value<int>(&Nx)->default_value(10), "number of X boxes")(
+      "Ny", bpo::value<int>(&Ny)->default_value(10), "number of Y boxes")(
+      "Nz", bpo::value<int>(&Nz)->default_value(10), "number of Z boxes");
   bpo::variables_map vm;
   bpo::store(bpo::command_line_parser(argc, argv).options(desc).run(), vm);
   bpo::notify(vm);
@@ -246,9 +246,11 @@ int main(int argc, char *argv[])
   Kokkos::View<float *, MemorySpace> my_energy("energy", num_boxes);
 
   Kokkos::Profiling::pushRegion("first_approach");
-  ArborX::Experimental::traverse(
+  bvh.query(exec_space, Rays<MemorySpace>{rays},
+            DepositEnergy<MemorySpace>{boxes, ray_energy, my_energy});
+/*  ArborX::Experimental::traverse(
       exec_space, bvh, Rays<MemorySpace>{rays},
-      DepositEnergy<MemorySpace>{boxes, ray_energy, my_energy});
+      DepositEnergy<MemorySpace>{boxes, ray_energy, my_energy});*/
   Kokkos::Profiling::popRegion();
 
   Kokkos::Profiling::pushRegion("second_approach");
@@ -288,7 +290,7 @@ int main(int argc, char *argv[])
   Kokkos::Profiling::popRegion();
 
   // Now check that the results we got are the same apart from numerical errors
-  // introduced by depositing energy to a particular cell from differnt rays
+  // introduced by depositing energy to a particular cell from separate rays
   // in different order.
   int n_errors = 0;
   float rel_tol = 1.e-5; 
