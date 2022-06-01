@@ -22,6 +22,11 @@ struct NearestPredicateTag
 struct SpatialPredicateTag
 {};
 } // namespace Details
+namespace Experimental
+{
+struct OrderedNearestPredicateTag
+{};
+} // namespace Experimental
 
 template <typename Geometry>
 struct Nearest
@@ -62,6 +67,25 @@ struct Intersects
   Geometry _geometry;
 };
 
+namespace Experimental
+{
+template <typename Geometry>
+struct OrderedNearest
+{
+  using Tag = Experimental::OrderedNearestPredicateTag;
+
+  KOKKOS_DEFAULTED_FUNCTION
+  OrderedNearest() = default;
+
+  KOKKOS_INLINE_FUNCTION
+  OrderedNearest(Geometry const &geometry)
+      : _geometry(geometry)
+  {}
+
+  Geometry _geometry;
+};
+} // namespace Experimental
+
 template <typename Geometry>
 KOKKOS_INLINE_FUNCTION Nearest<Geometry> nearest(Geometry const &geometry,
                                                  int k = 1)
@@ -81,6 +105,16 @@ KOKKOS_INLINE_FUNCTION int getK(Nearest<Geometry> const &pred)
   return pred._k;
 }
 
+namespace Experimental
+{
+template <typename Geometry>
+KOKKOS_INLINE_FUNCTION OrderedNearest<Geometry>
+ordered_nearest(Geometry const &geometry)
+{
+  return OrderedNearest<Geometry>(geometry);
+}
+} // namespace Experimental
+
 template <typename Geometry>
 KOKKOS_INLINE_FUNCTION Geometry const &
 getGeometry(Nearest<Geometry> const &pred)
@@ -91,6 +125,13 @@ getGeometry(Nearest<Geometry> const &pred)
 template <typename Geometry>
 KOKKOS_INLINE_FUNCTION Geometry const &
 getGeometry(Intersects<Geometry> const &pred)
+{
+  return pred._geometry;
+}
+
+template <typename Geometry>
+KOKKOS_INLINE_FUNCTION Geometry const &
+getGeometry(Experimental::OrderedNearest<Geometry> const &pred)
 {
   return pred._geometry;
 }

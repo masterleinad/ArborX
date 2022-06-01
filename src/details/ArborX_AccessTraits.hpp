@@ -137,9 +137,11 @@ void check_valid_access_traits(PredicatesTag, Predicates const &)
       "member function");
 
   using Tag = typename AccessTraitsHelper<Access>::tag;
-  static_assert(std::is_same<Tag, NearestPredicateTag>{} ||
-                    std::is_same<Tag, SpatialPredicateTag>{},
-                "Invalid tag for the predicates");
+  static_assert(
+      std::is_same<Tag, NearestPredicateTag>{} ||
+          std::is_same<Tag, SpatialPredicateTag>{} ||
+          std::is_same<Tag, Experimental::OrderedNearestPredicateTag>{},
+      "Invalid tag for the predicates");
 }
 
 template <typename Primitives>

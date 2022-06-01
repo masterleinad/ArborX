@@ -450,6 +450,135 @@ struct TreeTraversal<BVH, Predicates, Callback, NearestPredicateTag>
   }
 };
 
+template <class BVH, class Predicates, class Callback>
+struct TreeTraversal<BVH, Predicates, Callback,
+                     Experimental::OrderedNearestPredicateTag>
+{
+  BVH _bvh;
+  Predicates _predicates;
+  Callback _callback;
+
+  using Access = AccessTraits<Predicates, PredicatesTag>;
+
+  template <class ExecutionSpace>
+  TreeTraversal(ExecutionSpace const &space, BVH const &bvh,
+                Predicates const &predicates, Callback const &callback)
+      : _bvh{bvh}
+      , _predicates{predicates}
+      , _callback{callback}
+  {
+    if (_bvh.empty())
+    {
+      // do nothing
+    }
+    else if (_bvh.size() == 1)
+    {
+      Kokkos::parallel_for(
+          "ArborX::Experimental::TreeTraversal::OrderedNearestPredicate"
+          "degenerated_one_leaf_tree",
+          Kokkos::RangePolicy<ExecutionSpace, OneLeafTree>(
+              space, 0, Access::size(predicates)),
+          *this);
+    }
+    else
+    {
+      Kokkos::parallel_for(
+          "ArborX::Experimental::TreeTraversal::OrderedNearestPredicate",
+          Kokkos::RangePolicy<ExecutionSpace>(space, 0,
+                                              Access::size(predicates)),
+          *this);
+    }
+  }
+
+  struct OneLeafTree
+  {};
+
+  KOKKOS_FUNCTION void operator()(OneLeafTree, int queryIndex) const
+  {
+    auto const &predicate = Access::get(_predicates, queryIndex);
+    using ArborX::Details::HappyTreeFriends;
+    auto const root = HappyTreeFriends::getRoot(_bvh);
+    auto const &root_bounding_volume =
+        HappyTreeFriends::getBoundingVolume(_bvh, root);
+    if (distance(getGeometry(predicate), root_bounding_volume) !=
+        KokkosExt::ArithmeticTraits::infinity<float>::value)
+    {
+      _callback(predicate, 0);
+    }
+  }
+
+  KOKKOS_FUNCTION void operator()(int queryIndex) const
+  {
+    auto const &predicate = Access::get(_predicates, queryIndex);
+    using ArborX::Details::HappyTreeFriends;
+
+    auto const distance = [geometry = getGeometry(predicate),
+                           bvh = _bvh](int node) {
+      auto const &box = HappyTreeFriends::getBoundingVolume(bvh, node);
+      using Details::distance;
+      return distance(geometry, box);
+    };
+
+    using PairIndexDistance = Kokkos::pair<int, float>;
+    struct CompareDistance
+    {
+      KOKKOS_FUNCTION bool operator()(PairIndexDistance const &lhs,
+                                      PairIndexDistance const &rhs) const
+      {
+        return lhs.second > rhs.second;
+      }
+    };
+
+    PairIndexDistance heap[64];
+    PairIndexDistance *heap_last = heap;
+    CompareDistance const compare;
+
+    using ArborX::Details::popHeap;
+    using ArborX::Details::pushHeap;
+    int node = HappyTreeFriends::getRoot(_bvh);
+    int left_child;
+    int right_child;
+
+    while (true)
+    {
+      if (HappyTreeFriends::isLeaf(_bvh, node))
+      {
+        if (invoke_callback_and_check_early_exit(
+                _callback, predicate,
+                HappyTreeFriends::getLeafPermutationIndex(_bvh, node)))
+          return;
+      }
+      else
+      {
+        left_child = HappyTreeFriends::getLeftChild(_bvh, node);
+        right_child = HappyTreeFriends::getRightChild(_bvh, node);
+
+        float const distance_left_child = distance(left_child);
+        if (distance_left_child !=
+            KokkosExt::ArithmeticTraits::infinity<float>::value)
+        {
+          *heap_last++ = Kokkos::make_pair(left_child, distance(left_child));
+          pushHeap(heap, heap_last, compare);
+        }
+
+        float const distance_right_child = distance(right_child);
+        if (distance_right_child !=
+            KokkosExt::ArithmeticTraits::infinity<float>::value)
+        {
+          *heap_last++ = Kokkos::make_pair(right_child, distance_right_child);
+          pushHeap(heap, heap_last, compare);
+        }
+      }
+
+      if (heap == heap_last)
+        break; // heap is empty
+
+      node = heap->first;
+      popHeap(heap, heap_last--, compare);
+    }
+  }
+};
+
 template <typename ExecutionSpace, typename BVH, typename Predicates,
           typename Callback>
 void traverse(ExecutionSpace const &space, BVH const &bvh,

@@ -110,7 +110,9 @@ Sorry!)error");
 
   static_assert(
       (std::is_same<PredicateTag, SpatialPredicateTag>{} ||
-       std::is_same<PredicateTag, NearestPredicateTag>{}) &&
+       std::is_same<PredicateTag, NearestPredicateTag>{} ||
+       std::is_same<PredicateTag,
+                    Experimental::OrderedNearestPredicateTag>{}) &&
           Kokkos::is_detected<InlineCallbackArchetypeExpression, Callback,
                               Predicate, OutputFunctorHelper<OutputView>>{},
       "Callback 'operator()' does not have the correct signature");
@@ -181,7 +183,9 @@ void check_valid_callback(Callback const &callback, Predicates const &)
 
   static_assert(
       (std::is_same<PredicateTag, SpatialPredicateTag>{} ||
-       std::is_same<PredicateTag, NearestPredicateTag>{}) &&
+       std::is_same<PredicateTag, NearestPredicateTag>{} ||
+       std::is_same<PredicateTag,
+                    Experimental::OrderedNearestPredicateTag>{}) &&
           Kokkos::is_detected<Experimental_CallbackArchetypeExpression,
                               Callback, Predicate, int>{},
       "Callback 'operator()' does not have the correct signature");
@@ -195,13 +199,17 @@ void check_valid_callback(Callback const &callback, Predicates const &)
         std::is_void<
             Kokkos::detected_t<Experimental_CallbackArchetypeExpression,
                                Callback, Predicate, int>>{})) ||
-          std::is_same<PredicateTag, NearestPredicateTag>{},
+          std::is_same<PredicateTag, NearestPredicateTag>{} ||
+          std::is_same<PredicateTag,
+                       Experimental::OrderedNearestPredicateTag>{},
       "Callback 'operator()' return type must be void or "
       "ArborX::CallbackTreeTraversalControl");
 
   static_assert(
       std::is_same<PredicateTag, SpatialPredicateTag>{} ||
-          (std::is_same<PredicateTag, NearestPredicateTag>{} &&
+          ((std::is_same<PredicateTag, NearestPredicateTag>{} ||
+            std::is_same<PredicateTag,
+                         Experimental::OrderedNearestPredicateTag>{}) &&
            std::is_void<
                Kokkos::detected_t<Experimental_CallbackArchetypeExpression,
                                   Callback, Predicate, int>>{}),
