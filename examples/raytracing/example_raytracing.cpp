@@ -165,9 +165,13 @@ int main(int argc, char *argv[])
 
   namespace bpo = boost::program_options;
 
-  int Nx, Ny, Nz;
+  int Nx;
+  int Ny;
+  int Nz;
   int num_rays;
-  float Lx, Ly, Lz;
+  float Lx;
+  float Ly;
+  float Lz;
 
   bpo::options_description desc("Allowed options");
   desc.add_options()("help", "help message")(
