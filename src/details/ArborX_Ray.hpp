@@ -552,8 +552,8 @@ overlapDistance(Ray const &ray, Geometry const &geometry, float &length,
   }
   else
   {
-    length = 0.0;
-    distance_to_origin = 0. / 0.;
+    length = 0;
+    distance_to_origin = KokkosExt::ArithmeticTraits::infinity<float>::value;
   }
 }
 

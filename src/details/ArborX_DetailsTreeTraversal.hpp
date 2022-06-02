@@ -496,12 +496,11 @@ struct TreeTraversal<BVH, Predicates, Callback,
   KOKKOS_FUNCTION void operator()(OneLeafTree, int queryIndex) const
   {
     auto const &predicate = Access::get(_predicates, queryIndex);
-    using ArborX::Details::HappyTreeFriends;
     auto const root = HappyTreeFriends::getRoot(_bvh);
     auto const &root_bounding_volume =
         HappyTreeFriends::getBoundingVolume(_bvh, root);
-    if (distance(getGeometry(predicate), root_bounding_volume) !=
-        KokkosExt::ArithmeticTraits::infinity<float>::value)
+    constexpr auto inf = KokkosExt::ArithmeticTraits::infinity<float>::value;
+    if (distance(getGeometry(predicate), root_bounding_volume) != inf)
     {
       _callback(predicate, 0);
     }
@@ -532,9 +531,8 @@ struct TreeTraversal<BVH, Predicates, Callback,
     PairIndexDistance heap[64];
     PairIndexDistance *heap_last = heap;
     CompareDistance const compare;
+    constexpr auto inf = KokkosExt::ArithmeticTraits::infinity<float>::value;
 
-    using ArborX::Details::popHeap;
-    using ArborX::Details::pushHeap;
     int node = HappyTreeFriends::getRoot(_bvh);
     int left_child;
     int right_child;
@@ -554,16 +552,14 @@ struct TreeTraversal<BVH, Predicates, Callback,
         right_child = HappyTreeFriends::getRightChild(_bvh, node);
 
         float const distance_left_child = distance(left_child);
-        if (distance_left_child !=
-            KokkosExt::ArithmeticTraits::infinity<float>::value)
+        if (distance_left_child != inf)
         {
           *heap_last++ = Kokkos::make_pair(left_child, distance(left_child));
           pushHeap(heap, heap_last, compare);
         }
 
         float const distance_right_child = distance(right_child);
-        if (distance_right_child !=
-            KokkosExt::ArithmeticTraits::infinity<float>::value)
+        if (distance_right_child != inf)
         {
           *heap_last++ = Kokkos::make_pair(right_child, distance_right_child);
           pushHeap(heap, heap_last, compare);
