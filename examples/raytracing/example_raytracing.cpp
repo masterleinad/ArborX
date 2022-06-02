@@ -297,6 +297,7 @@ int main(int argc, char *argv[])
       "deposit_energy",
       Kokkos::RangePolicy<ExecutionSpace>(exec_space, 0, num_rays * num_boxes),
       KOKKOS_LAMBDA(int i) {
+        using Kokkos::Experimental::expm1;
         float ray_energy = (4000. * dx * dy * dz) / num_rays;
         for (int j = offsets(i); j < offsets(i + 1); ++j)
         {
