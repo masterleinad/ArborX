@@ -16,7 +16,7 @@
  * the boxes is important in this case, since the ray loses energy on
  * intersection. The example shows two different ways to do that:
  * 1.) using a specialized traversal that orders all intersection in a heap
- *     so that the callbacks for a sepcific ray are called in the correct order
+ *     so that the callbacks for a specific ray are called in the correct order
  * 2.) storing all intersections and doing the deposition of energy in a
  *     postprocessing step.
  */

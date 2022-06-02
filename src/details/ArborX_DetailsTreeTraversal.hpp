@@ -554,7 +554,7 @@ struct TreeTraversal<BVH, Predicates, Callback,
         float const distance_left_child = distance(left_child);
         if (distance_left_child != inf)
         {
-          *heap_last++ = Kokkos::make_pair(left_child, distance(left_child));
+          *heap_last++ = Kokkos::make_pair(left_child, distance_left_child);
           pushHeap(heap, heap_last, compare);
         }
 
