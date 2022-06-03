@@ -545,32 +545,58 @@ struct TreeTraversal<BVH, Predicates, Callback,
                 _callback, predicate,
                 HappyTreeFriends::getLeafPermutationIndex(_bvh, node)))
           return;
+
+        if (heap == heap_last)
+          break; // heap is empty
+
+        node = heap->first;
+        popHeap(heap, heap_last--, compare);
       }
       else
       {
         left_child = HappyTreeFriends::getLeftChild(_bvh, node);
         right_child = HappyTreeFriends::getRightChild(_bvh, node);
 
-        float const distance_left_child = distance(left_child);
-        if (distance_left_child != inf)
-        {
-          *heap_last++ = Kokkos::make_pair(left_child, distance_left_child);
-          pushHeap(heap, heap_last, compare);
-        }
+        float const distance_left = distance(left_child);
+        auto const left_pair = Kokkos::make_pair(left_child, distance_left);
 
-        float const distance_right_child = distance(right_child);
-        if (distance_right_child != inf)
+        float const distance_right = distance(right_child);
+        auto const right_pair = Kokkos::make_pair(right_child, distance_right);
+
+        auto const &closer_pair =
+            distance_left < distance_right ? left_pair : right_pair;
+        auto const &further_pair =
+            distance_left < distance_right ? right_pair : left_pair;
+
+        if (heap == heap_last && closer_pair.second == inf)
+          break; // heap is empty
+
+        if (heap != heap_last && heap->second < closer_pair.second)
         {
-          *heap_last++ = Kokkos::make_pair(right_child, distance_right_child);
-          pushHeap(heap, heap_last, compare);
+          node = heap->first;
+          popHeap(heap, heap_last--, compare);
+          if (closer_pair.second < inf)
+          {
+            *heap_last++ = closer_pair;
+            pushHeap(heap, heap_last, compare);
+            if (further_pair.second < inf)
+            {
+              *heap_last++ = further_pair;
+              pushHeap(heap, heap_last, compare);
+            }
+          }
+          continue;
+        }
+        else if (closer_pair.second < inf)
+        {
+          node = closer_pair.first;
+          if (further_pair.second < inf)
+          {
+            *heap_last++ = further_pair;
+            pushHeap(heap, heap_last, compare);
+          }
         }
       }
-
-      if (heap == heap_last)
-        break; // heap is empty
-
-      node = heap->first;
-      popHeap(heap, heap_last--, compare);
     }
   }
 };
