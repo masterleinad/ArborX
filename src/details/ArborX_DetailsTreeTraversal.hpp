@@ -528,9 +528,13 @@ struct TreeTraversal<BVH, Predicates, Callback,
       }
     };
 
-    PairIndexDistance heap[64];
-    PairIndexDistance *heap_last = heap;
+    constexpr int buffer_size = 64;
+    PairIndexDistance buffer[buffer_size];
     CompareDistance const compare;
+    PriorityQueue<PairIndexDistance, CompareDistance,
+                  UnmanagedStaticVector<PairIndexDistance>>
+        heap(UnmanagedStaticVector<PairIndexDistance>(buffer, buffer_size));
+
     constexpr auto inf = KokkosExt::ArithmeticTraits::infinity<float>::value;
 
     int node = HappyTreeFriends::getRoot(_bvh);
@@ -546,11 +550,11 @@ struct TreeTraversal<BVH, Predicates, Callback,
                 HappyTreeFriends::getLeafPermutationIndex(_bvh, node)))
           return;
 
-        if (heap == heap_last)
-          break; // heap is empty
+        if (heap.empty())
+          return;
 
-        node = heap->first;
-        popHeap(heap, heap_last--, compare);
+        node = heap.top().first;
+        heap.pop();
       }
       else
       {
@@ -568,23 +572,17 @@ struct TreeTraversal<BVH, Predicates, Callback,
         auto const &further_pair =
             distance_left < distance_right ? right_pair : left_pair;
 
-        if (heap != heap_last && heap->second < closer_pair.second)
+        if (!heap.empty() && heap.top().second < closer_pair.second)
         {
-          node = heap->first;
-          popHeap(heap, heap_last--, compare);
+          node = heap.top().first;
+          heap.pop();
           if (closer_pair.second < inf)
-          {
-            *heap_last++ = closer_pair;
-            pushHeap(heap, heap_last, compare);
-          }
+            heap.push(closer_pair);
         }
         else
           node = closer_pair.first;
         if (further_pair.second < inf)
-        {
-          *heap_last++ = further_pair;
-          pushHeap(heap, heap_last, compare);
-        }
+          heap.push(further_pair);
       }
     }
   }
