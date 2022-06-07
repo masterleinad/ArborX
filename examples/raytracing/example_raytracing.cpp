@@ -284,17 +284,7 @@ int main(int argc, char *argv[])
   Kokkos::View<int *> offsets("offsets", 0);
   bvh.query(exec_space, RaysSecond<MemorySpace>{rays},
             AccumRaySphereOptDist<MemorySpace>{boxes}, values, offsets);
-
-  Kokkos::parallel_for(
-      "batched_sorting",
-      Kokkos::RangePolicy<ExecutionSpace>(exec_space, 0, num_rays * num_boxes),
-      KOKKOS_LAMBDA(int i) {
-        auto *first = &values(offsets(i));
-        auto *last = &values(offsets(i + 1));
-        ArborX::Details::Less<IntersectedCell> compare;
-        ArborX::Details::makeHeap(first, last, compare);
-        ArborX::Details::sortHeap(first, last, compare);
-      });
+  ArborX::Details::sortObjects(exec_space, values);
 
   Kokkos::View<float *, MemorySpace> energy("energy", num_boxes);
   Kokkos::parallel_for(
