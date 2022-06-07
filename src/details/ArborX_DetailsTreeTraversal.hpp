@@ -568,9 +568,6 @@ struct TreeTraversal<BVH, Predicates, Callback,
         auto const &further_pair =
             distance_left < distance_right ? right_pair : left_pair;
 
-        if (heap == heap_last && closer_pair.second == inf)
-          break; // heap is empty
-
         if (heap != heap_last && heap->second < closer_pair.second)
         {
           node = heap->first;
@@ -579,22 +576,14 @@ struct TreeTraversal<BVH, Predicates, Callback,
           {
             *heap_last++ = closer_pair;
             pushHeap(heap, heap_last, compare);
-            if (further_pair.second < inf)
-            {
-              *heap_last++ = further_pair;
-              pushHeap(heap, heap_last, compare);
-            }
           }
-          continue;
         }
-        else if (closer_pair.second < inf)
-        {
+        else
           node = closer_pair.first;
-          if (further_pair.second < inf)
-          {
-            *heap_last++ = further_pair;
-            pushHeap(heap, heap_last, compare);
-          }
+        if (further_pair.second < inf)
+        {
+          *heap_last++ = further_pair;
+          pushHeap(heap, heap_last, compare);
         }
       }
     }
