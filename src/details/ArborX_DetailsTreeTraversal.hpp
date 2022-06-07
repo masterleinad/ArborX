@@ -499,7 +499,10 @@ struct TreeTraversal<BVH, Predicates, Callback,
     auto const root = HappyTreeFriends::getRoot(_bvh);
     auto const &root_bounding_volume =
         HappyTreeFriends::getBoundingVolume(_bvh, root);
-    constexpr auto inf = KokkosExt::ArithmeticTraits::infinity<float>::value;
+    using distance_type =
+        decltype(distance(getGeometry(predicate), root_bounding_volume));
+    constexpr auto inf =
+        KokkosExt::ArithmeticTraits::infinity<distance_type>::value;
     if (distance(getGeometry(predicate), root_bounding_volume) != inf)
     {
       _callback(predicate, 0);
@@ -518,7 +521,8 @@ struct TreeTraversal<BVH, Predicates, Callback,
       return distance(geometry, box);
     };
 
-    using PairIndexDistance = Kokkos::pair<int, float>;
+    using distance_type = decltype(distance(0));
+    using PairIndexDistance = Kokkos::pair<int, distance_type>;
     struct CompareDistance
     {
       KOKKOS_FUNCTION bool operator()(PairIndexDistance const &lhs,
@@ -535,7 +539,8 @@ struct TreeTraversal<BVH, Predicates, Callback,
                   UnmanagedStaticVector<PairIndexDistance>>
         heap(UnmanagedStaticVector<PairIndexDistance>(buffer, buffer_size));
 
-    constexpr auto inf = KokkosExt::ArithmeticTraits::infinity<float>::value;
+    constexpr auto inf =
+        KokkosExt::ArithmeticTraits::infinity<distance_type>::value;
 
     int node = HappyTreeFriends::getRoot(_bvh);
     int left_child;
@@ -561,10 +566,10 @@ struct TreeTraversal<BVH, Predicates, Callback,
         left_child = HappyTreeFriends::getLeftChild(_bvh, node);
         right_child = HappyTreeFriends::getRightChild(_bvh, node);
 
-        float const distance_left = distance(left_child);
+        auto const distance_left = distance(left_child);
         auto const left_pair = Kokkos::make_pair(left_child, distance_left);
 
-        float const distance_right = distance(right_child);
+        auto const distance_right = distance(right_child);
         auto const right_pair = Kokkos::make_pair(right_child, distance_right);
 
         auto const &closer_pair =
