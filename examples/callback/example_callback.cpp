@@ -56,11 +56,10 @@ struct PrintfCallback
   KOKKOS_FUNCTION void operator()(Predicate, int primitive,
                                   OutputFunctor const &out) const
   {
-#ifndef __SYCL_DEVICE_ONLY__
-    printf("Found %d from functor\n", primitive);
-#else
-    sycl::ext::oneapi::experimental::printf("Found %d from functor\n", primitive);
+	  #ifdef __SYCL_DEVICE_ONLY__
+          using sycl::ext::oneapi::experimental::printf;
 #endif
+    printf("Found %d from functor\n", primitive);
     out(primitive);
   }
 };
@@ -96,11 +95,10 @@ int main(int argc, char *argv[])
         bvh, ExecutionSpace{}, FirstOctant{},
         KOKKOS_LAMBDA(auto /*predicate*/, int primitive,
                       auto /*output_functor*/) {
-#ifndef __SYCL_DEVICE_ONLY__
-          printf("Found %d from generic lambda\n", primitive);
-#else
-          sycl::ext::oneapi::experimental::printf("Found %d from generic lambda\n", primitive);
+	#ifdef __SYCL_DEVICE_ONLY__
+          using sycl::ext::oneapi::experimental::printf;
 #endif
+          printf("Found %d from generic lambda\n", primitive);
         },
         values, offsets);
 #endif
@@ -117,11 +115,10 @@ int main(int argc, char *argv[])
         bvh, ExecutionSpace{}, NearestToOrigin{k},
         KOKKOS_LAMBDA(auto /*predicate*/, int primitive,
                       auto /*output_functor*/) {
-#ifndef __SYCL_DEVICE_ONLY__
-          printf("Found %d from generic lambda\n", primitive);
-#else
-	      sycl::ext::oneapi::experimental::printf("Found %d from generic lambda\n", primitive);
+	#ifdef __SYCL_DEVICE_ONLY__
+          using sycl::ext::oneapi::experimental::printf;
 #endif
+          printf("Found %d from generic lambda\n", primitive);
         },
         values, offsets);
 #endif
@@ -136,11 +133,10 @@ int main(int argc, char *argv[])
     bvh.query(
         ExecutionSpace{}, FirstOctant{},
         KOKKOS_LAMBDA(auto /*predicate*/, int j) {
-#ifndef __SYCL_DEVICE_ONLY__
-          printf("%d %d %d\n", ++c(), -1, j);
-#else
-	      sycl::ext::oneapi::experimental::printf("%d %d %d\n", ++c(), -1, j);
+#ifdef __SYCL_DEVICE_ONLY__
+	using sycl::ext::oneapi::experimental::printf;
 #endif
+          printf("%d %d %d\n", ++c(), -1, j);
         });
 #endif
   }
