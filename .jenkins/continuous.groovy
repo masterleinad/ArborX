@@ -412,10 +412,11 @@ pipeline {
                         sh 'rm -rf build && mkdir -p build'
                         dir('build') {
                             sh '''
+                                . /opt/intel/oneapi/setvars.sh --include-intel-llvm && \
                                 cmake \
                                     -D CMAKE_INSTALL_PREFIX=$ARBORX_DIR \
                                     -D CMAKE_BUILD_TYPE=Release \
-                                    -D CMAKE_CXX_COMPILER=clang++ \
+                                    -D CMAKE_CXX_COMPILER=/opt/intel/oneapi/compiler/2023.0.0/linux/bin-llvm/clang++ \
                                     -D CMAKE_CXX_EXTENSIONS=OFF \
                                     -D CMAKE_CXX_FLAGS="-fsycl-device-code-split=per_kernel -Wpedantic -Wall -Wextra -Wno-unknown-cuda-version" \
                                     -D CMAKE_PREFIX_PATH="$KOKKOS_DIR;$BOOST_DIR;$BENCHMARK_DIR;$ONE_DPL_DIR" \
@@ -444,9 +445,10 @@ pipeline {
                             dir('test_install') {
                                 sh 'cp -r ../examples .'
                                 sh '''
+                                    . /opt/intel/oneapi/setvars.sh --include-intel-llvm && \
                                     cmake \
                                         -D CMAKE_BUILD_TYPE=Release \
-                                        -D CMAKE_CXX_COMPILER=clang++ \
+                                        -D CMAKE_CXX_COMPILER=/opt/intel/oneapi/compiler/2023.0.0/linux/bin-llvm/clang++ \
                                         -D CMAKE_CXX_EXTENSIONS=OFF \
                                         -D CMAKE_CXX_FLAGS="-Wno-unknown-cuda-version" \
                                         -D CMAKE_PREFIX_PATH="$KOKKOS_DIR;$ARBORX_DIR;$ONE_DPL_DIR" \
