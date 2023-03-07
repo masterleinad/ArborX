@@ -84,7 +84,7 @@ RUN BOOST_VERSION=1.81.0 && \
         && \
     ./b2 -j${NPROCS} \
         hardcode-dll-paths=true dll-path=${BOOST_DIR}/lib \
-        toolset=intel-linux 
+        toolset=intel-linux \ 
         link=shared \
         variant=release \
         cxxflags=-w \
