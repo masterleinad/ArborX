@@ -83,6 +83,7 @@ RUN . /opt/intel/oneapi/setvars.sh --include-intel-llvm && \
         link=shared \
         variant=release \
         cxxflags=-w \
+        --without-thread \
         install \
         && \
     rm -rf ${SCRATCH_DIR}
