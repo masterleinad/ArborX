@@ -69,8 +69,14 @@ pipeline {
                                     -D ONEDPL_PAR_BACKEND=serial \
                                 ..
                             '''
-                            sh 'make -j8 VERBOSE=1'
-                            sh 'ctest $CTEST_OPTIONS'
+                            sh '''
+                                . /opt/intel/oneapi/setvars.sh --include-intel-llvm && \
+                                make -j8 VERBOSE=1
+                            '''
+                            sh '''
+                                . /opt/intel/oneapi/setvars.sh --include-intel-llvm
+                                ctest $CTEST_OPTIONS
+                            '''
                         }
                     }
                     post {
