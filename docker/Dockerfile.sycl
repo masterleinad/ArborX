@@ -76,6 +76,8 @@ RUN . /opt/intel/oneapi/setvars.sh --include-intel-llvm && \
     mkdir -p boost && \
     tar -xf ${BOOST_ARCHIVE} -C boost --strip-components=1 && \
     cd boost && \
+    sed -i "s/-pch-create/-Xclang -emit-pch -o/g" tools/build/src/tools/intel-linux.jam && \
+    cat tools/build/src/tools/intel-linux.jam && \
     CXXFLAGS="-w" ./bootstrap.sh --with-toolset=intel-linux --prefix=${BOOST_DIR} && \
     ./b2 -j${NPROCS} \
         hardcode-dll-paths=true dll-path=${BOOST_DIR}/lib \
@@ -83,7 +85,6 @@ RUN . /opt/intel/oneapi/setvars.sh --include-intel-llvm && \
         link=shared \
         variant=release \
         cxxflags=-w \
-        --without-thread \
         install \
         && \
     rm -rf ${SCRATCH_DIR}
