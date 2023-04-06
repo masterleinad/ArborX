@@ -27,7 +27,7 @@ RUN KEYDUMP_URL=https://cloud.cees.ornl.gov/download && \
     gpg --verify ${KEYDUMP_FILE}.sig ${KEYDUMP_FILE} && \
     rm ${KEYDUMP_FILE}*
 
-ARG CMAKE_VERSION=3.19.0
+ARG CMAKE_VERSION=3.26.3
 ENV CMAKE_DIR=/opt/cmake
 RUN CMAKE_KEY=2D2CEF1034921684 && \
     CMAKE_URL=https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION} && \
