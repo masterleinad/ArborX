@@ -78,7 +78,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(callback_spatial_predicate, TreeTypeTraits,
   ArborX::Point const origin = {{0., 0., 0.}};
   Kokkos::parallel_for(
       Kokkos::RangePolicy<ExecutionSpace>(0, n), KOKKOS_LAMBDA(int i) {
-        points(i) = {{(double)i, (double)i, (double)i}};
+        points(i) = {{(float)i, (float)i, (float)i}};
       });
   auto points_host =
       Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, points);
@@ -120,7 +120,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(callback_nearest_predicate, TreeTypeTraits,
   ArborX::Point const origin = {{0., 0., 0.}};
   Kokkos::parallel_for(
       Kokkos::RangePolicy<ExecutionSpace>(0, n), KOKKOS_LAMBDA(int i) {
-        points(i) = {{(double)i, (double)i, (double)i}};
+        points(i) = {{(float)i, (float)i, (float)i}};
       });
   auto points_host =
       Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, points);
@@ -258,7 +258,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(callback_with_attachment_spatial_predicate,
   ArborX::Point const origin = {{0., 0., 0.}};
   Kokkos::parallel_for(
       Kokkos::RangePolicy<ExecutionSpace>(0, n), KOKKOS_LAMBDA(int i) {
-        points(i) = {{(double)i, (double)i, (double)i}};
+        points(i) = {{(float)i, (float)i, (float)i}};
       });
   auto points_host =
       Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, points);
@@ -303,14 +303,14 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(callback_with_attachment_nearest_predicate,
   ArborX::Point const origin = {{0., 0., 0.}};
   Kokkos::parallel_for(
       Kokkos::RangePolicy<ExecutionSpace>(0, n), KOKKOS_LAMBDA(int i) {
-        points(i) = {{(double)i, (double)i, (double)i}};
+        points(i) = {{(float)i, (float)i, (float)i}};
       });
   auto points_host =
       Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, points);
 
   std::vector<Kokkos::pair<int, float>> values;
   values.reserve(n);
-  float const delta = 5.f;
+  const float delta = 5.f;
   for (int i = 0; i < n; ++i)
     values.emplace_back(
         i, delta + ArborX::Details::distance(points_host(i), origin));

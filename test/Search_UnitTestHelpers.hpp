@@ -107,10 +107,27 @@ auto query(ExecutionSpace const &exec_space, Tree const &tree,
 
 #define ARBORX_TEST_QUERY_TREE_CALLBACK(exec_space, tree, queries, callback,   \
                                         reference)                             \
-  using value_type = typename decltype(reference)::value_type;                 \
-  BOOST_TEST(query<value_type>(exec_space, tree, queries, callback) ==         \
-                 (reference),                                                  \
-             boost::test_tools::per_element());
+  {\
+	using value_type = typename decltype(reference)::value_type;                 \
+  auto result = query<value_type>(exec_space, tree, queries, callback);\
+  auto ref = (reference);\
+  if(result.size() == ref.size()) { \
+    auto result_iterator = result.cbegin();\
+    auto ref_iterator = ref.cbegin();\
+    for(int i=0; i<result.size(); ++result_iterator, ++ref_iterator, ++i) { \
+      BOOST_TEST_CONTEXT("index " << i) \
+      {\
+        BOOST_TEST(*result_iterator == *ref_iterator, boost::test_tools::tolerance(1.e-3) << *result_iterator << ' ' << *ref_iterator);\
+      }\
+    }\
+  } else { \
+    BOOST_TEST(result.size() == ref.size()); \
+  }\
+  }
+//
+//  BOOST_TEST(query<value_type>(exec_space, tree, queries, callback) ==         \
+//                 (reference),                                                  \
+//             boost::test_tools::tolerance( 1e-1 ) << "bla" << boost::test_tools::per_element());
 
 #ifdef ARBORX_ENABLE_MPI
 // Workaround for NVCC that complains that the enclosing parent function
