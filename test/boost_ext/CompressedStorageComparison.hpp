@@ -21,6 +21,61 @@
 #include <set>
 
 template <typename Values>
+struct ValueWrapper
+{
+  Values m_value;
+  friend bool operator<(const ValueWrapper left, const ValueWrapper right)
+  {
+    return left.m_value < right.m_value;
+  }
+
+  friend bool operator==(const ValueWrapper left, const ValueWrapper right)
+  {
+    return left.m_value == right.m_value;
+  }
+
+  friend std::ostream& operator<<(std::ostream& os, const ValueWrapper vw)
+  {
+    return os << vw.m_value;
+  }
+};
+
+template <>
+struct ValueWrapper<Kokkos::pair<int, float>>
+{
+  Kokkos::pair<int, float> m_value;
+  friend bool operator<(const ValueWrapper left, const ValueWrapper right)
+  {
+    if (left.m_value.first >= right.m_value.first)
+    {
+                          std::cout << "False " << left.m_value.first << ' ' << left.m_value.second << " and " << right.m_value.first << ' ' << right.m_value.second << std::endl;
+            return false;
+    }
+    if (left.m_value.second >= right.m_value.second * (1. - 1.e-3))
+    {
+                                      std::cout << "False " << left.m_value.first << ' ' << left.m_value.second << " and " << right.m_value.first << ' ' << right.m_value.second << std::endl;
+            return false;
+    }
+    std::cout << "True " << left.m_value.first << ' ' << left.m_value.second << " and " << right.m_value.first << ' ' << right.m_value.second << std::endl;
+    return true;
+  }
+
+  friend bool operator==(const ValueWrapper left, const ValueWrapper right)
+  {
+    if (left.m_value.first != right.m_value.first)
+      return false;
+    if (std::fabs(left.m_value.second-right.m_value.second) > 1.e-3 * std::fabs(right.m_value.second))
+      return false;
+    return true;
+  }
+
+  friend std::ostream& operator<<(std::ostream& os, const ValueWrapper vw)
+  {
+    return os << vw.m_value.first << ' ' << vw.m_value.second;
+  }
+};
+
+/*template <typename Values>
 struct ValueComparator;// : std::less<Values>{};
 
 template<>
@@ -44,7 +99,7 @@ struct ValueComparator<Kokkos::pair<int, float>>
     std::cout << "True " << left.first << ' ' << left.second << " and " << right.first << ' ' << right.second << std::endl;
     return true;
   }
-};
+};*/
 
 template <typename Offsets, typename Values>
 struct CompressedStorage
@@ -53,12 +108,11 @@ struct CompressedStorage
   Values values;
   using value_type = typename Values::value_type;
   using index_type = typename Offsets::value_type;
-  using comparator_type = ValueComparator<value_type>;
   struct ConstForwardIterator
   {
     index_type i;
     CompressedStorage const *p;
-    using value_type = std::multiset<CompressedStorage::value_type, comparator_type>;
+    using value_type = std::multiset<ValueWrapper<CompressedStorage::value_type>>;
     ConstForwardIterator &operator++()
     {
       ++i;
@@ -80,8 +134,8 @@ struct CompressedStorage
     }
     value_type operator*()
     {
-      return {p->values.data() + p->offsets[i],
-              p->values.data() + p->offsets[i + 1], comparator_type{}};
+      return {reinterpret_cast<const ValueWrapper<CompressedStorage::value_type>*>(p->values.data() + p->offsets[i]),
+              reinterpret_cast<const ValueWrapper<CompressedStorage::value_type>*>(p->values.data() + p->offsets[i + 1])};
     }
   };
   ConstForwardIterator cbegin() const { return {0, this}; }
