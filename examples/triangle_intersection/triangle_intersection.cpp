@@ -26,25 +26,22 @@
 // |x\|x\|x\|
 // __________
 
+template <int dim>
 struct Triangle
 {
-  ArborX::Point a;
-  ArborX::Point b;
-  ArborX::Point c;
+  ArborX::ExperimentalHyperGeometry::Point<dim> a, b, c;
 };
 
 struct Mapping
 {
-  ArborX::Point alpha;
-  ArborX::Point beta;
-  ArborX::Point p0;
+  ArborX::ExperimentalHyperGeometry::Point<2> alpha;
+  ArborX::ExperimentalHyperGeometry::Point<2> beta;
+  ArborX::ExperimentalHyperGeometry::Point<2> p0;
 
-  ArborX::Point get_coeff(ArborX::Point p) const
+  ArborX::Point get_coeff(ArborX::ExperimentalHyperGeometry::Point<2> p) const
   {
-    float alpha_coeff = alpha[0] * (p[0] - p0[0]) + alpha[1] * (p[1] - p0[1]) +
-                        alpha[2] * (p[2] - p0[2]);
-    float beta_coeff = beta[0] * (p[0] - p0[0]) + beta[1] * (p[1] - p0[1]) +
-                       beta[2] * (p[2] - p0[2]);
+    float alpha_coeff = alpha[0] * (p[0] - p0[0]) + alpha[1] * (p[1] - p0[1]);
+    float beta_coeff = beta[0] * (p[0] - p0[0]) + beta[1] * (p[1] - p0[1]);
     return {1 - alpha_coeff - beta_coeff, alpha_coeff, beta_coeff};
   }
 
@@ -52,28 +49,31 @@ struct Mapping
   //   = (1-beta-alpha) * a + alpha * b + beta * c
   //
   // FIXME Only works for 2D reliably
-  void compute(Triangle const &triangle)
+  void compute(Triangle<2> const &triangle)
   {
     auto const &a = triangle.a;
     auto const &b = triangle.b;
     auto const &c = triangle.c;
 
-    ArborX::Point u = {b[0] - a[0], b[1] - a[1], b[2] - a[2]};
-    ArborX::Point v = {c[0] - a[0], c[1] - a[1], c[2] - a[2]};
+    ArborX::ExperimentalHyperGeometry::Point<2> u = {b[0] - a[0], b[1] - a[1]};
+    ArborX::ExperimentalHyperGeometry::Point<2> v = {c[0] - a[0], c[1] - a[1]};
 
     float const inv_det = 1. / (v[1] * u[0] - v[0] * u[1]);
 
-    alpha = ArborX::Point{v[1] * inv_det, -v[0] * inv_det, 0};
-    beta = ArborX::Point{-u[1] * inv_det, u[0] * inv_det, 0};
+    alpha = ArborX::ExperimentalHyperGeometry::Point<2>{v[1] * inv_det,
+                                                        -v[0] * inv_det};
+    beta = ArborX::ExperimentalHyperGeometry::Point<2>{-u[1] * inv_det,
+                                                       u[0] * inv_det};
     p0 = a;
   }
 
-  Triangle get_triangle() const
+  Triangle<2> get_triangle() const
   {
     float const inv_det = 1. / (alpha[0] * beta[1] - alpha[1] * beta[0]);
-    ArborX::Point a = p0;
-    ArborX::Point b = {{p0[0] + inv_det * beta[1], p0[1] - inv_det * beta[0]}};
-    ArborX::Point c = {
+    ArborX::ExperimentalHyperGeometry::Point<2> a = p0;
+    ArborX::ExperimentalHyperGeometry::Point<2> b = {
+        {p0[0] + inv_det * beta[1], p0[1] - inv_det * beta[0]}};
+    ArborX::ExperimentalHyperGeometry::Point<2> c = {
         {p0[0] - inv_det * alpha[1], p0[1] + inv_det * alpha[0]}};
     return {a, b, c};
   }
@@ -95,16 +95,16 @@ public:
 
     auto index = [nx, ny](int i, int j) { return i + j * nx; };
 
-    points_ = Kokkos::View<ArborX::Point *, typename DeviceType::memory_space>(
+    points_ = Kokkos::View<ArborX::ExperimentalHyperGeometry::Point<2> *,
+                           typename DeviceType::memory_space>(
         Kokkos::view_alloc(Kokkos::WithoutInitializing, "points"), 2 * n);
     auto points_host = Kokkos::create_mirror_view(points_);
 
     for (int i = 0; i < nx; ++i)
       for (int j = 0; j < ny; ++j)
       {
-        points_host[2 * index(i, j)] = {(i + .25f) * hx, (j + .25f) * hy, 0.f};
-        points_host[2 * index(i, j) + 1] = {(i + .75f) * hx, (j + .75f) * hy,
-                                            0.f};
+        points_host[2 * index(i, j)] = {(i + .25f) * hx, (j + .25f) * hy};
+        points_host[2 * index(i, j) + 1] = {(i + .75f) * hx, (j + .75f) * hy};
       }
     Kokkos::deep_copy(execution_space, points_, points_host);
   }
@@ -114,14 +114,16 @@ public:
   KOKKOS_FUNCTION auto size() const { return points_.size(); }
 
 private:
-  Kokkos::View<ArborX::Point *, typename DeviceType::memory_space> points_;
+  Kokkos::View<ArborX::ExperimentalHyperGeometry::Point<2> *,
+               typename DeviceType::memory_space>
+      points_;
 };
 
 template <typename DeviceType>
 class Triangles
 {
 public:
-  // Create non-intersecting triangles on a 3D cartesian grid
+  // Create non-intersecting triangles on a 2D cartesian grid
   // used both for queries and predicates.
   Triangles(typename DeviceType::execution_space const &execution_space)
   {
@@ -135,7 +137,7 @@ public:
 
     auto index = [nx, ny](int i, int j) { return i + j * nx; };
 
-    triangles_ = Kokkos::View<Triangle *, typename DeviceType::memory_space>(
+    triangles_ = Kokkos::View<Triangle<2> *, typename DeviceType::memory_space>(
         Kokkos::view_alloc(Kokkos::WithoutInitializing, "triangles"), 2 * n);
     auto triangles_host = Kokkos::create_mirror_view(triangles_);
 
@@ -146,10 +148,11 @@ public:
     for (int i = 0; i < nx; ++i)
       for (int j = 0; j < ny; ++j)
       {
-        ArborX::Point bl{i * hx, j * hy, 0.};
-        ArborX::Point br{(i + 1) * hx, j * hy, 0.};
-        ArborX::Point tl{i * hx, (j + 1) * hy, 0.};
-        ArborX::Point tr{(i + 1) * hx, (j + 1) * hy, 0.};
+        ArborX::ExperimentalHyperGeometry::Point<2> bl{i * hx, j * hy};
+        ArborX::ExperimentalHyperGeometry::Point<2> br{(i + 1) * hx, j * hy};
+        ArborX::ExperimentalHyperGeometry::Point<2> tl{i * hx, (j + 1) * hy};
+        ArborX::ExperimentalHyperGeometry::Point<2> tr{(i + 1) * hx,
+                                                       (j + 1) * hy};
 
         triangles_host[2 * index(i, j)] = {tl, bl, br};
         triangles_host[2 * index(i, j) + 1] = {tl, br, tr};
@@ -159,17 +162,17 @@ public:
     {
       mappings_host[k].compute(triangles_host[k]);
 
-      Triangle recover_triangle = mappings_host[k].get_triangle();
+      Triangle<2> recover_triangle = mappings_host[k].get_triangle();
 
-      for (unsigned int i = 0; i < 3; ++i)
+      for (unsigned int i = 0; i < 2; ++i)
         if (std::abs(triangles_host[k].a[i] - recover_triangle.a[i]) > 1.e-3)
           abort();
 
-      for (unsigned int i = 0; i < 3; ++i)
+      for (unsigned int i = 0; i < 2; ++i)
         if (std::abs(triangles_host[k].b[i] - recover_triangle.b[i]) > 1.e-3)
           abort();
 
-      for (unsigned int i = 0; i < 3; ++i)
+      for (unsigned int i = 0; i < 2; ++i)
         if (std::abs(triangles_host[k].c[i] - recover_triangle.c[i]) > 1.e-3)
           abort();
     }
@@ -180,7 +183,7 @@ public:
   KOKKOS_FUNCTION int size() const { return triangles_.size(); }
 
   // Return the triangle with index i.
-  KOKKOS_FUNCTION Triangle const &get_triangle(int i) const
+  KOKKOS_FUNCTION Triangle<2> const &get_triangle(int i) const
   {
     return triangles_(i);
   }
@@ -191,7 +194,7 @@ public:
   }
 
 private:
-  Kokkos::View<Triangle *, typename DeviceType::memory_space> triangles_;
+  Kokkos::View<Triangle<2> *, typename DeviceType::memory_space> triangles_;
   Kokkos::View<Mapping *, typename DeviceType::memory_space> mappings_;
 };
 
@@ -210,7 +213,7 @@ struct ArborX::AccessTraits<Triangles<DeviceType>, ArborX::PrimitivesTag>
   static KOKKOS_FUNCTION auto get(Triangles<DeviceType> const &triangles, int i)
   {
     auto const &triangle = triangles.get_triangle(i);
-    ArborX::Box box{};
+    ArborX::ExperimentalHyperGeometry::Box<2> box{};
     box += triangle.a;
     box += triangle.b;
     box += triangle.c;
@@ -229,10 +232,14 @@ public:
   template <typename Query>
   KOKKOS_FUNCTION void operator()(
       Query const &query,
-      ArborX::Details::PairIndexVolume<ArborX::Box> const &predicate) const
+      ArborX::Details::PairIndexVolume<
+          ArborX::ExperimentalHyperGeometry::Box<2>> const &predicate) const
   {
-    ArborX::Point const &point = getGeometry(getPredicate(query));
+    ArborX::ExperimentalHyperGeometry::Point<2> const &point =
+        getGeometry(getPredicate(query));
     auto const &attachment = ArborX::getData(query);
+
+    auto const &triangle = triangles_.get_triangle(predicate.index);
 
     auto const coeffs =
         triangles_.get_mapping(predicate.index).get_coeff(point);
@@ -288,7 +295,9 @@ int main()
     std::cout << "Triangles set up.\n";
 
     std::cout << "Creating BVH tree.\n";
-    ArborX::BVH<MemorySpace> const tree(execution_space, triangles);
+    ArborX::BasicBoundingVolumeHierarchy<
+        MemorySpace, ArborX::ExperimentalHyperGeometry::Box<2>> const
+        tree(execution_space, triangles);
     std::cout << "BVH tree set up.\n";
 
     std::cout << "Create the points used for queries.\n";
@@ -309,12 +318,14 @@ int main()
       ArborX::Point &coeffs;
     };
 
-    ArborX::Details::TreeTraversal<ArborX::BVH<MemorySpace>, Dummy,
-                                   TriangleIntersectionCallback<DeviceType>,
-                                   ArborX::Details::SpatialPredicateTag,
-                                   decltype(ArborX::attach(
-                                       intersects(ArborX::Point{}),
-                                       std::declval<Attachment>()))>
+    ArborX::Details::TreeTraversal<
+        ArborX::BasicBoundingVolumeHierarchy<
+            MemorySpace, ArborX::ExperimentalHyperGeometry::Box<2>>,
+        Dummy, TriangleIntersectionCallback<DeviceType>,
+        ArborX::Details::SpatialPredicateTag,
+        decltype(ArborX::attach(
+            ArborX::intersects(ArborX::ExperimentalHyperGeometry::Point<2>{}),
+            std::declval<Attachment>()))>
         tree_traversal(tree,
                        TriangleIntersectionCallback<DeviceType>{triangles});
 
@@ -325,7 +336,7 @@ int main()
         Kokkos::RangePolicy<ExecutionSpace>(execution_space, 0, n),
         KOKKOS_LAMBDA(int i) {
           tree_traversal.search(
-              ArborX::attach(intersects(points.get_point(i)),
+              ArborX::attach(ArborX::intersects(points.get_point(i)),
                              Attachment{offsets(i), coefficients(i)}));
         });
 
@@ -346,11 +357,10 @@ int main()
       auto const &c = coeffs_host(i);
       auto const &t = triangles.get_triangle(offsets_host(i));
       auto const &p_h = points.get_point(i);
-      ArborX::Point p = {{c[0] * t.a[0] + c[1] * t.b[0] + c[2] * t.c[0]},
-                         {c[0] * t.a[1] + c[1] * t.b[1] + c[2] * t.c[1]},
-                         {c[0] * t.a[2] + c[1] * t.b[2] + c[2] * t.c[2]}};
-      if ((std::abs(p[0] - p_h[0]) > eps) || std::abs(p[1] - p_h[1]) > eps ||
-          std::abs(p[2] - p_h[2]) > eps)
+      auto const p = ArborX::ExperimentalHyperGeometry::Point<2>{
+          c[0] * t.a[0] + c[1] * t.b[0] + c[2] * t.c[0],
+          c[0] * t.a[1] + c[1] * t.b[1] + c[2] * t.c[1]};
+      if ((std::abs(p[0] - p_h[0]) > eps) || std::abs(p[1] - p_h[1]) > eps)
       {
         std::cout << "coeffs for point " << i << " are wrong!\n";
       }
