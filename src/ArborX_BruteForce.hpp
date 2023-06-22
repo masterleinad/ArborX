@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2017-2021 by the ArborX authors                            *
+ * Copyright (c) 2017-2022 by the ArborX authors                            *
  * All rights reserved.                                                     *
  *                                                                          *
  * This file is part of the ArborX library. ArborX is                       *
@@ -23,14 +23,14 @@
 namespace ArborX
 {
 
-template <typename MemorySpace>
+template <typename MemorySpace, typename BoundingVolume = Box>
 class BruteForce
 {
 public:
   using memory_space = MemorySpace;
-  static_assert(Kokkos::is_memory_space<MemorySpace>::value, "");
+  static_assert(Kokkos::is_memory_space<MemorySpace>::value);
   using size_type = typename MemorySpace::size_type;
-  using bounding_volume_type = Box;
+  using bounding_volume_type = BoundingVolume;
 
   BruteForce() = default;
 
@@ -55,7 +55,7 @@ public:
             typename CallbackOrView, typename View, typename... Args>
   std::enable_if_t<Kokkos::is_view<std::decay_t<View>>{}>
   query(ExecutionSpace const &space, Predicates const &predicates,
-        CallbackOrView &&callback_or_view, View &&view, Args &&... args) const
+        CallbackOrView &&callback_or_view, View &&view, Args &&...args) const
   {
     ArborX::query(*this, space, predicates,
                   std::forward<CallbackOrView>(callback_or_view),
@@ -63,23 +63,23 @@ public:
   }
 
 private:
-  size_type _size;
+  size_type _size{0};
   bounding_volume_type _bounds;
   Kokkos::View<bounding_volume_type *, memory_space> _bounding_volumes;
 };
 
-template <typename MemorySpace>
+template <typename MemorySpace, typename BoundingVolume>
 template <typename ExecutionSpace, typename Primitives>
-BruteForce<MemorySpace>::BruteForce(ExecutionSpace const &space,
-                                    Primitives const &primitives)
+BruteForce<MemorySpace, BoundingVolume>::BruteForce(
+    ExecutionSpace const &space, Primitives const &primitives)
     : _size(AccessTraits<Primitives, PrimitivesTag>::size(primitives))
     , _bounding_volumes(
-          Kokkos::view_alloc(Kokkos::WithoutInitializing,
+          Kokkos::view_alloc(space, Kokkos::WithoutInitializing,
                              "ArborX::BruteForce::bounding_volumes"),
           _size)
 {
   static_assert(
-      KokkosExt::is_accessible_from<MemorySpace, ExecutionSpace>::value, "");
+      KokkosExt::is_accessible_from<MemorySpace, ExecutionSpace>::value);
   Details::check_valid_access_traits(PrimitivesTag{}, primitives);
   using Access = AccessTraits<Primitives, PrimitivesTag>;
   static_assert(KokkosExt::is_accessible_from<typename Access::memory_space,
@@ -94,15 +94,15 @@ BruteForce<MemorySpace>::BruteForce(ExecutionSpace const &space,
   Kokkos::Profiling::popRegion();
 }
 
-template <typename MemorySpace>
+template <typename MemorySpace, typename BoundingVolume>
 template <typename ExecutionSpace, typename Predicates, typename Callback,
           typename Ignore>
-void BruteForce<MemorySpace>::query(ExecutionSpace const &space,
-                                    Predicates const &predicates,
-                                    Callback const &callback, Ignore) const
+void BruteForce<MemorySpace, BoundingVolume>::query(
+    ExecutionSpace const &space, Predicates const &predicates,
+    Callback const &callback, Ignore) const
 {
   static_assert(
-      KokkosExt::is_accessible_from<MemorySpace, ExecutionSpace>::value, "");
+      KokkosExt::is_accessible_from<MemorySpace, ExecutionSpace>::value);
   Details::check_valid_access_traits(PredicatesTag{}, predicates);
   using Access = AccessTraits<Predicates, PredicatesTag>;
   static_assert(KokkosExt::is_accessible_from<typename Access::memory_space,
@@ -111,6 +111,7 @@ void BruteForce<MemorySpace>::query(ExecutionSpace const &space,
   using Tag = typename Details::AccessTraitsHelper<Access>::tag;
   static_assert(std::is_same<Tag, Details::SpatialPredicateTag>{},
                 "nearest query not implemented yet");
+  Details::check_valid_callback(callback, predicates);
 
   Kokkos::Profiling::pushRegion("ArborX::BruteForce::query::spatial");
 

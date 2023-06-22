@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2017-2021 by the ArborX authors                            *
+ * Copyright (c) 2017-2022 by the ArborX authors                            *
  * All rights reserved.                                                     *
  *                                                                          *
  * This file is part of the ArborX library. ArborX is                       *
@@ -16,5 +16,6 @@
 #cmakedefine ARBORX_ENABLE_ONEDPL
 #cmakedefine ARBORX_ENABLE_MPI
 #cmakedefine ARBORX_USE_CUDA_AWARE_MPI
+#cmakedefine ARBORX_ENABLE_GPU_AWARE_MPI
 
 #endif

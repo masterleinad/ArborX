@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2017-2021 by the ArborX authors                            *
+ * Copyright (c) 2017-2022 by the ArborX authors                            *
  * All rights reserved.                                                     *
  *                                                                          *
  * This file is part of the ArborX library. ArborX is                       *
@@ -18,10 +18,26 @@ namespace ArborX
 namespace Details
 {
 struct NearestPredicateTag
-{
-};
+{};
 struct SpatialPredicateTag
+{};
+} // namespace Details
+namespace Experimental
 {
+struct OrderedSpatialPredicateTag
+{};
+} // namespace Experimental
+
+namespace Details
+{
+// nvcc has problems with using std::interal_constant here.
+template <typename PredicateTag>
+struct is_valid_predicate_tag
+{
+  static constexpr bool value =
+      std::is_same<PredicateTag, SpatialPredicateTag>{} ||
+      std::is_same<PredicateTag, NearestPredicateTag>{} ||
+      std::is_same<PredicateTag, Experimental::OrderedSpatialPredicateTag>{};
 };
 } // namespace Details
 
@@ -33,11 +49,17 @@ struct Nearest
   KOKKOS_DEFAULTED_FUNCTION
   Nearest() = default;
 
-  KOKKOS_INLINE_FUNCTION
+  KOKKOS_FUNCTION
   Nearest(Geometry const &geometry, int k)
       : _geometry(geometry)
       , _k(k)
+  {}
+
+  template <class OtherGeometry>
+  KOKKOS_FUNCTION auto distance(OtherGeometry const &other) const
   {
+    using Details::distance;
+    return distance(_geometry, other);
   }
 
   Geometry _geometry;
@@ -51,13 +73,12 @@ struct Intersects
 
   KOKKOS_DEFAULTED_FUNCTION Intersects() = default;
 
-  KOKKOS_INLINE_FUNCTION Intersects(Geometry const &geometry)
+  KOKKOS_FUNCTION Intersects(Geometry const &geometry)
       : _geometry(geometry)
-  {
-  }
+  {}
 
-  template <typename Other>
-  KOKKOS_INLINE_FUNCTION bool operator()(Other const &other) const
+  template <typename OtherGeometry>
+  KOKKOS_FUNCTION bool operator()(OtherGeometry const &other) const
   {
     using Details::intersects;
     return intersects(_geometry, other);
@@ -65,6 +86,32 @@ struct Intersects
 
   Geometry _geometry;
 };
+
+namespace Experimental
+{
+template <typename Geometry>
+struct OrderedSpatial
+{
+  using Tag = Experimental::OrderedSpatialPredicateTag;
+
+  KOKKOS_DEFAULTED_FUNCTION
+  OrderedSpatial() = default;
+
+  KOKKOS_FUNCTION
+  OrderedSpatial(Geometry const &geometry)
+      : _geometry(geometry)
+  {}
+
+  template <class OtherGeometry>
+  KOKKOS_FUNCTION auto distance(OtherGeometry const &other) const
+  {
+    using Details::distance;
+    return distance(_geometry, other);
+  }
+
+  Geometry _geometry;
+};
+} // namespace Experimental
 
 template <typename Geometry>
 KOKKOS_INLINE_FUNCTION Nearest<Geometry> nearest(Geometry const &geometry,
@@ -85,6 +132,16 @@ KOKKOS_INLINE_FUNCTION int getK(Nearest<Geometry> const &pred)
   return pred._k;
 }
 
+namespace Experimental
+{
+template <typename Geometry>
+KOKKOS_INLINE_FUNCTION OrderedSpatial<Geometry>
+ordered_intersects(Geometry const &geometry)
+{
+  return OrderedSpatial<Geometry>(geometry);
+}
+} // namespace Experimental
+
 template <typename Geometry>
 KOKKOS_INLINE_FUNCTION Geometry const &
 getGeometry(Nearest<Geometry> const &pred)
@@ -99,6 +156,13 @@ getGeometry(Intersects<Geometry> const &pred)
   return pred._geometry;
 }
 
+template <typename Geometry>
+KOKKOS_INLINE_FUNCTION Geometry const &
+getGeometry(Experimental::OrderedSpatial<Geometry> const &pred)
+{
+  return pred._geometry;
+}
+
 template <typename Predicate, typename Data>
 struct PredicateWithAttachment : Predicate
 {
@@ -107,13 +171,11 @@ struct PredicateWithAttachment : Predicate
                                                  Data const &data)
       : Predicate{pred}
       , _data{data}
-  {
-  }
+  {}
   KOKKOS_INLINE_FUNCTION PredicateWithAttachment(Predicate &&pred, Data &&data)
       : Predicate(std::forward<Predicate>(pred))
       , _data(std::forward<Data>(data))
-  {
-  }
+  {}
   Data _data;
 };
 

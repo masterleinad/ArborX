@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2017-2021 by the ArborX authors                            *
+ * Copyright (c) 2017-2022 by the ArborX authors                            *
  * All rights reserved.                                                     *
  *                                                                          *
  * This file is part of the ArborX library. ArborX is                       *
@@ -32,8 +32,10 @@ struct is_forward_iterable<Kokkos::View<T, P...>> : public boost::mpl::true_
   // operator== for the operands is not as clear.
   static_assert(
       Kokkos::View<T, P...>::rank == 1 &&
+          !std::is_same<typename Kokkos::View<T, P...>::array_layout,
+                        Kokkos::LayoutStride>::value &&
           KokkosExt::is_accessible_from_host<Kokkos::View<T, P...>>::value,
-      "Restricted to rank-one host-accessible views");
+      "Restricted to contiguous rank-one host-accessible views");
 };
 
 template <typename T, typename... P>
@@ -51,8 +53,7 @@ struct bt_iterator_traits<Kokkos::View<T, P...>, true>
 template <typename T, size_t N, typename Proxy>
 struct is_forward_iterable<Kokkos::Array<T, N, Proxy>>
     : public boost::mpl::true_
-{
-};
+{};
 
 template <typename T, size_t N, typename Proxy>
 struct bt_iterator_traits<Kokkos::Array<T, N, Proxy>, true>

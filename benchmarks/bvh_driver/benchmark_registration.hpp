@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2017-2021 by the ArborX authors                            *
+ * Copyright (c) 2017-2022 by the ArborX authors                            *
  * All rights reserved.                                                     *
  *                                                                          *
  * This file is part of the ArborX library. ArborX is                       *
@@ -173,7 +173,7 @@ template <typename Queries>
 struct ArborX::AccessTraits<QueriesWithIndex<Queries>, ArborX::PredicatesTag>
 {
   using memory_space = typename Queries::memory_space;
-  static size_t size(QueriesWithIndex<Queries> const &q)
+  static KOKKOS_FUNCTION size_t size(QueriesWithIndex<Queries> const &q)
   {
     return q._queries.extent(0);
   }
@@ -192,7 +192,7 @@ struct CountCallback
   KOKKOS_FUNCTION void operator()(Query const &query, int) const
   {
     auto const i = ArborX::getData(query);
-    Kokkos::atomic_fetch_add(&count_(i), 1);
+    Kokkos::atomic_increment(&count_(i));
   }
 };
 
@@ -219,12 +219,8 @@ void BM_construction(benchmark::State &state, Spec const &spec)
     std::chrono::duration<double> elapsed_seconds = end - start;
     state.SetIterationTime(elapsed_seconds.count());
   }
-  // In Benchmark 1.5.0, it could be rewritten as
-  //   state.counters["rate"] = benchmark::Counter(
-  //     spec.n_values, benchmark::Counter::kIsIterationInvariantRate);
-  // Benchmark 1.4 does not support kIsIterationInvariantRate, however.
   state.counters["rate"] = benchmark::Counter(
-      spec.n_values * state.iterations(), benchmark::Counter::kIsRate);
+      spec.n_values, benchmark::Counter::kIsIterationInvariantRate);
 }
 
 template <typename ExecutionSpace, class TreeType>
@@ -260,7 +256,7 @@ void BM_radius_search(benchmark::State &state, Spec const &spec)
     state.SetIterationTime(elapsed_seconds.count());
   }
   state.counters["rate"] = benchmark::Counter(
-      spec.n_queries * state.iterations(), benchmark::Counter::kIsRate);
+      spec.n_queries, benchmark::Counter::kIsIterationInvariantRate);
 }
 
 template <typename ExecutionSpace, class TreeType>
@@ -298,7 +294,7 @@ void BM_radius_callback_search(benchmark::State &state, Spec const &spec)
     state.SetIterationTime(elapsed_seconds.count());
   }
   state.counters["rate"] = benchmark::Counter(
-      spec.n_queries * state.iterations(), benchmark::Counter::kIsRate);
+      spec.n_queries, benchmark::Counter::kIsIterationInvariantRate);
 }
 
 template <typename ExecutionSpace, class TreeType>
@@ -333,7 +329,7 @@ void BM_knn_search(benchmark::State &state, Spec const &spec)
     state.SetIterationTime(elapsed_seconds.count());
   }
   state.counters["rate"] = benchmark::Counter(
-      spec.n_queries * state.iterations(), benchmark::Counter::kIsRate);
+      spec.n_queries, benchmark::Counter::kIsIterationInvariantRate);
 }
 
 template <typename ExecutionSpace, class TreeType>
@@ -370,7 +366,7 @@ void BM_knn_callback_search(benchmark::State &state, Spec const &spec)
     state.SetIterationTime(elapsed_seconds.count());
   }
   state.counters["rate"] = benchmark::Counter(
-      spec.n_queries * state.iterations(), benchmark::Counter::kIsRate);
+      spec.n_queries, benchmark::Counter::kIsIterationInvariantRate);
 }
 
 template <typename ExecutionSpace, typename TreeType>

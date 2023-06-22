@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2017-2021 by the ArborX authors                            *
+ * Copyright (c) 2017-2023 by the ArborX authors                            *
  * All rights reserved.                                                     *
  *                                                                          *
  * This file is part of the ArborX library. ArborX is                       *
@@ -12,10 +12,11 @@
 #ifndef ARBORX_DETAILS_UTILS_HPP
 #define ARBORX_DETAILS_UTILS_HPP
 
+#include <ArborX_DetailsKokkosExtAccessibilityTraits.hpp>
+#include <ArborX_DetailsKokkosExtViewHelpers.hpp>
 #include <ArborX_Exception.hpp>
 
 #include <Kokkos_Core.hpp>
-#include <Kokkos_Sort.hpp> // min_max_functor
 
 namespace ArborX
 {
@@ -28,119 +29,131 @@ namespace internal
 template <typename PointerType>
 struct PointerDepth
 {
-  static int constexpr value = 0;
+  static constexpr int value = 0;
 };
 
 template <typename PointerType>
 struct PointerDepth<PointerType *>
 {
-  static int constexpr value = PointerDepth<PointerType>::value + 1;
+  static constexpr int value = PointerDepth<PointerType>::value + 1;
 };
 
 template <typename PointerType, std::size_t N>
 struct PointerDepth<PointerType[N]>
 {
-  static int constexpr value = PointerDepth<PointerType>::value;
+  static constexpr int value = PointerDepth<PointerType>::value;
 };
 } // namespace internal
 
-template <typename View, typename ExecutionSpace>
+template <typename View, typename ExecutionSpace, typename MemorySpace>
 inline Kokkos::View<typename View::traits::data_type, Kokkos::LayoutRight,
                     typename ExecutionSpace::memory_space>
-create_layout_right_mirror_view(
-    ExecutionSpace const & /*execution_space*/, View const &src,
-    typename std::enable_if<!(
-        (std::is_same<typename View::traits::array_layout,
-                      Kokkos::LayoutRight>::value ||
-         (View::rank == 1 && !std::is_same<typename View::traits::array_layout,
-                                           Kokkos::LayoutStride>::value)) &&
-        std::is_same<typename View::traits::memory_space,
-                     typename ExecutionSpace::memory_space>::value)>::type * =
-        nullptr)
+create_layout_right_mirror_view_no_init(ExecutionSpace const &execution_space,
+                                        MemorySpace const &memory_space,
+                                        View const &src)
 {
-  constexpr int pointer_depth =
-      internal::PointerDepth<typename View::traits::data_type>::value;
-  return Kokkos::View<typename View::traits::data_type, Kokkos::LayoutRight,
-                      typename ExecutionSpace::memory_space>(
-      std::string(src.label()).append("_layout_right_mirror"), src.extent(0),
-      pointer_depth > 1 ? src.extent(1) : KOKKOS_INVALID_INDEX,
-      pointer_depth > 2 ? src.extent(2) : KOKKOS_INVALID_INDEX,
-      pointer_depth > 3 ? src.extent(3) : KOKKOS_INVALID_INDEX,
-      pointer_depth > 4 ? src.extent(4) : KOKKOS_INVALID_INDEX,
-      pointer_depth > 5 ? src.extent(5) : KOKKOS_INVALID_INDEX,
-      pointer_depth > 6 ? src.extent(6) : KOKKOS_INVALID_INDEX,
-      pointer_depth > 7 ? src.extent(7) : KOKKOS_INVALID_INDEX);
-}
+  static_assert(Kokkos::is_execution_space<ExecutionSpace>::value);
+  static_assert(Kokkos::is_memory_space<MemorySpace>::value);
 
-template <typename View, typename ExecutionSpace>
-inline auto create_layout_right_mirror_view(
-    ExecutionSpace const & /*execution_space*/, View const &src,
-    typename std::enable_if<
-        ((std::is_same<typename View::traits::array_layout,
-                       Kokkos::LayoutRight>::value ||
-          (View::rank == 1 && !std::is_same<typename View::traits::array_layout,
-                                            Kokkos::LayoutStride>::value)) &&
-         std::is_same<typename View::traits::memory_space,
-                      typename ExecutionSpace::memory_space>::value)>::type * =
-        nullptr)
-{
-  return src;
+  constexpr bool has_compatible_layout =
+      (std::is_same_v<typename View::array_layout, Kokkos::LayoutRight> ||
+       (View::rank == 1 &&
+        (std::is_same_v<typename View::array_layout, Kokkos::LayoutLeft> ||
+         std::is_same_v<typename View::array_layout, Kokkos::LayoutRight>)));
+  constexpr bool has_compatible_memory_space =
+      std::is_same_v<typename View::memory_space, MemorySpace>;
+
+  if constexpr (has_compatible_layout && has_compatible_memory_space)
+  {
+    return src;
+  }
+  else
+  {
+    constexpr int pointer_depth =
+        internal::PointerDepth<typename View::traits::data_type>::value;
+    return Kokkos::View<typename View::traits::data_type, Kokkos::LayoutRight,
+                        MemorySpace>(
+        Kokkos::view_alloc(
+            execution_space, memory_space, Kokkos::WithoutInitializing,
+            std::string(src.label()).append("_layout_right_mirror")),
+        src.extent(0), pointer_depth > 1 ? src.extent(1) : KOKKOS_INVALID_INDEX,
+        pointer_depth > 2 ? src.extent(2) : KOKKOS_INVALID_INDEX,
+        pointer_depth > 3 ? src.extent(3) : KOKKOS_INVALID_INDEX,
+        pointer_depth > 4 ? src.extent(4) : KOKKOS_INVALID_INDEX,
+        pointer_depth > 5 ? src.extent(5) : KOKKOS_INVALID_INDEX,
+        pointer_depth > 6 ? src.extent(6) : KOKKOS_INVALID_INDEX,
+        pointer_depth > 7 ? src.extent(7) : KOKKOS_INVALID_INDEX);
+  }
 }
 
 template <typename View>
-inline auto create_layout_right_mirror_view(View const &src)
+inline auto create_layout_right_mirror_view_no_init(View const &src)
 {
-  return create_layout_right_mirror_view(
-      typename View::traits::host_mirror_space{}, src);
+  typename View::traits::host_mirror_space::execution_space exec;
+  auto mirror_view = create_layout_right_mirror_view_no_init(
+      exec, typename View::traits::host_mirror_space{}, src);
+  exec.fence();
+  return mirror_view;
 }
 
-template <typename View, typename ExecutionSpace>
-inline auto create_layout_right_mirror_view_and_copy(
-    ExecutionSpace const &execution_space, View const &src,
-    typename std::enable_if<!(
-        (std::is_same<typename View::traits::array_layout,
-                      Kokkos::LayoutRight>::value ||
-         (View::rank == 1 && !std::is_same<typename View::traits::array_layout,
-                                           Kokkos::LayoutStride>::value)) &&
-        std::is_same<typename View::traits::memory_space,
-                     typename ExecutionSpace::memory_space>::value)>::type * =
-        0)
+template <typename View, typename ExecutionSpace, typename MemorySpace>
+inline auto
+create_layout_right_mirror_view_and_copy(ExecutionSpace const &execution_space,
+                                         MemorySpace const &memory_space,
+                                         View const &src)
 {
-  constexpr int pointer_depth =
-      internal::PointerDepth<typename View::traits::data_type>::value;
-  Kokkos::View<typename View::traits::data_type, Kokkos::LayoutRight,
-               typename ExecutionSpace::memory_space>
-      layout_right_view(
-          Kokkos::view_alloc(
-              Kokkos::WithoutInitializing,
-              std::string(src.label()).append("_layout_right_mirror")),
-          src.extent(0),
-          pointer_depth > 1 ? src.extent(1) : KOKKOS_INVALID_INDEX,
-          pointer_depth > 2 ? src.extent(2) : KOKKOS_INVALID_INDEX,
-          pointer_depth > 3 ? src.extent(3) : KOKKOS_INVALID_INDEX,
-          pointer_depth > 4 ? src.extent(4) : KOKKOS_INVALID_INDEX,
-          pointer_depth > 5 ? src.extent(5) : KOKKOS_INVALID_INDEX,
-          pointer_depth > 6 ? src.extent(6) : KOKKOS_INVALID_INDEX,
-          pointer_depth > 7 ? src.extent(7) : KOKKOS_INVALID_INDEX);
-  auto tmp_view = Kokkos::create_mirror_view_and_copy(execution_space, src);
-  // TODO not quite sure wy this can't be execution_space
-  Kokkos::deep_copy(/*execution_space, */ layout_right_view, tmp_view);
-  return layout_right_view;
-}
+  static_assert(Kokkos::is_execution_space<ExecutionSpace>::value);
+  static_assert(Kokkos::is_memory_space<MemorySpace>::value);
 
-template <typename View, typename ExecutionSpace>
-inline auto create_layout_right_mirror_view_and_copy(
-    ExecutionSpace const & /*execution_space*/, View const &src,
-    typename std::enable_if<
-        ((std::is_same<typename View::traits::array_layout,
-                       Kokkos::LayoutRight>::value ||
-          (View::rank == 1 && !std::is_same<typename View::traits::array_layout,
-                                            Kokkos::LayoutStride>::value)) &&
-         std::is_same<typename View::traits::memory_space,
-                      typename ExecutionSpace::memory_space>::value)>::type * =
-        nullptr)
-{
-  return src;
+  constexpr bool has_compatible_layout =
+      (std::is_same_v<typename View::array_layout, Kokkos::LayoutRight> ||
+       (View::rank == 1 &&
+        (std::is_same_v<typename View::array_layout, Kokkos::LayoutLeft> ||
+         std::is_same_v<typename View::array_layout, Kokkos::LayoutRight>)));
+  constexpr bool has_compatible_memory_space =
+      std::is_same_v<typename View::memory_space, MemorySpace>;
+
+  if constexpr (has_compatible_layout && has_compatible_memory_space)
+  {
+    return src;
+  }
+  else
+  {
+    constexpr int pointer_depth =
+        internal::PointerDepth<typename View::traits::data_type>::value;
+
+    auto exec = [execution_space]() {
+      if constexpr (Kokkos::SpaceAccessibility<ExecutionSpace,
+                                               MemorySpace>::accessible)
+        return execution_space;
+      else
+        return typename MemorySpace::execution_space{};
+    }();
+
+    Kokkos::View<typename View::traits::data_type, Kokkos::LayoutRight,
+                 MemorySpace>
+        layout_right_view(
+            Kokkos::view_alloc(
+                exec, Kokkos::WithoutInitializing,
+                std::string(src.label()).append("_layout_right_mirror")),
+            src.extent(0),
+            pointer_depth > 1 ? src.extent(1) : KOKKOS_INVALID_INDEX,
+            pointer_depth > 2 ? src.extent(2) : KOKKOS_INVALID_INDEX,
+            pointer_depth > 3 ? src.extent(3) : KOKKOS_INVALID_INDEX,
+            pointer_depth > 4 ? src.extent(4) : KOKKOS_INVALID_INDEX,
+            pointer_depth > 5 ? src.extent(5) : KOKKOS_INVALID_INDEX,
+            pointer_depth > 6 ? src.extent(6) : KOKKOS_INVALID_INDEX,
+            pointer_depth > 7 ? src.extent(7) : KOKKOS_INVALID_INDEX);
+    auto tmp_view = Kokkos::create_mirror_view(
+        Kokkos::view_alloc(exec, Kokkos::WithoutInitializing, memory_space),
+        src);
+    if constexpr (!Kokkos::SpaceAccessibility<ExecutionSpace,
+                                              MemorySpace>::accessible)
+      exec.fence();
+    Kokkos::deep_copy(execution_space, tmp_view, src);
+    Kokkos::deep_copy(execution_space, layout_right_view, tmp_view);
+    return layout_right_view;
+  }
 }
 
 // NOTE: This functor is used in exclusivePrefixSum( src, dst ).  We were
@@ -153,8 +166,7 @@ public:
                        Kokkos::View<T *, DeviceType> const &out)
       : _in(in)
       , _out(out)
-  {
-  }
+  {}
   KOKKOS_INLINE_FUNCTION void operator()(int i, T &update,
                                          bool final_pass) const
   {
@@ -252,17 +264,11 @@ template <typename T, typename... P>
  *  \pre \c v is of rank 1 and not empty.
  */
 template <typename T, typename... P>
-typename Kokkos::ViewTraits<T, P...>::non_const_value_type
+[[deprecated]] typename Kokkos::ViewTraits<T, P...>::non_const_value_type
 lastElement(Kokkos::View<T, P...> const &v)
 {
-  static_assert((unsigned(Kokkos::ViewTraits<T, P...>::rank) == unsigned(1)),
-                "lastElement requires Views of rank 1");
-  auto const n = v.extent(0);
-  ARBORX_ASSERT(n > 0);
-  auto v_subview = Kokkos::subview(v, n - 1);
-  auto v_host = Kokkos::create_mirror_view(v_subview);
-  Kokkos::deep_copy(v_host, v_subview);
-  return v_host();
+  using ExecutionSpace = typename Kokkos::View<T, P...>::execution_space;
+  return KokkosExt::lastElement(ExecutionSpace{}, v);
 }
 
 /** \brief Fills the view with a sequence of numbers
@@ -281,7 +287,7 @@ void iota(ExecutionSpace &&space, Kokkos::View<T, P...> const &v,
           typename Kokkos::ViewTraits<T, P...>::value_type value = 0)
 {
   using ValueType = typename Kokkos::ViewTraits<T, P...>::value_type;
-  static_assert((unsigned(Kokkos::ViewTraits<T, P...>::rank) == unsigned(1)),
+  static_assert(unsigned(Kokkos::ViewTraits<T, P...>::rank) == unsigned(1),
                 "iota requires a View of rank 1");
   static_assert(std::is_arithmetic<ValueType>::value,
                 "iota requires a View with an arithmetic value type");
@@ -292,8 +298,9 @@ void iota(ExecutionSpace &&space, Kokkos::View<T, P...> const &v,
   auto const n = v.extent(0);
   Kokkos::RangePolicy<std::decay_t<ExecutionSpace>> policy(
       std::forward<ExecutionSpace>(space), 0, n);
-  Kokkos::parallel_for("ArborX::Algorithms::iota", policy,
-                       KOKKOS_LAMBDA(int i) { v(i) = value + (ValueType)i; });
+  Kokkos::parallel_for(
+      "ArborX::Algorithms::iota", policy,
+      KOKKOS_LAMBDA(int i) { v(i) = value + (ValueType)i; });
 }
 
 template <typename T, typename... P>
@@ -321,13 +328,26 @@ minMax(ExecutionSpace &&space, ViewType const &v)
   static_assert(ViewType::rank == 1, "minMax requires a View of rank 1");
   auto const n = v.extent(0);
   ARBORX_ASSERT(n > 0);
-  Kokkos::MinMaxScalar<typename ViewType::non_const_value_type> result;
-  Kokkos::MinMax<typename ViewType::non_const_value_type> reducer(result);
+  using ValueType = typename ViewType::non_const_value_type;
+  ValueType min_val;
+  ValueType max_val;
   Kokkos::RangePolicy<std::decay_t<ExecutionSpace>> policy(
       std::forward<ExecutionSpace>(space), 0, n);
-  Kokkos::parallel_reduce("ArborX::Algorithms::minmax", policy,
-                          Kokkos::Impl::min_max_functor<ViewType>(v), reducer);
-  return std::make_pair(result.min_val, result.max_val);
+  Kokkos::parallel_reduce(
+      "ArborX::Algorithms::minmax", policy,
+      KOKKOS_LAMBDA(int i, ValueType &local_min, ValueType &local_max) {
+        auto const &val = v(i);
+        if (val < local_min)
+        {
+          local_min = val;
+        }
+        if (local_max < val)
+        {
+          local_max = val;
+        }
+      },
+      Kokkos::Min<ValueType>(min_val), Kokkos::Max<ValueType>(max_val));
+  return std::make_pair(min_val, max_val);
 }
 
 template <typename ViewType>
@@ -351,16 +371,18 @@ typename ViewType::non_const_value_type min(ExecutionSpace &&space,
   static_assert(ViewType::rank == 1, "min requires a View of rank 1");
   auto const n = v.extent(0);
   ARBORX_ASSERT(n > 0);
-  typename ViewType::non_const_value_type result;
+  using ValueType = typename ViewType::non_const_value_type;
+  ValueType result;
   Kokkos::Min<typename ViewType::non_const_value_type> reducer(result);
   Kokkos::RangePolicy<std::decay_t<ExecutionSpace>> policy(
       std::forward<ExecutionSpace>(space), 0, n);
-  Kokkos::parallel_reduce("ArborX::Algorithms::min", policy,
-                          KOKKOS_LAMBDA(int i, int &update) {
-                            if (v(i) < update)
-                              update = v(i);
-                          },
-                          reducer);
+  Kokkos::parallel_reduce(
+      "ArborX::Algorithms::min", policy,
+      KOKKOS_LAMBDA(int i, ValueType &update) {
+        if (v(i) < update)
+          update = v(i);
+      },
+      reducer);
   return result;
 }
 
@@ -384,16 +406,18 @@ typename ViewType::non_const_value_type max(ExecutionSpace &&space,
   static_assert(ViewType::rank == 1, "max requires a View of rank 1");
   auto const n = v.extent(0);
   ARBORX_ASSERT(n > 0);
-  typename ViewType::non_const_value_type result;
+  using ValueType = typename ViewType::non_const_value_type;
+  ValueType result;
   Kokkos::Max<typename ViewType::non_const_value_type> reducer(result);
   Kokkos::RangePolicy<std::decay_t<ExecutionSpace>> policy(
       std::forward<ExecutionSpace>(space), 0, n);
-  Kokkos::parallel_reduce("ArborX::Algorithms::max", policy,
-                          KOKKOS_LAMBDA(int i, int &update) {
-                            if (v(i) > update)
-                              update = v(i);
-                          },
-                          reducer);
+  Kokkos::parallel_reduce(
+      "ArborX::Algorithms::max", policy,
+      KOKKOS_LAMBDA(int i, ValueType &update) {
+        if (v(i) > update)
+          update = v(i);
+      },
+      reducer);
   return result;
 }
 
@@ -483,13 +507,13 @@ void adjacentDifference(ExecutionSpace &&space, SrcViewType const &src,
   ARBORX_ASSERT(src != dst);
   Kokkos::RangePolicy<std::decay_t<ExecutionSpace>> policy(
       std::forward<ExecutionSpace>(space), 0, n);
-  Kokkos::parallel_for("ArbroX::Algorithms::adjacent_difference", policy,
-                       KOKKOS_LAMBDA(int i) {
-                         if (i > 0)
-                           dst(i) = src(i) - src(i - 1);
-                         else
-                           dst(i) = src(i);
-                       });
+  Kokkos::parallel_for(
+      "ArborX::Algorithms::adjacent_difference", policy, KOKKOS_LAMBDA(int i) {
+        if (i > 0)
+          dst(i) = src(i) - src(i - 1);
+        else
+          dst(i) = src(i);
+      });
 }
 
 template <typename SrcViewType, typename DstViewType>
@@ -503,75 +527,88 @@ template <typename SrcViewType, typename DstViewType>
 // FIXME split this into one for STL-like algorithms and another one for view
 // utility helpers
 
-// FIXME get rid of this when Trilinos/Kokkos version is updated
-// clang-format off
-#ifndef KOKKOS_IMPL_CTOR_DEFAULT_ARG
-#  ifdef KOKKOS_ENABLE_DEPRECATED_CODE
-#    define KOKKOS_IMPL_CTOR_DEFAULT_ARG 0
-#  else
-#    define KOKKOS_IMPL_CTOR_DEFAULT_ARG (~std::size_t(0))
-#  endif
-#endif
-// clang-format on
-
 // NOTE: not possible to avoid initialization with Kokkos::realloc()
 template <typename View>
-void reallocWithoutInitializing(View &v,
-                                size_t n0 = KOKKOS_IMPL_CTOR_DEFAULT_ARG,
-                                size_t n1 = KOKKOS_IMPL_CTOR_DEFAULT_ARG,
-                                size_t n2 = KOKKOS_IMPL_CTOR_DEFAULT_ARG,
-                                size_t n3 = KOKKOS_IMPL_CTOR_DEFAULT_ARG,
-                                size_t n4 = KOKKOS_IMPL_CTOR_DEFAULT_ARG,
-                                size_t n5 = KOKKOS_IMPL_CTOR_DEFAULT_ARG,
-                                size_t n6 = KOKKOS_IMPL_CTOR_DEFAULT_ARG,
-                                size_t n7 = KOKKOS_IMPL_CTOR_DEFAULT_ARG)
+[[deprecated]] void
+reallocWithoutInitializing(View &v, size_t n0 = KOKKOS_IMPL_CTOR_DEFAULT_ARG,
+                           size_t n1 = KOKKOS_IMPL_CTOR_DEFAULT_ARG,
+                           size_t n2 = KOKKOS_IMPL_CTOR_DEFAULT_ARG,
+                           size_t n3 = KOKKOS_IMPL_CTOR_DEFAULT_ARG,
+                           size_t n4 = KOKKOS_IMPL_CTOR_DEFAULT_ARG,
+                           size_t n5 = KOKKOS_IMPL_CTOR_DEFAULT_ARG,
+                           size_t n6 = KOKKOS_IMPL_CTOR_DEFAULT_ARG,
+                           size_t n7 = KOKKOS_IMPL_CTOR_DEFAULT_ARG)
 {
-  static_assert(View::is_managed, "Can only realloc managed views");
-
-  size_t new_extents[8] = {n0, n1, n2, n3, n4, n5, n6, n7};
-  bool has_requested_extents = true;
-  for (unsigned int dim = 0; dim < v.rank_dynamic; ++dim)
-    if (new_extents[dim] != v.extent(dim))
-    {
-      has_requested_extents = false;
-      break;
-    }
-
-  if (!has_requested_extents)
-    v = View(Kokkos::view_alloc(Kokkos::WithoutInitializing, v.label()), n0, n1,
-             n2, n3, n4, n5, n6, n7);
+  using ExecutionSpace = typename View::execution_space;
+  KokkosExt::reallocWithoutInitializing(ExecutionSpace{}, v, n0, n1, n2, n3, n4,
+                                        n5, n6, n7);
 }
 
 template <typename View>
-void reallocWithoutInitializing(View &v,
-                                const typename View::array_layout &layout)
+[[deprecated]] void
+reallocWithoutInitializing(View &v, const typename View::array_layout &layout)
 {
-  static_assert(View::is_managed, "Can only realloc managed views");
-  v = View(Kokkos::view_alloc(Kokkos::WithoutInitializing, v.label()), layout);
+  using ExecutionSpace = typename View::execution_space;
+  KokkosExt::reallocWithoutInitializing(ExecutionSpace{}, v, layout);
 }
 
 template <typename View>
-typename View::non_const_type cloneWithoutInitializingNorCopying(View &v)
+[[deprecated]] typename View::non_const_type
+cloneWithoutInitializingNorCopying(View &v)
 {
-  return typename View::non_const_type(
-      Kokkos::view_alloc(Kokkos::WithoutInitializing, v.label()), v.layout());
+  using ExecutionSpace = typename View::execution_space;
+  return KokkosExt::cloneWithoutInitializingNorCopying(ExecutionSpace{}, v);
 }
 
 template <typename ExecutionSpace, typename View>
-typename View::non_const_type clone(ExecutionSpace &&space, View &v)
+[[deprecated]] typename View::non_const_type clone(ExecutionSpace const &space,
+                                                   View &v)
 {
-  typename View::non_const_type w(
-      Kokkos::view_alloc(Kokkos::WithoutInitializing, v.label()), v.layout());
-  Kokkos::deep_copy(std::forward<ExecutionSpace>(space), w, v);
-  return w;
+  return KokkosExt::clone(space, v);
 }
 
 template <typename View>
 [[deprecated]] inline typename View::non_const_type clone(View &v)
 {
   using ExecutionSpace = typename View::execution_space;
-  return clone(ExecutionSpace{}, v);
+  return KokkosExt::clone(ExecutionSpace{}, v);
 }
+
+namespace Details
+{
+
+template <typename ExecutionSpace, typename View, typename Offset>
+void computeOffsetsInOrderedView(ExecutionSpace const &exec_space, View view,
+                                 Offset &offsets)
+{
+  static_assert(KokkosExt::is_accessible_from<typename View::memory_space,
+                                              ExecutionSpace>::value);
+  static_assert(KokkosExt::is_accessible_from<typename Offset::memory_space,
+                                              ExecutionSpace>::value);
+
+  auto const n = view.extent_int(0);
+
+  int num_offsets;
+  KokkosExt::reallocWithoutInitializing(exec_space, offsets, n + 1);
+  Kokkos::parallel_scan(
+      "ArborX::Algorithms::compute_offsets_in_sorted_view",
+      Kokkos::RangePolicy<ExecutionSpace>(exec_space, 0, n + 1),
+      KOKKOS_LAMBDA(int i, int &update, bool final_pass) {
+        bool const is_cell_first_index =
+            (i == 0 || i == n || view(i) != view(i - 1));
+        if (is_cell_first_index)
+        {
+          if (final_pass)
+            offsets(update) = i;
+          ++update;
+        }
+      },
+      num_offsets);
+  Kokkos::resize(Kokkos::view_alloc(exec_space, Kokkos::WithoutInitializing),
+                 offsets, num_offsets);
+}
+
+} // namespace Details
 
 } // namespace ArborX
 

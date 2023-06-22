@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2017-2021 by the ArborX authors                            *
+ * Copyright (c) 2017-2022 by the ArborX authors                            *
  * All rights reserved.                                                     *
  *                                                                          *
  * This file is part of the ArborX library. ArborX is                       *
@@ -9,6 +9,8 @@
  * SPDX-License-Identifier: BSD-3-Clause                                    *
  ****************************************************************************/
 
+#include <ArborX_GeometryTraits.hpp>
+#include <ArborX_HyperBox.hpp>
 #include <ArborX_LinearBVH.hpp>
 
 #include <Kokkos_Core.hpp>
@@ -23,18 +25,31 @@ using PrimitivePointOrBox = ArborX::Point;
 struct FakeBoundingVolume
 {
   KOKKOS_FUNCTION FakeBoundingVolume &operator+=(PrimitivePointOrBox) { return *this; }
-  KOKKOS_FUNCTION void operator+=(PrimitivePointOrBox) volatile {}
-  KOKKOS_FUNCTION operator ArborX::Box() const { return {}; }
 };
 KOKKOS_FUNCTION void expand(FakeBoundingVolume, FakeBoundingVolume) {}
 KOKKOS_FUNCTION void expand(FakeBoundingVolume, PrimitivePointOrBox) {}
+template<int DIM>
+KOKKOS_FUNCTION void expand(ArborX::ExperimentalHyperGeometry::Box<DIM> &, FakeBoundingVolume) { }
 
 struct FakePredicateGeometry {};
 KOKKOS_FUNCTION ArborX::Point returnCentroid(FakePredicateGeometry) { return {}; }
 KOKKOS_FUNCTION bool intersects(FakePredicateGeometry, FakeBoundingVolume) { return true; }
 KOKKOS_FUNCTION float distance(FakePredicateGeometry, FakeBoundingVolume) { return 0.f; }
 // clang-format on
+
+struct PoorManLambda
+{
+  template <class Predicate>
+  KOKKOS_FUNCTION void operator()(Predicate, int) const
+  {}
+};
 } // namespace Test
+
+template <>
+struct ArborX::GeometryTraits::dimension<Test::FakeBoundingVolume>
+{
+  static constexpr int value = 3;
+};
 
 // Compile-only
 void check_bounding_volume_and_predicate_geometry_type_requirements()
@@ -52,13 +67,19 @@ void check_bounding_volume_and_predicate_geometry_type_requirements()
       decltype(ArborX::intersects(Test::FakePredicateGeometry{}));
   Kokkos::View<SpatialPredicate *, MemorySpace> spatial_predicates(
       "spatial_predicates", 0);
+  tree.query(ExecutionSpace{}, spatial_predicates, Test::PoorManLambda{});
+#ifndef __NVCC__
   tree.query(ExecutionSpace{}, spatial_predicates,
              KOKKOS_LAMBDA(SpatialPredicate, int){});
+#endif
 
   using NearestPredicate =
       decltype(ArborX::nearest(Test::FakePredicateGeometry{}));
   Kokkos::View<NearestPredicate *, MemorySpace> nearest_predicates(
       "nearest_predicates", 0);
+  tree.query(ExecutionSpace{}, nearest_predicates, Test::PoorManLambda{});
+#ifndef __NVCC__
   tree.query(ExecutionSpace{}, nearest_predicates,
              KOKKOS_LAMBDA(NearestPredicate, int){});
+#endif
 }

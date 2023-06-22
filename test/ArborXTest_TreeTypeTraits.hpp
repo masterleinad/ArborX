@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2017-2021 by the ArborX authors                            *
+ * Copyright (c) 2017-2022 by the ArborX authors                            *
  * All rights reserved.                                                     *
  *                                                                          *
  * This file is part of the ArborX library. ArborX is                       *
@@ -19,8 +19,7 @@
 // NOTE Because std::tuple does not take template template parameters
 template <template <class> class...>
 struct Tuple
-{
-};
+{};
 
 #ifndef ARBORX_TEST_TREE_TYPES
 // NOTE Emulate resulting name from using ArborX::BoundingVolumeHierarchy as
@@ -45,7 +44,7 @@ struct TreeExecutionAndMemorySpaces
 // test_case_name<this_class_name<ArborX__BVH_ Kokkos__Device<Kokkos__Cuda_ Kokkos__CudaSpace>>>*
 // clang-format on
 {
-  static_assert(Kokkos::is_device<DeviceType>{}, "");
+  static_assert(Kokkos::is_device<DeviceType>{});
   using device_type = DeviceType;
   using execution_space = typename DeviceType::execution_space;
   using memory_space = typename DeviceType::memory_space;

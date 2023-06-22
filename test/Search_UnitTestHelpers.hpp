@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2017-2021 by the ArborX authors                            *
+ * Copyright (c) 2017-2022 by the ArborX authors                            *
  * All rights reserved.                                                     *
  *                                                                          *
  * This file is part of the ArborX library. ArborX is                       *
@@ -13,6 +13,7 @@
 #define ARBORX_SEARCH_TEST_HELPERS_HPP
 
 // clang-format off
+#include "boost_ext/ArborXPairIndexRankComparison.hpp"
 #include "boost_ext/KokkosPairComparison.hpp"
 #include "boost_ext/TupleComparison.hpp"
 #include "boost_ext/CompressedStorageComparison.hpp"
@@ -23,6 +24,9 @@
 #include "ArborX_BoostRTreeHelpers.hpp"
 #include <ArborX_DistributedTree.hpp>
 #endif
+#include <ArborX_Box.hpp>
+#include <ArborX_Point.hpp>
+#include <ArborX_Sphere.hpp>
 
 #include <boost/test/unit_test.hpp>
 
@@ -32,19 +36,16 @@
 
 template <typename T>
 struct is_distributed : std::false_type
-{
-};
+{};
 
 #ifdef ARBORX_ENABLE_MPI
 template <typename D>
 struct is_distributed<ArborX::DistributedTree<D>> : std::true_type
-{
-};
+{};
 
 template <typename I>
 struct is_distributed<BoostExt::ParallelRTree<I>> : std::true_type
-{
-};
+{};
 #endif
 
 template <typename T>
@@ -72,8 +73,12 @@ auto query(ExecutionSpace const &exec_space, Tree const &tree,
            Queries const &queries)
 {
   using memory_space = typename Tree::memory_space;
+#ifdef ARBORX_ENABLE_MPI
   using value_type =
-      std::conditional_t<is_distributed<Tree>{}, Kokkos::pair<int, int>, int>;
+      std::conditional_t<is_distributed<Tree>{}, ArborX::PairIndexRank, int>;
+#else
+  using value_type = int;
+#endif
   Kokkos::View<value_type *, memory_space> values("Testing::values", 0);
   Kokkos::View<int *, memory_space> offsets("Testing::offsets", 0);
   tree.query(exec_space, queries, values, offsets);
@@ -107,28 +112,27 @@ auto query(ExecutionSpace const &exec_space, Tree const &tree,
                  (reference),                                                  \
              boost::test_tools::per_element());
 
+#ifdef ARBORX_ENABLE_MPI
 // Workaround for NVCC that complains that the enclosing parent function
 // (query_with_distance) for an extended __host__ __device__ lambda must not
 // have deduced return type
 template <typename DeviceType, typename ExecutionSpace>
-Kokkos::View<Kokkos::pair<Kokkos::pair<int, int>, float> *, DeviceType>
+Kokkos::View<ArborX::Details::PairIndexRankAndDistance *, DeviceType>
 zip(ExecutionSpace const &space, Kokkos::View<int *, DeviceType> indices,
     Kokkos::View<int *, DeviceType> ranks,
     Kokkos::View<float *, DeviceType> distances)
 {
   auto const n = indices.extent(0);
-  Kokkos::View<Kokkos::pair<Kokkos::pair<int, int>, float> *, DeviceType>
-      values(Kokkos::view_alloc(Kokkos::WithoutInitializing, "Testing::values"),
-             n);
-  Kokkos::parallel_for("ArborX:UnitTestSupport:zip",
-                       Kokkos::RangePolicy<ExecutionSpace>(space, 0, n),
-                       KOKKOS_LAMBDA(int i) {
-                         values(i) = {{indices(i), ranks(i)}, distances(i)};
-                       });
+  Kokkos::View<ArborX::Details::PairIndexRankAndDistance *, DeviceType> values(
+      Kokkos::view_alloc(Kokkos::WithoutInitializing, "Testing::values"), n);
+  Kokkos::parallel_for(
+      "ArborX:UnitTestSupport:zip",
+      Kokkos::RangePolicy<ExecutionSpace>(space, 0, n), KOKKOS_LAMBDA(int i) {
+        values(i) = {{indices(i), ranks(i)}, distances(i)};
+      });
   return values;
 }
 
-#ifdef ARBORX_ENABLE_MPI
 template <typename ExecutionSpace, typename Tree, typename Queries>
 auto query_with_distance(ExecutionSpace const &exec_space, Tree const &tree,
                          Queries const &queries,
@@ -208,8 +212,8 @@ auto makeIntersectsBoxWithAttachmentQueries(
     std::vector<ArborX::Box> const &boxes, std::vector<Data> const &data)
 {
   int const n = boxes.size();
-  Kokkos::View<decltype(
-                   ArborX::attach(ArborX::intersects(ArborX::Box{}), Data{})) *,
+  Kokkos::View<decltype(ArborX::attach(ArborX::intersects(ArborX::Box{}),
+                                       Data{})) *,
                DeviceType>
       queries("Testing::intersecting_with_box_with_attachment_predicates", n);
   auto queries_host = Kokkos::create_mirror_view(queries);
@@ -235,6 +239,43 @@ auto makeNearestQueries(
   return queries;
 }
 
+template <typename DeviceType>
+auto makeBoxNearestQueries(
+    std::vector<std::tuple<ArborX::Point, ArborX::Point, int>> const &boxes)
+{
+  // NOTE: `boxes` is not a very descriptive name here. It stores both the
+  // corners of the boxe and the number k of neighbors to query for.
+  int const n = boxes.size();
+  Kokkos::View<ArborX::Nearest<ArborX::Box> *, DeviceType> queries(
+      "Testing::nearest_queries", n);
+  auto queries_host = Kokkos::create_mirror_view(queries);
+  for (int i = 0; i < n; ++i)
+    queries_host(i) = ArborX::nearest(
+        ArborX::Box{std::get<0>(boxes[i]), std::get<1>(boxes[i])},
+        std::get<2>(boxes[i]));
+  Kokkos::deep_copy(queries, queries_host);
+  return queries;
+}
+
+template <typename DeviceType>
+auto makeSphereNearestQueries(
+    std::vector<std::tuple<ArborX::Point, float, int>> const &spheres)
+{
+  // NOTE: `sphere` is not a very descriptive name here. It stores both the
+  // center and the radius of the sphere and the number k of neighbors to query
+  // for.
+  int const n = spheres.size();
+  Kokkos::View<ArborX::Nearest<ArborX::Sphere> *, DeviceType> queries(
+      "Testing::nearest_queries", n);
+  auto queries_host = Kokkos::create_mirror_view(queries);
+  for (int i = 0; i < n; ++i)
+    queries_host(i) = ArborX::nearest(
+        ArborX::Sphere{std::get<0>(spheres[i]), std::get<1>(spheres[i])},
+        std::get<2>(spheres[i]));
+  Kokkos::deep_copy(queries, queries_host);
+  return queries;
+}
+
 template <typename DeviceType, typename Data>
 auto makeNearestWithAttachmentQueries(
     std::vector<std::pair<ArborX::Point, int>> const &points,
@@ -243,8 +284,8 @@ auto makeNearestWithAttachmentQueries(
   // NOTE: `points` is not a very descriptive name here. It stores both the
   // actual point and the number k of neighbors to query for.
   int const n = points.size();
-  Kokkos::View<decltype(
-                   ArborX::attach(ArborX::Nearest<ArborX::Point>{}, Data{})) *,
+  Kokkos::View<decltype(ArborX::attach(ArborX::Nearest<ArborX::Point>{},
+                                       Data{})) *,
                DeviceType>
       queries("Testing::nearest_queries", n);
   auto queries_host = Kokkos::create_mirror_view(queries);

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2017-2021 by the ArborX authors                            *
+ * Copyright (c) 2017-2022 by the ArborX authors                            *
  * All rights reserved.                                                     *
  *                                                                          *
  * This file is part of the ArborX library. ArborX is                       *
@@ -84,8 +84,7 @@ void viz(std::string const &prefix, std::string const &infile, int n_neighbors)
 
   ArborX::BVH<Kokkos::HostSpace> bvh{ExecutionSpace{}, points};
 
-  using TreeVisualization =
-      typename ArborX::Details::TreeVisualization<DeviceType>;
+  using TreeVisualization = ArborX::Details::TreeVisualization;
   using TikZVisitor = typename TreeVisualization::TikZVisitor;
   using GraphvizVisitor = typename TreeVisualization::GraphvizVisitor;
 
@@ -94,10 +93,10 @@ void viz(std::string const &prefix, std::string const &infile, int n_neighbors)
     n_neighbors = bvh.size();
   Kokkos::View<ArborX::Nearest<ArborX::Point> *, DeviceType> queries("queries",
                                                                      n_queries);
-  Kokkos::parallel_for(Kokkos::RangePolicy<ExecutionSpace>(0, n_queries),
-                       KOKKOS_LAMBDA(int i) {
-                         queries(i) = ArborX::nearest(points(i), n_neighbors);
-                       });
+  Kokkos::parallel_for(
+      Kokkos::RangePolicy<ExecutionSpace>(0, n_queries), KOKKOS_LAMBDA(int i) {
+        queries(i) = ArborX::nearest(points(i), n_neighbors);
+      });
 
   auto performQueries = [&bvh, &queries](std::string const &p,
                                          std::string const &s) {
@@ -138,9 +137,10 @@ void viz(std::string const &prefix, std::string const &infile, int n_neighbors)
   performQueries(prefix + "shuffled_", suffix);
 
   // Sort them
-  auto permute =
-      ArborX::Details::BatchedQueries<DeviceType>::sortQueriesAlongZOrderCurve(
-          ExecutionSpace{}, bvh.bounds(), queries);
+  auto permute = ArborX::Details::BatchedQueries<DeviceType>::
+      sortPredicatesAlongSpaceFillingCurve(ExecutionSpace{},
+                                           ArborX::Experimental::Morton32(),
+                                           bvh.bounds(), queries);
   queries = ArborX::Details::BatchedQueries<DeviceType>::applyPermutation(
       ExecutionSpace{}, permute, queries);
   performQueries(prefix + "sorted_", suffix);
@@ -148,9 +148,7 @@ void viz(std::string const &prefix, std::string const &infile, int n_neighbors)
 
 int main(int argc, char *argv[])
 {
-  Kokkos::InitArguments args;
-  args.disable_warnings = true;
-  Kokkos::ScopeGuard guard(args);
+  Kokkos::ScopeGuard guard(argc, argv);
 
   std::string prefix;
   std::string infile;

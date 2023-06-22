@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2017-2021 by the ArborX authors                            *
+ * Copyright (c) 2017-2022 by the ArborX authors                            *
  * All rights reserved.                                                     *
  *                                                                          *
  * This file is part of the ArborX library. ArborX is                       *
@@ -38,7 +38,8 @@ struct AccessTraits<Details::PermutedData<Predicates, Permute, AttachIndices>,
       Details::PermutedData<Predicates, Permute, AttachIndices>;
   using NativeAccess = AccessTraits<Predicates, PredicatesTag>;
 
-  static std::size_t size(PermutedPredicates const &permuted_predicates)
+  KOKKOS_FUNCTION static std::size_t
+  size(PermutedPredicates const &permuted_predicates)
   {
     return NativeAccess::size(permuted_predicates._data);
   }
@@ -53,8 +54,9 @@ struct AccessTraits<Details::PermutedData<Predicates, Permute, AttachIndices>,
   }
 
   template <bool _Attach = AttachIndices>
-  KOKKOS_FUNCTION static auto get(PermutedPredicates const &permuted_predicates,
-                                  std::enable_if_t<!_Attach, std::size_t> index)
+  KOKKOS_FUNCTION static decltype(auto)
+  get(PermutedPredicates const &permuted_predicates,
+      std::enable_if_t<!_Attach, std::size_t> index)
   {
     auto const permuted_index = permuted_predicates._permute(index);
     return NativeAccess::get(permuted_predicates._data, permuted_index);

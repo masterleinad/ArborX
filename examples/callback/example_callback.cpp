@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2017-2021 by the ArborX authors                            *
+ * Copyright (c) 2017-2022 by the ArborX authors                            *
  * All rights reserved.                                                     *
  *                                                                          *
  * This file is part of the ArborX library. ArborX is                       *
@@ -21,8 +21,7 @@ using ExecutionSpace = Kokkos::DefaultExecutionSpace;
 using MemorySpace = ExecutionSpace::memory_space;
 
 struct FirstOctant
-{
-};
+{};
 
 struct NearestToOrigin
 {
@@ -57,9 +56,10 @@ struct PrintfCallback
   KOKKOS_FUNCTION void operator()(Predicate, int primitive,
                                   OutputFunctor const &out) const
   {
-#ifndef __SYCL_DEVICE_ONLY__
-    printf("Found %d from functor\n", primitive);
+#ifdef __SYCL_DEVICE_ONLY__
+    using sycl::ext::oneapi::experimental::printf;
 #endif
+    printf("Found %d from functor\n", primitive);
     out(primitive);
   }
 };
@@ -91,16 +91,16 @@ int main(int argc, char *argv[])
     ArborX::query(bvh, ExecutionSpace{}, FirstOctant{}, PrintfCallback{},
                   values, offsets);
 #ifndef __NVCC__
-    ArborX::query(bvh, ExecutionSpace{}, FirstOctant{},
-                  KOKKOS_LAMBDA(auto /*predicate*/, int primitive,
-                                auto /*output_functor*/) {
-#ifndef __SYCL_DEVICE_ONLY__
-                    printf("Found %d from generic lambda\n", primitive);
-#else
-                    (void)primitive;
+    ArborX::query(
+        bvh, ExecutionSpace{}, FirstOctant{},
+        KOKKOS_LAMBDA(auto /*predicate*/, int primitive,
+                      auto /*output_functor*/) {
+#ifdef __SYCL_DEVICE_ONLY__
+          using sycl::ext::oneapi::experimental::printf;
 #endif
-                  },
-                  values, offsets);
+          printf("Found %d from generic lambda\n", primitive);
+        },
+        values, offsets);
 #endif
   }
 
@@ -111,16 +111,16 @@ int main(int argc, char *argv[])
     ArborX::query(bvh, ExecutionSpace{}, NearestToOrigin{k}, PrintfCallback{},
                   values, offsets);
 #ifndef __NVCC__
-    ArborX::query(bvh, ExecutionSpace{}, NearestToOrigin{k},
-                  KOKKOS_LAMBDA(auto /*predicate*/, int primitive,
-                                auto /*output_functor*/) {
-#ifndef __SYCL_DEVICE_ONLY__
-                    printf("Found %d from generic lambda\n", primitive);
-#else
-                    (void)primitive;
+    ArborX::query(
+        bvh, ExecutionSpace{}, NearestToOrigin{k},
+        KOKKOS_LAMBDA(auto /*predicate*/, int primitive,
+                      auto /*output_functor*/) {
+#ifdef __SYCL_DEVICE_ONLY__
+          using sycl::ext::oneapi::experimental::printf;
 #endif
-                  },
-                  values, offsets);
+          printf("Found %d from generic lambda\n", primitive);
+        },
+        values, offsets);
 #endif
   }
 
@@ -130,14 +130,14 @@ int main(int argc, char *argv[])
         "counter");
 
 #ifndef __NVCC__
-    bvh.query(ExecutionSpace{}, FirstOctant{},
-              KOKKOS_LAMBDA(auto /*predicate*/, int j) {
-#ifndef __SYCL_DEVICE_ONLY__
-                printf("%d %d %d\n", ++c(), -1, j);
-#else
-                (void)j;
+    bvh.query(
+        ExecutionSpace{}, FirstOctant{},
+        KOKKOS_LAMBDA(auto /*predicate*/, int j) {
+#ifdef __SYCL_DEVICE_ONLY__
+          using sycl::ext::oneapi::experimental::printf;
 #endif
-              });
+          printf("%d %d %d\n", ++c(), -1, j);
+        });
 #endif
   }
 

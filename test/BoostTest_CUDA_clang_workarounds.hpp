@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2017-2021 by the ArborX authors                            *
+ * Copyright (c) 2017-2022 by the ArborX authors                            *
  * All rights reserved.                                                     *
  *                                                                          *
  * This file is part of the ArborX library. ArborX is                       *
@@ -18,7 +18,7 @@
 #include <boost/type_traits/add_pointer.hpp>
 
 #ifndef BOOST_STATIC_ASSERT
-#define BOOST_STATIC_ASSERT(m) static_assert(m, "");
+#define BOOST_STATIC_ASSERT(m) static_assert(m);
 #endif
 
 #endif

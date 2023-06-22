@@ -1,14 +1,22 @@
 cmake_minimum_required(VERSION 3.16)
 project(ArborX CXX)
 
-find_package(Kokkos 3.1 REQUIRED)
-if(Kokkos_ENABLE_CUDA)
+# Workaround to compile against Trilinos 14.0. That version
+# of Trilinos does not set the compatibility mode for Kokkos correctly.
+# FIXME: remove once we require Kokkos 4.0.1 or later.
+find_package(Kokkos QUIET 3.7.01 CONFIG)
+if (NOT Kokkos_FOUND)
+  find_package(Kokkos 4.0.00 REQUIRED CONFIG)
+endif()
+message(STATUS "Found Kokkos: ${Kokkos_DIR} (version \"${Kokkos_VERSION}\")")
+if(Kokkos_ENABLE_CUDA AND Kokkos_VERSION VERSION_LESS 4.1)
+  # CUDA_LAMBDA is deprecated starting 4.1
   kokkos_check(OPTIONS CUDA_LAMBDA)
 endif()
 
 add_library(ArborX INTERFACE)
 target_link_libraries(ArborX INTERFACE Kokkos::kokkos)
-set_target_properties(ArborX PROPERTIES INTERFACE_COMPILE_FEATURES cxx_std_14)
+set_target_properties(ArborX PROPERTIES INTERFACE_COMPILE_FEATURES cxx_std_17)
 # As all executables using ArborX depend on it, depending on record_hash allows
 # updating hash each time executable is rebuilt, including when called from
 # within a subdirectory.
@@ -30,8 +38,19 @@ endif()
 
 cmake_dependent_option(ARBORX_ENABLE_ONEDPL "Enable oneDPL support" ON "Kokkos_ENABLE_SYCL" OFF)
 if(Kokkos_ENABLE_SYCL AND ARBORX_ENABLE_ONEDPL)
-  find_package(oneDPL REQUIRED)
-  target_link_libraries(ArborX INTERFACE oneDPL)
+  include(CheckIncludeFileCXX)
+  check_include_file_cxx(oneapi/dpl/execution ARBORX_COMPILER_HAS_ONEDPL_EXECUTION_HEADER)
+  check_include_file_cxx(oneapi/dpl/algorithm ARBORX_COMPILER_HAS_ONEDPL_ALGORITHM_HEADER)
+  if (ARBORX_COMPILER_HAS_ONEDPL_EXECUTION_HEADER AND
+      ARBORX_COMPILER_HAS_ONEDPL_ALGORITHM_HEADER)
+    set(ARBORX_CXX_COMPILER_BUNDLED_ONEDPL TRUE)
+  else()
+    set(ARBORX_CXX_COMPILER_BUNDLED_ONEDPL FALSE)
+  endif()
+  if(NOT ARBORX_CXX_COMPILER_BUNDLED_ONEDPL)
+    find_package(oneDPL REQUIRED)
+    target_link_libraries(ArborX INTERFACE oneDPL)
+  endif()
 endif()
 
 # Refer to the alias target in examples and benchmarks so they can be built
@@ -43,16 +62,28 @@ if(ARBORX_ENABLE_MPI)
   find_package(MPI REQUIRED)
   target_link_libraries(ArborX INTERFACE MPI::MPI_CXX)
 endif()
-cmake_dependent_option(ARBORX_USE_CUDA_AWARE_MPI
+cmake_dependent_option(ARBORX_ENABLE_CUDA_AWARE_MPI
+                       "Allow using device data in MPI communication"
+                       OFF "ARBORX_ENABLE_MPI" OFF)
+if(ARBORX_USE_CUDA_AWARE_MPI)
+  set(ARBORX_ENABLE_GPU_AWARE_MPI ON)
+    message(DEPRECATION "ARBORX_USE_CUDA_AWARE_MPI is deprecated, use ARBORX_ENABLE_GPU_AWARE_MPI instead")
+endif()
+
+cmake_dependent_option(ARBORX_ENABLE_GPU_AWARE_MPI
                        "Allow using device data in MPI communication"
                        OFF "ARBORX_ENABLE_MPI" OFF)
 
 target_include_directories(ArborX INTERFACE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/details>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/geometry>
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src/kokkos_ext>
   $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
-  $<INSTALL_INTERFACE:include>
-  $<INSTALL_INTERFACE:include/details>
+  $<INSTALL_INTERFACE:include/ArborX>
+  $<INSTALL_INTERFACE:include/ArborX/details>
+  $<INSTALL_INTERFACE:include/ArborX/geometry>
+  $<INSTALL_INTERFACE:include/ArborX/kokkos_ext>
 )
 
 install(TARGETS ArborX
@@ -65,7 +96,7 @@ install(EXPORT ArborXTargets
   DESTINATION lib/cmake/ArborX
 )
 
-set(ARBORX_VERSION_STRING "1.1 (dev)")
+set(ARBORX_VERSION_STRING "1.5 (dev)")
 
 # Make sure that the git hash in ArborX_Version.hpp is considered to be always
 # out of date, and thus is updated every recompile.
@@ -110,17 +141,17 @@ install(FILES
   DESTINATION lib/cmake/ArborX )
 
 if(ARBORX_ENABLE_MPI)
-  install(DIRECTORY ${PROJECT_SOURCE_DIR}/src/ DESTINATION include
+  install(DIRECTORY ${PROJECT_SOURCE_DIR}/src/ DESTINATION include/ArborX
           FILES_MATCHING PATTERN "*.hpp")
 else()
-  install(DIRECTORY ${PROJECT_SOURCE_DIR}/src/ DESTINATION include
+  install(DIRECTORY ${PROJECT_SOURCE_DIR}/src/ DESTINATION include/ArborX
           FILES_MATCHING PATTERN "*.hpp"
           PATTERN "*Distribut*" EXCLUDE)
 endif()
-install(DIRECTORY ${PROJECT_BINARY_DIR}/include/ DESTINATION include
+install(DIRECTORY ${PROJECT_BINARY_DIR}/include/ DESTINATION include/ArborX
         FILES_MATCHING PATTERN "*.hpp")
 
-if (NOT CMAKE_BUILD_TYPE)
+if(NOT CMAKE_BUILD_TYPE)
   set(default_build_type "RelWithDebInfo")
   message(STATUS "Setting build type to '${default_build_type}' as none was specified.")
   set(CMAKE_BUILD_TYPE "${default_build_type}" CACHE STRING
@@ -132,7 +163,7 @@ option(ARBORX_ENABLE_TESTS "Enable tests" OFF)
 option(ARBORX_ENABLE_EXAMPLES "Enable examples" OFF)
 option(ARBORX_ENABLE_BENCHMARKS "Enable benchmarks" OFF)
 
-if(${ARBORX_ENABLE_TESTS} OR ${ARBORX_ENABLE_EXAMPLES})
+if(ARBORX_ENABLE_TESTS OR ARBORX_ENABLE_EXAMPLES OR ARBORX_ENABLE_BENCHMARKS)
   enable_testing()
 endif()
 

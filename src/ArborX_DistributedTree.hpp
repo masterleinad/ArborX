@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2017-2021 by the ArborX authors                            *
+ * Copyright (c) 2017-2022 by the ArborX authors                            *
  * All rights reserved.                                                     *
  *                                                                          *
  * This file is part of the ArborX library. ArborX is                       *
@@ -31,12 +31,12 @@ namespace ArborX
  *  \note query() must be called as collective over all processes in the
  *  communicator passed to the constructor.
  */
-template <typename MemorySpace, typename Enable = void>
+template <typename MemorySpace>
 class DistributedTree
 {
 public:
   using memory_space = MemorySpace;
-  static_assert(Kokkos::is_memory_space<MemorySpace>::value, "");
+  static_assert(Kokkos::is_memory_space<MemorySpace>::value);
   using size_type = typename BVH<MemorySpace>::size_type;
   using bounding_volume_type = typename BVH<MemorySpace>::bounding_volume_type;
 
@@ -88,9 +88,9 @@ public:
    */
   template <typename ExecutionSpace, typename Predicates, typename... Args>
   void query(ExecutionSpace const &space, Predicates const &predicates,
-             Args &&... args) const
+             Args &&...args) const
   {
-    static_assert(Kokkos::is_execution_space<ExecutionSpace>::value, "");
+    static_assert(Kokkos::is_execution_space<ExecutionSpace>::value);
     using Access = AccessTraits<Predicates, PredicatesTag>;
     using Tag = typename Details::AccessTraitsHelper<Access>::tag;
     using DeviceType = Kokkos::Device<ExecutionSpace, MemorySpace>;
@@ -109,14 +109,15 @@ private:
   Kokkos::View<size_type *, MemorySpace> _bottom_tree_sizes;
 };
 
-template <typename MemorySpace, typename Enable>
+template <typename MemorySpace>
 template <typename ExecutionSpace, typename Primitives>
-DistributedTree<MemorySpace, Enable>::DistributedTree(
-    MPI_Comm comm, ExecutionSpace const &space, Primitives const &primitives)
+DistributedTree<MemorySpace>::DistributedTree(MPI_Comm comm,
+                                              ExecutionSpace const &space,
+                                              Primitives const &primitives)
 {
   Kokkos::Profiling::pushRegion("ArborX::DistributedTree::DistributedTree");
 
-  static_assert(Kokkos::is_execution_space<ExecutionSpace>::value, "");
+  static_assert(Kokkos::is_execution_space<ExecutionSpace>::value);
 
   // Create new context for the library to isolate library's communication from
   // user's
@@ -149,18 +150,33 @@ DistributedTree<MemorySpace, Enable>::DistributedTree(
   MPI_Comm_size(getComm(), &comm_size);
 
   Kokkos::View<Box *, MemorySpace> boxes(
-      Kokkos::view_alloc(Kokkos::WithoutInitializing,
+      Kokkos::view_alloc(space, Kokkos::WithoutInitializing,
                          "ArborX::DistributedTree::DistributedTree::"
                          "rank_bounding_boxes"),
       comm_size);
-  // FIXME when we move to MPI with CUDA-aware support, we will not need to
-  // copy from the device to the host
-  auto boxes_host = Kokkos::create_mirror_view(boxes);
+
+  Kokkos::DefaultHostExecutionSpace host_exec;
+#ifdef ARBORX_ENABLE_GPU_AWARE_MPI
+  Kokkos::deep_copy(space, Kokkos::subview(boxes, comm_rank),
+                    _bottom_tree.bounds());
+  space.fence("ArborX::DistributedTree::DistributedTree"
+              " (fill on device done before MPI_Allgather)");
+
+  MPI_Allgather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL,
+                static_cast<void *>(boxes.data()), sizeof(Box), MPI_BYTE,
+                getComm());
+#else
+  auto boxes_host = Kokkos::create_mirror_view(
+      Kokkos::view_alloc(host_exec, Kokkos::WithoutInitializing), boxes);
+  host_exec.fence();
   boxes_host(comm_rank) = _bottom_tree.bounds();
+
   MPI_Allgather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL,
                 static_cast<void *>(boxes_host.data()), sizeof(Box), MPI_BYTE,
                 getComm());
+
   Kokkos::deep_copy(space, boxes, boxes_host);
+#endif
 
   _top_tree = BVH<MemorySpace>{space, boxes};
 
@@ -169,11 +185,14 @@ DistributedTree<MemorySpace, Enable>::DistributedTree(
                                 "size_calculation");
 
   _bottom_tree_sizes = Kokkos::View<size_type *, MemorySpace>(
-      Kokkos::view_alloc(Kokkos::WithoutInitializing,
+      Kokkos::view_alloc(space, Kokkos::WithoutInitializing,
                          "ArborX::DistributedTree::"
                          "leave_count_in_local_trees"),
       comm_size);
-  auto bottom_tree_sizes_host = Kokkos::create_mirror_view(_bottom_tree_sizes);
+  auto bottom_tree_sizes_host = Kokkos::create_mirror_view(
+      Kokkos::view_alloc(host_exec, Kokkos::WithoutInitializing),
+      _bottom_tree_sizes);
+  host_exec.fence();
   bottom_tree_sizes_host(comm_rank) = _bottom_tree.size();
   MPI_Allgather(MPI_IN_PLACE, 0, MPI_DATATYPE_NULL,
                 static_cast<void *>(bottom_tree_sizes_host.data()),
@@ -185,40 +204,6 @@ DistributedTree<MemorySpace, Enable>::DistributedTree(
   Kokkos::Profiling::popRegion();
   Kokkos::Profiling::popRegion();
 }
-
-template <typename DeviceType>
-class DistributedTree<DeviceType,
-                      std::enable_if_t<Kokkos::is_device<DeviceType>::value>>
-    : public DistributedTree<typename DeviceType::memory_space>
-{
-public:
-  using device_type = DeviceType;
-
-  // clang-format off
-  template <typename Primitives>
-  [[deprecated("ArborX::DistributedTree templated on a device type is "
-               "deprecated, use it templated on a memory space instead.")]]
-  DistributedTree(MPI_Comm comm, Primitives const &primitives)
-      : DistributedTree<typename DeviceType::memory_space>(
-            comm, typename DeviceType::execution_space{}, primitives)
-  {
-  }
-  // clang-format on
-  template <typename... Args>
-  void query(Args &&... args) const
-  {
-    DistributedTree<typename DeviceType::memory_space>::query(
-        typename DeviceType::execution_space{}, std::forward<Args>(args)...);
-  }
-};
-
-// clang-format off
-
-template <typename MemorySpace, typename Enable = void>
-using DistributedSearchTree [[deprecated("Use DistributedTree instead.")]] =
-    DistributedTree<MemorySpace, Enable>;
-
-// clang-format-on
 
 } // namespace ArborX
 

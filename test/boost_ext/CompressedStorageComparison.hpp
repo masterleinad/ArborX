@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2017-2021 by the ArborX authors                            *
+ * Copyright (c) 2017-2022 by the ArborX authors                            *
  * All rights reserved.                                                     *
  *                                                                          *
  * This file is part of the ArborX library. ArborX is                       *
@@ -13,6 +13,7 @@
 #define ARBORX_BOOST_TEST_COMPRESSED_STORAGE_COMPARISON_HPP
 
 #include <boost/test/tools/detail/print_helper.hpp>
+#include <boost/test/utils/is_forward_iterable.hpp>
 
 #include <iosfwd>
 #include <set>
@@ -39,23 +40,23 @@ struct CompressedStorage
       ConstForwardIterator old{*this};
       ++*this;
       return old;
-    };
-    ConstForwardIterator operator==(ConstForwardIterator const &o)
-    {
-      return i == o.i;
     }
-    ConstForwardIterator operator!=(ConstForwardIterator const &o)
-    {
-      return !(*this == o);
-    }
+    bool operator==(ConstForwardIterator const &o) { return i == o.i; }
+    bool operator!=(ConstForwardIterator const &o) { return !(*this == o); }
     value_type operator*()
     {
       return {p->values.data() + p->offsets[i],
               p->values.data() + p->offsets[i + 1]};
     }
   };
-  ConstForwardIterator cbegin() const { return {0, this}; }
-  ConstForwardIterator cend() const { return {offsets.size(), this}; }
+  ConstForwardIterator cbegin() const
+  {
+    return {static_cast<index_type>(0), this};
+  }
+  ConstForwardIterator cend() const
+  {
+    return {static_cast<index_type>(offsets.size()), this};
+  }
   std::size_t size() const { return offsets.size() - 1; }
 };
 
@@ -73,8 +74,7 @@ namespace unit_test
 template <typename Offsets, typename Values>
 struct is_forward_iterable<CompressedStorage<Offsets, Values>>
     : public boost::mpl::true_
-{
-};
+{};
 template <typename Offsets, typename Values>
 struct bt_iterator_traits<CompressedStorage<Offsets, Values>, true>
 {

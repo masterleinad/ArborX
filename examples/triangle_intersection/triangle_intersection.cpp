@@ -52,16 +52,16 @@ struct Mapping
   //   = (1-beta-alpha) * a + alpha * b + beta * c
   //
   // FIXME Only works for 2D reliably
-  void compute(const Triangle &triangle)
+  void compute(Triangle const &triangle)
   {
-    const auto &a = triangle.a;
-    const auto &b = triangle.b;
-    const auto &c = triangle.c;
+    auto const &a = triangle.a;
+    auto const &b = triangle.b;
+    auto const &c = triangle.c;
 
     ArborX::Point u = {b[0] - a[0], b[1] - a[1], b[2] - a[2]};
     ArborX::Point v = {c[0] - a[0], c[1] - a[1], c[2] - a[2]};
 
-    const float inv_det = 1. / (v[1] * u[0] - v[0] * u[1]);
+    float const inv_det = 1. / (v[1] * u[0] - v[0] * u[1]);
 
     alpha = ArborX::Point{v[1] * inv_det, -v[0] * inv_det, 0};
     beta = ArborX::Point{-u[1] * inv_det, u[0] * inv_det, 0};
@@ -70,7 +70,7 @@ struct Mapping
 
   Triangle get_triangle() const
   {
-    const float inv_det = 1. / (alpha[0] * beta[1] - alpha[1] * beta[0]);
+    float const inv_det = 1. / (alpha[0] * beta[1] - alpha[1] * beta[0]);
     ArborX::Point a = p0;
     ArborX::Point b = {{p0[0] + inv_det * beta[1], p0[1] - inv_det * beta[0]}};
     ArborX::Point c = {
@@ -180,12 +180,12 @@ public:
   KOKKOS_FUNCTION int size() const { return triangles_.size(); }
 
   // Return the triangle with index i.
-  KOKKOS_FUNCTION const Triangle &get_triangle(int i) const
+  KOKKOS_FUNCTION Triangle const &get_triangle(int i) const
   {
     return triangles_(i);
   }
 
-  KOKKOS_FUNCTION const Mapping &get_mapping(int i) const
+  KOKKOS_FUNCTION Mapping const &get_mapping(int i) const
   {
     return mappings_(i);
   }
@@ -209,7 +209,7 @@ struct ArborX::AccessTraits<Triangles<DeviceType>, ArborX::PrimitivesTag>
   }
   static KOKKOS_FUNCTION auto get(Triangles<DeviceType> const &triangles, int i)
   {
-    const auto &triangle = triangles.get_triangle(i);
+    auto const &triangle = triangles.get_triangle(i);
     ArborX::Box box{};
     box += triangle.a;
     box += triangle.b;
@@ -224,21 +224,23 @@ class TriangleIntersectionCallback
 public:
   TriangleIntersectionCallback(Triangles<DeviceType> triangles)
       : triangles_(triangles)
-  {
-  }
+  {}
 
   template <typename Query>
-  KOKKOS_FUNCTION void operator()(Query const &query, int triangle_index) const
+  KOKKOS_FUNCTION void operator()(
+      Query const &query,
+      ArborX::Details::PairIndexVolume<ArborX::Box> const &predicate) const
   {
-    const ArborX::Point &point = getGeometry(getPredicate(query));
+    ArborX::Point const &point = getGeometry(getPredicate(query));
     auto const &attachment = ArborX::getData(query);
 
-    const auto coeffs = triangles_.get_mapping(triangle_index).get_coeff(point);
+    auto const coeffs =
+        triangles_.get_mapping(predicate.index).get_coeff(point);
     bool intersects = coeffs[0] >= 0 && coeffs[1] >= 0 && coeffs[2] >= 0;
 
     if (intersects)
     {
-      attachment.triangle_index = triangle_index;
+      attachment.triangle_index = predicate.index;
       attachment.coeffs = coeffs;
     }
   }
@@ -265,19 +267,19 @@ int main()
 
     for (int i = 0; i < triangles.size(); ++i)
     {
-      const auto &mapping = triangles.get_mapping(i);
-      const auto &triangle = triangles.get_triangle(i);
-      const auto &coeff_a = mapping.get_coeff(triangle.a);
+      auto const &mapping = triangles.get_mapping(i);
+      auto const &triangle = triangles.get_triangle(i);
+      auto const &coeff_a = mapping.get_coeff(triangle.a);
       if ((std::abs(coeff_a[0] - 1.) > eps) || std::abs(coeff_a[1]) > eps ||
           std::abs(coeff_a[2]) > eps)
         std::cout << i << " a: " << coeff_a[0] << ' ' << coeff_a[1] << ' '
                   << coeff_a[2] << std::endl;
-      const auto &coeff_b = mapping.get_coeff(triangle.b);
+      auto const &coeff_b = mapping.get_coeff(triangle.b);
       if ((std::abs(coeff_b[0]) > eps) || std::abs(coeff_b[1] - 1.) > eps ||
           std::abs(coeff_b[2]) > eps)
         std::cout << i << " b: " << coeff_b[0] << ' ' << coeff_b[1] << ' '
                   << coeff_b[2] << std::endl;
-      const auto &coeff_c = mapping.get_coeff(triangle.c);
+      auto const &coeff_c = mapping.get_coeff(triangle.c);
       if ((std::abs(coeff_c[0]) > eps) || std::abs(coeff_c[1]) > eps ||
           std::abs(coeff_c[2] - 1.) > eps)
         std::cout << i << " c: " << coeff_c[0] << ' ' << coeff_c[1] << ' '
@@ -299,8 +301,7 @@ int main()
     Kokkos::View<ArborX::Point *, MemorySpace> coefficients("coefficients", n);
 
     struct Dummy
-    {
-    };
+    {};
 
     struct Attachment
     {
@@ -342,9 +343,9 @@ int main()
       {
         std::cout << offsets_host(i) << " should be " << i << std::endl;
       }
-      const auto &c = coeffs_host(i);
-      const auto &t = triangles.get_triangle(offsets_host(i));
-      const auto &p_h = points.get_point(i);
+      auto const &c = coeffs_host(i);
+      auto const &t = triangles.get_triangle(offsets_host(i));
+      auto const &p_h = points.get_point(i);
       ArborX::Point p = {{c[0] * t.a[0] + c[1] * t.b[0] + c[2] * t.c[0]},
                          {c[0] * t.a[1] + c[1] * t.b[1] + c[2] * t.c[1]},
                          {c[0] * t.a[2] + c[1] * t.b[2] + c[2] * t.c[2]}};

@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2017-2021 by the ArborX authors                            *
+ * Copyright (c) 2017-2022 by the ArborX authors                            *
  * All rights reserved.                                                     *
  *                                                                          *
  * This file is part of the ArborX library. ArborX is                       *
@@ -18,9 +18,14 @@
 #include "ArborX_BoostRangeAdapters.hpp"
 #include <ArborX_Box.hpp>
 #include <ArborX_DetailsKokkosExtAccessibilityTraits.hpp> // is_accessible_from_host
-#include <ArborX_DetailsUtils.hpp> // exclusivePrefixSum, lastElement
+#include <ArborX_DetailsKokkosExtViewHelpers.hpp>         // lastElement
+#include <ArborX_DetailsUtils.hpp>                        // exclusivePrefixSum
 #include <ArborX_Point.hpp>
 #include <ArborX_Predicates.hpp>
+#include <ArborX_Sphere.hpp>
+#ifdef ARBORX_ENABLE_MPI
+#include <ArborX_PairIndexRank.hpp>
+#endif
 
 #include <boost/range/adaptors.hpp>
 #include <boost/range/algorithm/copy.hpp>
@@ -72,8 +77,7 @@ class AppendRankToPairObjectIndex
 public:
   AppendRankToPairObjectIndex(int rank)
       : _rank(rank)
-  {
-  }
+  {}
 
   template <typename T1, typename T2>
   inline boost::tuple<T1, T2, int> operator()(std::pair<T1, T2> const &p) const
@@ -142,8 +146,7 @@ struct UnaryPredicate
   using Function = std::function<bool(Value const &)>;
   UnaryPredicate(Function pred)
       : _pred(pred)
-  {
-  }
+  {}
   inline bool operator()(Value const &val) const { return _pred(val); }
   Function _pred;
 };
@@ -185,7 +188,7 @@ template <typename Indexable, typename InputView,
 static std::tuple<OutputView, OutputView>
 performQueries(RTree<Indexable> const &rtree, InputView const &queries)
 {
-  static_assert(KokkosExt::is_accessible_from_host<InputView>::value, "");
+  static_assert(KokkosExt::is_accessible_from_host<InputView>::value);
 
   using Value = typename RTree<Indexable>::value_type;
   auto const n_queries = queries.extent_int(0);
@@ -195,8 +198,9 @@ performQueries(RTree<Indexable> const &rtree, InputView const &queries)
     offset(i) = rtree.query(translate<Value>(queries(i)),
                             std::back_inserter(returned_values));
   using ExecutionSpace = typename InputView::execution_space;
-  ArborX::exclusivePrefixSum(ExecutionSpace{}, offset);
-  auto const n_results = ArborX::lastElement(offset);
+  ExecutionSpace space;
+  ArborX::exclusivePrefixSum(space, offset);
+  auto const n_results = KokkosExt::lastElement(space, offset);
   OutputView indices("indices", n_results);
   for (int i = 0; i < n_queries; ++i)
     for (int j = offset(i); j < offset(i + 1); ++j)
@@ -207,12 +211,12 @@ performQueries(RTree<Indexable> const &rtree, InputView const &queries)
 #ifdef ARBORX_ENABLE_MPI
 template <typename Indexable, typename InputView,
           typename OutputView1 =
-              Kokkos::View<Kokkos::pair<int, int> *, Kokkos::HostSpace>,
+              Kokkos::View<ArborX::PairIndexRank *, Kokkos::HostSpace>,
           typename OutputView2 = Kokkos::View<int *, Kokkos::HostSpace>>
 static std::tuple<OutputView2, OutputView1>
 performQueries(ParallelRTree<Indexable> const &rtree, InputView const &queries)
 {
-  static_assert(KokkosExt::is_accessible_from_host<InputView>::value, "");
+  static_assert(KokkosExt::is_accessible_from_host<InputView>::value);
   using Value = typename ParallelRTree<Indexable>::value_type;
   auto const n_queries = queries.extent_int(0);
   OutputView2 offset("offset", n_queries + 1);
@@ -221,8 +225,9 @@ performQueries(ParallelRTree<Indexable> const &rtree, InputView const &queries)
     offset(i) = rtree.query(translate<Value>(queries(i)),
                             std::back_inserter(returned_values));
   using ExecutionSpace = typename InputView::execution_space;
-  ArborX::exclusivePrefixSum(ExecutionSpace{}, offset);
-  auto const n_results = ArborX::lastElement(offset);
+  ExecutionSpace space;
+  ArborX::exclusivePrefixSum(space, offset);
+  auto const n_results = KokkosExt::lastElement(space, offset);
   OutputView1 values("values", n_results);
   for (int i = 0; i < n_queries; ++i)
     for (int j = offset(i); j < offset(i + 1); ++j)
@@ -251,7 +256,7 @@ public:
   template <typename ExecutionSpace>
   RTree(ExecutionSpace, Kokkos::View<Indexable *, DeviceType> const &values)
   {
-    static_assert(Kokkos::is_execution_space<ExecutionSpace>::value, "");
+    static_assert(Kokkos::is_execution_space<ExecutionSpace>::value);
 
     _tree = BoostRTreeHelpers::makeRTree(values);
   }
@@ -262,7 +267,7 @@ public:
   void query(ExecutionSpace const &, Predicates const &predicates,
              InputView &indices, InputView &offset, TrailingArgs &&...) const
   {
-    static_assert(Kokkos::is_execution_space<ExecutionSpace>::value, "");
+    static_assert(Kokkos::is_execution_space<ExecutionSpace>::value);
 
     std::tie(offset, indices) =
         BoostRTreeHelpers::performQueries(_tree, predicates);
@@ -273,7 +278,7 @@ public:
   void query(ExecutionSpace const &, Predicates const &, Callback const &,
              TrailingArgs &&...) const
   {
-    static_assert(Kokkos::is_execution_space<ExecutionSpace>::value, "");
+    static_assert(Kokkos::is_execution_space<ExecutionSpace>::value);
 
     throw std::runtime_error(
         "Boost RTree does not support callback only query overload.");
@@ -295,7 +300,7 @@ public:
   ParallelRTree(MPI_Comm comm, ExecutionSpace const &,
                 Kokkos::View<Indexable *, DeviceType> const &values)
   {
-    static_assert(Kokkos::is_execution_space<ExecutionSpace>::value, "");
+    static_assert(Kokkos::is_execution_space<ExecutionSpace>::value);
 
     _tree = BoostRTreeHelpers::makeRTree(comm, values);
   }
@@ -306,7 +311,7 @@ public:
   void query(ExecutionSpace const &, Predicates const &predicates,
              InputView1 &indices, InputView2 &offset, TrailingArgs &&...) const
   {
-    static_assert(Kokkos::is_execution_space<ExecutionSpace>::value, "");
+    static_assert(Kokkos::is_execution_space<ExecutionSpace>::value);
 
     std::tie(offset, indices) =
         BoostRTreeHelpers::performQueries(_tree, predicates);
@@ -326,8 +331,7 @@ template <typename Indexable, typename ExecutionSpace, typename Predicates,
           typename InputView, typename... TrailingArgs>
 inline void query(BoostExt::RTree<Indexable> const &rtree,
                   ExecutionSpace const &space, Predicates const &predicates,
-                  InputView &indices, InputView &offset,
-                  TrailingArgs &&... args)
+                  InputView &indices, InputView &offset, TrailingArgs &&...args)
 {
   rtree.query(space, predicates, indices, offset,
               std::forward<TrailingArgs>(args)...);

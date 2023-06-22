@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2017-2021 by the ArborX authors                            *
+ * Copyright (c) 2017-2022 by the ArborX authors                            *
  * All rights reserved.                                                     *
  *                                                                          *
  * This file is part of the ArborX library. ArborX is                       *
@@ -227,10 +227,10 @@ inline void checkNewViewWasAllocated(View1 const &v1, View2 const &v2)
   BOOST_TEST(v1.extent(7) == v2.extent(7));
 }
 
-BOOST_AUTO_TEST_CASE_TEMPLATE(create_layout_right_mirror_view, DeviceType,
-                              ARBORX_DEVICE_TYPES)
+BOOST_AUTO_TEST_CASE_TEMPLATE(create_layout_right_mirror_view_no_init,
+                              DeviceType, ARBORX_DEVICE_TYPES)
 {
-  using ArborX::Details::create_layout_right_mirror_view;
+  using ArborX::Details::create_layout_right_mirror_view_no_init;
   using Kokkos::ALL;
   using Kokkos::LayoutLeft;
   using Kokkos::LayoutRight;
@@ -244,37 +244,37 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(create_layout_right_mirror_view, DeviceType,
 
   // rank-1 and not strided -> do not allocate
   View<int *, LayoutLeft, DeviceType> u("u", 255);
-  auto u_h = create_layout_right_mirror_view(u);
+  auto u_h = create_layout_right_mirror_view_no_init(u);
   checkViewWasNotAllocated(u, u_h);
 
   // right layout -> do not allocate
   View<int **, LayoutRight, DeviceType> v("v", 2, 3);
-  auto v_h = create_layout_right_mirror_view(v);
+  auto v_h = create_layout_right_mirror_view_no_init(v);
   checkViewWasNotAllocated(v, v_h);
 
   // the same with compile time size
   View<int[2][3], LayoutRight, DeviceType> v_c("v");
-  auto v_c_h = create_layout_right_mirror_view(v_c);
+  auto v_c_h = create_layout_right_mirror_view_no_init(v_c);
   checkViewWasNotAllocated(v_c, v_c_h);
 
   // left layout and rank > 1 -> allocate
   View<int **, LayoutLeft, DeviceType> w("w", 4, 5);
-  auto w_h = create_layout_right_mirror_view(w);
+  auto w_h = create_layout_right_mirror_view_no_init(w);
   checkNewViewWasAllocated(w, w_h);
 
   // the same with compile time size
-  View<int * [5], LayoutLeft, DeviceType> w_c("v", 4);
-  auto w_c_h = create_layout_right_mirror_view(w_c);
+  View<int *[5], LayoutLeft, DeviceType> w_c("v", 4);
+  auto w_c_h = create_layout_right_mirror_view_no_init(w_c);
   checkNewViewWasAllocated(w_c, w_c_h);
 
   // strided layout -> allocate
   auto x = subview(v, ALL, 0);
-  auto x_h = create_layout_right_mirror_view(x);
+  auto x_h = create_layout_right_mirror_view_no_init(x);
   checkNewViewWasAllocated(x, x_h);
 
   // subview is rank-1 and not strided -> do not allocate
   auto y = subview(u, make_pair(8, 16));
-  auto y_h = create_layout_right_mirror_view(y);
+  auto y_h = create_layout_right_mirror_view_no_init(y);
   checkViewWasNotAllocated(y, y_h);
 }
 
@@ -326,7 +326,7 @@ BOOST_AUTO_TEST_CASE(pointer_depth)
                 "Failing for double[2]");
   static_assert(ArborX::Details::internal::PointerDepth<double **>::value == 2,
                 "Failing for double**");
-  static_assert(ArborX::Details::internal::PointerDepth<double * [2]>::value ==
+  static_assert(ArborX::Details::internal::PointerDepth<double *[2]>::value ==
                     1,
                 "Failing for double*[2]");
   static_assert(ArborX::Details::internal::PointerDepth<double[2][3]>::value ==
@@ -334,11 +334,11 @@ BOOST_AUTO_TEST_CASE(pointer_depth)
                 "Failing for double[2][3]");
   static_assert(ArborX::Details::internal::PointerDepth<double ***>::value == 3,
                 "Failing for double***");
+  static_assert(ArborX::Details::internal::PointerDepth<double **[2]>::value ==
+                    2,
+                "Failing for double[2]");
   static_assert(
-      ArborX::Details::internal::PointerDepth<double * * [2]>::value == 2,
-      "Failing for double[2]");
-  static_assert(
-      ArborX::Details::internal::PointerDepth<double * [2][3]>::value == 1,
+      ArborX::Details::internal::PointerDepth<double *[2][3]>::value == 1,
       "Failing for double*[2][3]");
   static_assert(
       ArborX::Details::internal::PointerDepth<double[2][3][4]>::value == 0,
@@ -393,21 +393,21 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(send_across_network, DeviceType,
   // send 1 packet to rank k
   // receive comm_size packets
   Kokkos::View<int **, DeviceType> u_exp("u_exp", comm_size, DIM);
-  Kokkos::parallel_for(Kokkos::RangePolicy<ExecutionSpace>(0, comm_size),
-                       KOKKOS_LAMBDA(int i) {
-                         for (int j = 0; j < DIM; ++j)
-                           u_exp(i, j) = i + j * comm_rank;
-                       });
+  Kokkos::parallel_for(
+      Kokkos::RangePolicy<ExecutionSpace>(0, comm_size), KOKKOS_LAMBDA(int i) {
+        for (int j = 0; j < DIM; ++j)
+          u_exp(i, j) = i + j * comm_rank;
+      });
 
   Kokkos::View<int *, DeviceType> ranks_u("", comm_size);
   ArborX::iota(ExecutionSpace{}, ranks_u, 0);
 
   Kokkos::View<int **, DeviceType> u_ref("u_ref", comm_size, DIM);
-  Kokkos::parallel_for(Kokkos::RangePolicy<ExecutionSpace>(0, comm_size),
-                       KOKKOS_LAMBDA(int i) {
-                         for (int j = 0; j < DIM; ++j)
-                           u_ref(i, j) = comm_rank + i * j;
-                       });
+  Kokkos::parallel_for(
+      Kokkos::RangePolicy<ExecutionSpace>(0, comm_size), KOKKOS_LAMBDA(int i) {
+        for (int j = 0; j < DIM; ++j)
+          u_ref(i, j) = comm_rank + i * j;
+      });
 
   Helper<DeviceType>::checkSendAcrossNetwork(comm, ranks_u, u_exp, u_ref);
 

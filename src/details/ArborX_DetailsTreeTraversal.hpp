@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2017-2021 by the ArborX authors                            *
+ * Copyright (c) 2017-2023 by the ArborX authors                            *
  * All rights reserved.                                                     *
  *                                                                          *
  * This file is part of the ArborX library. ArborX is                       *
@@ -15,6 +15,8 @@
 #include <ArborX_DetailsAlgorithms.hpp>
 #include <ArborX_DetailsHappyTreeFriends.hpp>
 #include <ArborX_DetailsKokkosExtArithmeticTraits.hpp>
+#include <ArborX_DetailsKokkosExtClassLambda.hpp> // ARBORX_CLASS_LAMBDA
+#include <ArborX_DetailsKokkosExtViewHelpers.hpp>
 #include <ArborX_DetailsNode.hpp> // ROPE_SENTINEL
 #include <ArborX_DetailsPriorityQueue.hpp>
 #include <ArborX_DetailsStack.hpp>
@@ -32,8 +34,7 @@ template <typename BVH, typename Predicates, typename Callback, typename Tag,
               decltype(AccessTraits<Predicates, PredicatesTag>::get(
                   std::declval<Predicates>(), 0))>
 struct TreeTraversal
-{
-};
+{};
 
 template <typename BVH, typename Predicates, typename Callback, typename Query>
 struct TreeTraversal<BVH, Predicates, Callback, SpatialPredicateTag, Query>
@@ -43,7 +44,6 @@ struct TreeTraversal<BVH, Predicates, Callback, SpatialPredicateTag, Query>
   Callback _callback;
 
   using Access = AccessTraits<Predicates, PredicatesTag>;
-  using Node = HappyTreeFriends::node_t<BVH>;
 
   TreeTraversal() = default;
 
@@ -52,14 +52,12 @@ struct TreeTraversal<BVH, Predicates, Callback, SpatialPredicateTag, Query>
       : _bvh{bvh}
       , _predicates{predicates}
       , _callback{callback}
-  {
-  }
+  {}
 
   TreeTraversal(BVH const &bvh, Callback const &callback)
       : _bvh{bvh}
       , _callback{callback}
-  {
-  }
+  {}
 
   template <typename ExecutionSpace>
   void run(ExecutionSpace const &space) const
@@ -78,11 +76,6 @@ struct TreeTraversal<BVH, Predicates, Callback, SpatialPredicateTag, Query>
     }
     else
     {
-      static_assert(
-          std::is_same<typename Node::Tag, NodeWithTwoChildrenTag>{} ||
-              std::is_same<typename Node::Tag, NodeWithLeftChildAndRopeTag>{},
-          "Unrecognized node tag");
-
       Kokkos::parallel_for("ArborX::TreeTraversal::spatial",
                            Kokkos::RangePolicy<ExecutionSpace>(
                                space, 0, Access::size(_predicates)),
@@ -91,110 +84,54 @@ struct TreeTraversal<BVH, Predicates, Callback, SpatialPredicateTag, Query>
   }
 
   struct OneLeafTree
-  {
-  };
+  {};
 
   KOKKOS_FUNCTION void operator()(OneLeafTree, int queryIndex) const
   {
     auto const &predicate = Access::get(_predicates, queryIndex);
-    Node const *root = HappyTreeFriends::getRoot(_bvh);
+    auto const root = 0;
     auto const &root_bounding_volume =
-        HappyTreeFriends::getBoundingVolume(_bvh, root);
+        HappyTreeFriends::getIndexable(_bvh, root);
     if (predicate(root_bounding_volume))
     {
-      _callback(predicate, 0);
+      _callback(predicate, HappyTreeFriends::getValue(_bvh, 0));
     }
   }
 
-  template <typename Tag = typename Node::Tag>
   KOKKOS_FUNCTION void operator()(int queryIndex) const
   {
     auto const &predicate = Access::get(_predicates, queryIndex);
-    search<Tag>(predicate);
+    search(predicate);
   }
 
-  // Stack-based traversal
-  template <typename Tag = typename Node::Tag>
-  KOKKOS_FUNCTION std::enable_if_t<std::is_same<Tag, NodeWithTwoChildrenTag>{}>
-  search(const Query &predicate) const
+  KOKKOS_FUNCTION void search(Query const &predicate) const
   {
-    Node const *stack[64];
-    Node const **stack_ptr = stack;
-    *stack_ptr++ = nullptr;
-    Node const *node = HappyTreeFriends::getRoot(_bvh);
+    int node = HappyTreeFriends::getRoot(_bvh); // start with root
     do
     {
-      Node const *child_left =
-          HappyTreeFriends::getNodePtr(_bvh, node->left_child);
-      Node const *child_right =
-          HappyTreeFriends::getNodePtr(_bvh, node->right_child);
+      bool const is_leaf = HappyTreeFriends::isLeaf(_bvh, node);
 
-      bool overlap_left =
-          predicate(HappyTreeFriends::getBoundingVolume(_bvh, child_left));
-      bool overlap_right =
-          predicate(HappyTreeFriends::getBoundingVolume(_bvh, child_right));
-
-      if (overlap_left && child_left->isLeaf())
+      if (is_leaf ? predicate(HappyTreeFriends::getIndexable(_bvh, node))
+                  : predicate(HappyTreeFriends::getInternalBoundingVolume(
+                        _bvh, node)))
       {
-        if (invoke_callback_and_check_early_exit(
-                _callback, predicate, child_left->getLeafPermutationIndex()))
-          return;
-      }
-      if (overlap_right && child_right->isLeaf())
-      {
-        if (invoke_callback_and_check_early_exit(
-                _callback, predicate, child_right->getLeafPermutationIndex()))
-          return;
-      }
-
-      bool traverse_left = (overlap_left && !child_left->isLeaf());
-      bool traverse_right = (overlap_right && !child_right->isLeaf());
-
-      if (!traverse_left && !traverse_right)
-      {
-        node = *--stack_ptr;
-      }
-      else
-      {
-        node = traverse_left ? child_left : child_right;
-        if (traverse_left && traverse_right)
-          *stack_ptr++ = child_right;
-      }
-    } while (node != nullptr);
-  }
-
-  // Ropes-based traversal
-  template <typename Tag = typename Node::Tag>
-  KOKKOS_FUNCTION
-      std::enable_if_t<std::is_same<Tag, NodeWithLeftChildAndRopeTag>{}>
-      search(const Query &predicate) const
-  {
-    Node const *node;
-    int next = 0; // start with root
-    do
-    {
-      node = HappyTreeFriends::getNodePtr(_bvh, next);
-
-      if (predicate(HappyTreeFriends::getBoundingVolume(_bvh, node)))
-      {
-        if (!node->isLeaf())
+        if (is_leaf)
         {
-          next = node->left_child;
+          if (invoke_callback_and_check_early_exit(
+                  _callback, predicate, HappyTreeFriends::getValue(_bvh, node)))
+            return;
+          node = HappyTreeFriends::getRope(_bvh, node);
         }
         else
         {
-          if (invoke_callback_and_check_early_exit(
-                  _callback, predicate, node->getLeafPermutationIndex()))
-            return;
-          next = node->rope;
+          node = HappyTreeFriends::getLeftChild(_bvh, node);
         }
       }
       else
       {
-        next = node->rope;
+        node = HappyTreeFriends::getRope(_bvh, node);
       }
-
-    } while (next != ROPE_SENTINEL);
+    } while (node != ROPE_SENTINEL);
   }
 };
 
@@ -208,7 +145,6 @@ struct TreeTraversal<BVH, Predicates, Callback, NearestPredicateTag>
   Callback _callback;
 
   using Access = AccessTraits<Predicates, PredicatesTag>;
-  using Node = HappyTreeFriends::node_t<BVH>;
 
   using Buffer = Kokkos::View<Kokkos::pair<int, float> *, MemorySpace>;
   using Offset = Kokkos::View<int *, MemorySpace>;
@@ -219,9 +155,9 @@ struct TreeTraversal<BVH, Predicates, Callback, NearestPredicateTag>
 
     KOKKOS_FUNCTION auto operator()(int i) const
     {
-      auto const *_offsetptr = &_offset(i);
+      auto const *offset_ptr = &_offset(i);
       return Kokkos::subview(_buffer,
-                             Kokkos::make_pair(*_offsetptr, *(_offsetptr + 1)));
+                             Kokkos::make_pair(*offset_ptr, *(offset_ptr + 1)));
     }
   };
 
@@ -232,26 +168,26 @@ struct TreeTraversal<BVH, Predicates, Callback, NearestPredicateTag>
   {
     auto const n_queries = Access::size(_predicates);
 
-    Offset offset(Kokkos::view_alloc(Kokkos::WithoutInitializing,
+    Offset offset(Kokkos::view_alloc(space, Kokkos::WithoutInitializing,
                                      "ArborX::TreeTraversal::nearest::offset"),
                   n_queries + 1);
-    // NOTE workaround to avoid implicit capture of *this
-    auto const &predicates = _predicates;
     Kokkos::parallel_for(
         "ArborX::TreeTraversal::nearest::"
         "scan_queries_for_numbers_of_neighbors",
         Kokkos::RangePolicy<ExecutionSpace>(space, 0, n_queries),
-        KOKKOS_LAMBDA(int i) { offset(i) = getK(Access::get(predicates, i)); });
+        ARBORX_CLASS_LAMBDA(int i) {
+          offset(i) = getK(Access::get(_predicates, i));
+        });
     exclusivePrefixSum(space, offset);
-    int const _buffersize = lastElement(offset);
+    int const buffer_size = KokkosExt::lastElement(space, offset);
     // Allocate buffer over which to perform heap operations in
     // TreeTraversal::nearestQuery() to store nearest leaf nodes found so far.
     // It is not possible to anticipate how much memory to allocate since the
     // number of nearest neighbors k is only known at runtime.
 
-    Buffer buffer(Kokkos::view_alloc(Kokkos::WithoutInitializing,
+    Buffer buffer(Kokkos::view_alloc(space, Kokkos::WithoutInitializing,
                                      "ArborX::TreeTraversal::nearest::buffer"),
-                  _buffersize);
+                  buffer_size);
     _buffer = BufferProvider{buffer, offset};
   }
 
@@ -260,8 +196,7 @@ struct TreeTraversal<BVH, Predicates, Callback, NearestPredicateTag>
       : _bvh{bvh}
       , _predicates{predicates}
       , _callback{callback}
-  {
-  }
+  {}
 
   template <typename ExecutionSpace>
   void run(ExecutionSpace const &space)
@@ -280,11 +215,6 @@ struct TreeTraversal<BVH, Predicates, Callback, NearestPredicateTag>
     }
     else
     {
-      static_assert(
-          std::is_same<typename Node::Tag, NodeWithLeftChildAndRopeTag>{} ||
-              std::is_same<typename Node::Tag, NodeWithTwoChildrenTag>{},
-          "Unrecognized node tag");
-
       allocateBuffer(space);
 
       Kokkos::parallel_for("ArborX::TreeTraversal::nearest",
@@ -295,8 +225,7 @@ struct TreeTraversal<BVH, Predicates, Callback, NearestPredicateTag>
   }
 
   struct OneLeafTree
-  {
-  };
+  {};
 
   KOKKOS_FUNCTION void operator()(OneLeafTree, int queryIndex) const
   {
@@ -307,36 +236,13 @@ struct TreeTraversal<BVH, Predicates, Callback, NearestPredicateTag>
     if (k < 1)
       return;
 
-    _callback(predicate, 0);
-  }
-
-  template <typename Tag = typename Node::Tag>
-  KOKKOS_FUNCTION
-      std::enable_if_t<std::is_same<Tag, NodeWithTwoChildrenTag>{}, int>
-      getRightChild(Node const *node) const
-  {
-    assert(!node->isLeaf());
-    return node->right_child;
-  }
-
-  template <typename Tag = typename Node::Tag>
-  KOKKOS_FUNCTION
-      std::enable_if_t<std::is_same<Tag, NodeWithLeftChildAndRopeTag>{}, int>
-      getRightChild(Node const *node) const
-  {
-    assert(!node->isLeaf());
-    return HappyTreeFriends::getNodePtr(_bvh, node->left_child)->rope;
+    _callback(predicate, HappyTreeFriends::getValue(_bvh, 0));
   }
 
   KOKKOS_FUNCTION void operator()(int queryIndex) const
   {
     auto const &predicate = Access::get(_predicates, queryIndex);
     auto const k = getK(predicate);
-    auto const distance = [geometry = getGeometry(predicate),
-                           bvh = _bvh](Node const *node) {
-      using Details::distance;
-      return distance(geometry, HappyTreeFriends::getBoundingVolume(bvh, node));
-    };
     auto const buffer = _buffer(queryIndex);
 
     // NOTE thinking about making this a precondition
@@ -372,18 +278,27 @@ struct TreeTraversal<BVH, Predicates, Callback, NearestPredicateTag>
         heap(UnmanagedStaticVector<PairIndexDistance>(buffer.data(),
                                                       buffer.size()));
 
-    Node const *stack[64];
+    auto &bvh = _bvh;
+    auto const distance = [&predicate, &bvh](int j) {
+      return HappyTreeFriends::isLeaf(bvh, j)
+                 ? predicate.distance(HappyTreeFriends::getIndexable(bvh, j))
+                 : predicate.distance(
+                       HappyTreeFriends::getInternalBoundingVolume(bvh, j));
+    };
+
+    constexpr int SENTINEL = -1;
+    int stack[64];
     auto *stack_ptr = stack;
-    *stack_ptr++ = nullptr;
+    *stack_ptr++ = SENTINEL;
 #if !defined(__CUDA_ARCH__)
     float stack_distance[64];
     auto *stack_distance_ptr = stack_distance;
     *stack_distance_ptr++ = 0.f;
 #endif
 
-    Node const *node = HappyTreeFriends::getRoot(_bvh);
-    Node const *child_left = nullptr;
-    Node const *child_right = nullptr;
+    int node = HappyTreeFriends::getRoot(_bvh);
+    int left_child;
+    int right_child;
 
     float distance_left = 0.f;
     float distance_right = 0.f;
@@ -398,50 +313,59 @@ struct TreeTraversal<BVH, Predicates, Callback, NearestPredicateTag>
       {
         // Insert children into the stack and make sure that the
         // closest one ends on top.
-        child_left = HappyTreeFriends::getNodePtr(_bvh, node->left_child);
-        child_right = HappyTreeFriends::getNodePtr(_bvh, getRightChild(node));
+        left_child = HappyTreeFriends::getLeftChild(_bvh, node);
+        right_child = HappyTreeFriends::getRightChild(_bvh, node);
 
-        distance_left = distance(child_left);
-        distance_right = distance(child_right);
+        distance_left = distance(left_child);
+        distance_right = distance(right_child);
 
-        if (distance_left < radius && child_left->isLeaf())
+        if (distance_left < radius)
         {
-          auto leaf_pair = Kokkos::make_pair(
-              child_left->getLeafPermutationIndex(), distance_left);
-          if ((int)heap.size() < k)
-            heap.push(leaf_pair);
+          if (HappyTreeFriends::isLeaf(_bvh, left_child))
+          {
+            auto leaf_pair = Kokkos::make_pair(left_child, distance_left);
+            if ((int)heap.size() < k)
+              heap.push(leaf_pair);
+            else
+              heap.popPush(leaf_pair);
+            if ((int)heap.size() == k)
+              radius = heap.top().second;
+          }
           else
-            heap.popPush(leaf_pair);
-          if ((int)heap.size() == k)
-            radius = heap.top().second;
+          {
+            traverse_left = true;
+          }
         }
 
         // Note: radius may have been already updated here from the left child
-        if (distance_right < radius && child_right->isLeaf())
+        if (distance_right < radius)
         {
-          auto leaf_pair = Kokkos::make_pair(
-              child_right->getLeafPermutationIndex(), distance_right);
-          if ((int)heap.size() < k)
-            heap.push(leaf_pair);
+          if (HappyTreeFriends::isLeaf(_bvh, right_child))
+          {
+            auto leaf_pair = Kokkos::make_pair(right_child, distance_right);
+            if ((int)heap.size() < k)
+              heap.push(leaf_pair);
+            else
+              heap.popPush(leaf_pair);
+            if ((int)heap.size() == k)
+              radius = heap.top().second;
+          }
           else
-            heap.popPush(leaf_pair);
-          if ((int)heap.size() == k)
-            radius = heap.top().second;
+          {
+            traverse_right = true;
+          }
         }
-
-        traverse_left = (distance_left < radius && !child_left->isLeaf());
-        traverse_right = (distance_right < radius && !child_right->isLeaf());
       }
 
       if (!traverse_left && !traverse_right)
       {
         node = *--stack_ptr;
 #if defined(__CUDA_ARCH__)
-        if (node != nullptr)
+        if (node != SENTINEL)
         {
           // This is a theoretically unnecessary duplication of distance
           // calculation for stack nodes. However, for Cuda it's better than
-          // than putting the distances in stack.
+          // putting the distances in stack.
           distance_node = distance(node);
         }
 #else
@@ -452,19 +376,19 @@ struct TreeTraversal<BVH, Predicates, Callback, NearestPredicateTag>
       {
         node = (traverse_left &&
                 (distance_left <= distance_right || !traverse_right))
-                   ? child_left
-                   : child_right;
-        distance_node = (node == child_left ? distance_left : distance_right);
+                   ? left_child
+                   : right_child;
+        distance_node = (node == left_child ? distance_left : distance_right);
         if (traverse_left && traverse_right)
         {
-          *stack_ptr++ = (node == child_left ? child_right : child_left);
+          *stack_ptr++ = (node == left_child ? right_child : left_child);
 #if !defined(__CUDA_ARCH__)
           *stack_distance_ptr++ =
-              (node == child_left ? distance_right : distance_left);
+              (node == left_child ? distance_right : distance_left);
 #endif
         }
       }
-    } while (node != nullptr);
+    } while (node != SENTINEL);
 
     // Sort the leaf nodes and output the results.
     // NOTE: Do not try this at home.  Messing with the underlying container
@@ -472,8 +396,166 @@ struct TreeTraversal<BVH, Predicates, Callback, NearestPredicateTag>
     sortHeap(heap.data(), heap.data() + heap.size(), heap.valueComp());
     for (decltype(heap.size()) i = 0; i < heap.size(); ++i)
     {
-      int const leaf_index = (heap.data() + i)->first;
-      _callback(predicate, leaf_index);
+      _callback(predicate,
+                HappyTreeFriends::getValue(_bvh, (heap.data() + i)->first));
+    }
+  }
+};
+
+template <class BVH, class Predicates, class Callback, typename Query>
+struct TreeTraversal<BVH, Predicates, Callback,
+                     Experimental::OrderedSpatialPredicateTag, Query>
+{
+  BVH _bvh;
+  Predicates _predicates;
+  Callback _callback;
+
+  using Access = AccessTraits<Predicates, PredicatesTag>;
+
+  TreeTraversal() = default;
+
+  TreeTraversal(BVH const &bvh, Predicates const &predicates,
+                Callback const &callback)
+      : _bvh{bvh}
+      , _predicates{predicates}
+      , _callback{callback}
+  {}
+
+  TreeTraversal(BVH const &bvh, Callback const &callback)
+      : _bvh{bvh}
+      , _callback{callback}
+  {}
+
+  template <typename ExecutionSpace>
+  void run(ExecutionSpace const &space) const
+  {
+    if (_bvh.empty())
+    {
+      // do nothing
+    }
+    else if (_bvh.size() == 1)
+    {
+      Kokkos::parallel_for(
+          "ArborX::Experimental::TreeTraversal::OrderedSpatialPredicate"
+          "degenerated_one_leaf_tree",
+          Kokkos::RangePolicy<ExecutionSpace, OneLeafTree>(
+              space, 0, Access::size(_predicates)),
+          *this);
+    }
+    else
+    {
+      Kokkos::parallel_for(
+          "ArborX::Experimental::TreeTraversal::OrderedSpatialPredicate",
+          Kokkos::RangePolicy<ExecutionSpace>(space, 0,
+                                              Access::size(_predicates)),
+          *this);
+    }
+  }
+
+  struct OneLeafTree
+  {};
+
+  KOKKOS_FUNCTION void operator()(OneLeafTree, int queryIndex) const
+  {
+    auto const &predicate = Access::get(_predicates, queryIndex);
+    auto const root = 0;
+    auto const &root_bounding_volume =
+        HappyTreeFriends::getIndexable(_bvh, root);
+    using distance_type =
+        decltype(distance(getGeometry(predicate), root_bounding_volume));
+    constexpr auto inf =
+        KokkosExt::ArithmeticTraits::infinity<distance_type>::value;
+    if (distance(getGeometry(predicate), root_bounding_volume) != inf)
+    {
+      _callback(predicate, HappyTreeFriends::getValue(_bvh, 0));
+    }
+  }
+
+  KOKKOS_FUNCTION void operator()(int queryIndex) const
+  {
+    auto const &predicate = Access::get(_predicates, queryIndex);
+    search(predicate);
+  }
+
+  KOKKOS_FUNCTION void search(Query const &predicate) const
+  {
+    using ArborX::Details::HappyTreeFriends;
+
+    using distance_type = decltype(predicate.distance(
+        HappyTreeFriends::getInternalBoundingVolume(_bvh, 0)));
+    using PairIndexDistance = Kokkos::pair<int, distance_type>;
+    struct CompareDistance
+    {
+      KOKKOS_FUNCTION bool operator()(PairIndexDistance const &lhs,
+                                      PairIndexDistance const &rhs) const
+      {
+        return lhs.second > rhs.second;
+      }
+    };
+
+    constexpr int buffer_size = 64;
+    PairIndexDistance buffer[buffer_size];
+    PriorityQueue<PairIndexDistance, CompareDistance,
+                  UnmanagedStaticVector<PairIndexDistance>>
+        heap(UnmanagedStaticVector<PairIndexDistance>(buffer, buffer_size));
+
+    constexpr auto inf =
+        KokkosExt::ArithmeticTraits::infinity<distance_type>::value;
+
+    auto &bvh = _bvh;
+    auto const distance = [&predicate, &bvh](int j) {
+      return HappyTreeFriends::isLeaf(bvh, j)
+                 ? predicate.distance(HappyTreeFriends::getIndexable(bvh, j))
+                 : predicate.distance(
+                       HappyTreeFriends::getInternalBoundingVolume(bvh, j));
+    };
+
+    int node = HappyTreeFriends::getRoot(_bvh);
+    int left_child;
+    int right_child;
+
+    while (true)
+    {
+      if (HappyTreeFriends::isLeaf(_bvh, node))
+      {
+        if (invoke_callback_and_check_early_exit(
+                _callback, predicate, HappyTreeFriends::getValue(_bvh, node)))
+          return;
+
+        if (heap.empty())
+          return;
+
+        node = heap.top().first;
+        heap.pop();
+      }
+      else
+      {
+        left_child = HappyTreeFriends::getLeftChild(_bvh, node);
+        right_child = HappyTreeFriends::getRightChild(_bvh, node);
+
+        auto const distance_left = distance(left_child);
+        auto const left_pair = Kokkos::make_pair(left_child, distance_left);
+
+        auto const distance_right = distance(right_child);
+        auto const right_pair = Kokkos::make_pair(right_child, distance_right);
+
+        auto const &closer_pair =
+            distance_left < distance_right ? left_pair : right_pair;
+        auto const &further_pair =
+            distance_left < distance_right ? right_pair : left_pair;
+
+        if (!heap.empty() && heap.top().second < closer_pair.second)
+        {
+          node = heap.top().first;
+          heap.pop();
+          if (closer_pair.second < inf)
+            heap.push(closer_pair);
+        }
+        else
+          node = closer_pair.first;
+        if (further_pair.second < inf)
+          heap.push(further_pair);
+      }
     }
   }
 };

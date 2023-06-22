@@ -1,5 +1,5 @@
 /****************************************************************************
- * Copyright (c) 2017-2021 by the ArborX authors                            *
+ * Copyright (c) 2017-2022 by the ArborX authors                            *
  * All rights reserved.                                                     *
  *                                                                          *
  * This file is part of the ArborX library. ArborX is                       *
@@ -227,6 +227,7 @@ int main(int argc, char *argv[])
 
   std::cout << "ArborX version: " << ArborX::version() << std::endl;
   std::cout << "ArborX hash   : " << ArborX::gitCommitHash() << std::endl;
+  std::cout << "Kokkos version: " << KokkosExt::version() << std::endl;
 
   if (vm.count("help") > 0)
   {
