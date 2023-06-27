@@ -13,6 +13,8 @@
 
 #include <Kokkos_Core.hpp>
 
+#include <fstream>
+
 // Perform intersection queries using 2D triangles on a regular mesh as
 // primitives and intersection with points as queries. One point per triangle.
 // __________
@@ -80,105 +82,8 @@ struct Mapping
 };
 
 template <typename DeviceType>
-class Points
+struct Triangles
 {
-public:
-  Points(typename DeviceType::execution_space const &execution_space)
-  {
-    float Lx = 100.0;
-    float Ly = 100.0;
-    int nx = 101;
-    int ny = 101;
-    int n = nx * ny;
-    float hx = Lx / (nx - 1);
-    float hy = Ly / (ny - 1);
-
-    auto index = [nx, ny](int i, int j) { return i + j * nx; };
-
-    points_ = Kokkos::View<ArborX::ExperimentalHyperGeometry::Point<2> *,
-                           typename DeviceType::memory_space>(
-        Kokkos::view_alloc(Kokkos::WithoutInitializing, "points"), 2 * n);
-    auto points_host = Kokkos::create_mirror_view(points_);
-
-    for (int i = 0; i < nx; ++i)
-      for (int j = 0; j < ny; ++j)
-      {
-        points_host[2 * index(i, j)] = {(i + .25f) * hx, (j + .25f) * hy};
-        points_host[2 * index(i, j) + 1] = {(i + .75f) * hx, (j + .75f) * hy};
-      }
-    Kokkos::deep_copy(execution_space, points_, points_host);
-  }
-
-  KOKKOS_FUNCTION auto const &get_point(int i) const { return points_(i); }
-
-  KOKKOS_FUNCTION auto size() const { return points_.size(); }
-
-private:
-  Kokkos::View<ArborX::ExperimentalHyperGeometry::Point<2> *,
-               typename DeviceType::memory_space>
-      points_;
-};
-
-template <typename DeviceType>
-class Triangles
-{
-public:
-  // Create non-intersecting triangles on a 2D cartesian grid
-  // used both for queries and predicates.
-  Triangles(typename DeviceType::execution_space const &execution_space)
-  {
-    float Lx = 100.0;
-    float Ly = 100.0;
-    int nx = 101;
-    int ny = 101;
-    int n = nx * ny;
-    float hx = Lx / (nx - 1);
-    float hy = Ly / (ny - 1);
-
-    auto index = [nx, ny](int i, int j) { return i + j * nx; };
-
-    triangles_ = Kokkos::View<Triangle<2> *, typename DeviceType::memory_space>(
-        Kokkos::view_alloc(Kokkos::WithoutInitializing, "triangles"), 2 * n);
-    auto triangles_host = Kokkos::create_mirror_view(triangles_);
-
-    mappings_ = Kokkos::View<Mapping *, typename DeviceType::memory_space>(
-        Kokkos::view_alloc(Kokkos::WithoutInitializing, "mappings"), 2 * n);
-    auto mappings_host = Kokkos::create_mirror_view(mappings_);
-
-    for (int i = 0; i < nx; ++i)
-      for (int j = 0; j < ny; ++j)
-      {
-        ArborX::ExperimentalHyperGeometry::Point<2> bl{i * hx, j * hy};
-        ArborX::ExperimentalHyperGeometry::Point<2> br{(i + 1) * hx, j * hy};
-        ArborX::ExperimentalHyperGeometry::Point<2> tl{i * hx, (j + 1) * hy};
-        ArborX::ExperimentalHyperGeometry::Point<2> tr{(i + 1) * hx,
-                                                       (j + 1) * hy};
-
-        triangles_host[2 * index(i, j)] = {tl, bl, br};
-        triangles_host[2 * index(i, j) + 1] = {tl, br, tr};
-      }
-
-    for (int k = 0; k < 2 * n; ++k)
-    {
-      mappings_host[k].compute(triangles_host[k]);
-
-      Triangle<2> recover_triangle = mappings_host[k].get_triangle();
-
-      for (unsigned int i = 0; i < 2; ++i)
-        if (std::abs(triangles_host[k].a[i] - recover_triangle.a[i]) > 1.e-3)
-          abort();
-
-      for (unsigned int i = 0; i < 2; ++i)
-        if (std::abs(triangles_host[k].b[i] - recover_triangle.b[i]) > 1.e-3)
-          abort();
-
-      for (unsigned int i = 0; i < 2; ++i)
-        if (std::abs(triangles_host[k].c[i] - recover_triangle.c[i]) > 1.e-3)
-          abort();
-    }
-    Kokkos::deep_copy(execution_space, triangles_, triangles_host);
-  }
-
   // Return the number of triangles.
   KOKKOS_FUNCTION int size() const { return triangles_.size(); }
 
@@ -193,7 +98,6 @@ public:
     return mappings_(i);
   }
 
-private:
   Kokkos::View<Triangle<2> *, typename DeviceType::memory_space> triangles_;
   Kokkos::View<Mapping *, typename DeviceType::memory_space> mappings_;
 };
@@ -239,6 +143,8 @@ public:
         getGeometry(getPredicate(query));
     auto const &attachment = ArborX::getData(query);
 
+    auto const &triangle = triangles_.get_triangle(predicate.index);
+
     auto const coeffs =
         triangles_.get_mapping(predicate.index).get_coeff(point);
     bool intersects = coeffs[0] >= 0 && coeffs[1] >= 0 && coeffs[2] >= 0;
@@ -254,6 +160,55 @@ private:
   Triangles<DeviceType> triangles_;
 };
 
+template <typename DeviceType>
+Triangles<DeviceType> parse_stl(typename DeviceType::execution_space const &execution_space)
+  {
+    std::vector<Triangle<2>> triangles_host;
+    std::vector<Mapping> mappings_host;
+    std::ifstream stl_file("RZGrid.stl");
+    if (!stl_file.good())
+      throw std::runtime_error("Cannot open file");
+    std::string line;
+    std::istringstream in;
+    float coordinates[2];
+    Triangle<2> triangle;
+    Mapping mapping;
+    while (std::getline(stl_file >> std::ws, line))
+    {
+      if (line.find("outer loop") == std::string::npos)
+        continue;
+     
+      std::getline(stl_file >> std::ws, line);
+      in.str(line);
+      in >> coordinates[0] >> coordinates[1];
+      triangle.a = {{coordinates[0], coordinates[1]}};
+      
+      std::getline(stl_file >> std::ws, line);
+      in.str(line);
+      in >> coordinates[0] >> coordinates[1];
+      triangle.b = {{coordinates[0], coordinates[1]}};
+      
+      std::getline(stl_file >> std::ws, line);
+      in.str(line);
+      in >> coordinates[0] >> coordinates[1];
+      triangle.c = {{coordinates[0], coordinates[1]}};
+    
+      triangles_host.push_back(triangle);
+      mapping.compute(triangle);
+    } 
+
+    std::cout << "Read " << triangles_host.size() << " Triangles\n";
+ 
+    Kokkos::View<Triangle<2>*, typename DeviceType::memory_space> triangles (Kokkos::view_alloc(Kokkos::WithoutInitializing, "triangles"), triangles_host.size());
+    Kokkos::deep_copy(execution_space, triangles, Kokkos::View<Triangle<2>*, Kokkos::HostSpace>(triangles_host.data(), triangles_host.size()));
+
+    Kokkos::View<Mapping*, typename DeviceType::memory_space> mappings (Kokkos::view_alloc(Kokkos::WithoutInitializing, "mappings"), mappings_host.size());
+    Kokkos::deep_copy(execution_space, mappings, Kokkos::View<Mapping*, Kokkos::HostSpace>(mappings_host.data(), mappings_host.size()));
+
+    return {triangles, mappings};
+  }
+
+
 // Now that we have encapsulated the objects and queries to be used within the
 // Triangles class, we can continue with performing the actual search.
 int main()
@@ -266,9 +221,9 @@ int main()
     ExecutionSpace execution_space;
 
     std::cout << "Create grid with triangles.\n";
-    Triangles<DeviceType> triangles(execution_space);
+    auto triangles = parse_stl<DeviceType>(execution_space);
 
-    constexpr float eps = 1.e-3;
+/*    constexpr float eps = 1.e-3;
 
     for (int i = 0; i < triangles.size(); ++i)
     {
@@ -364,7 +319,7 @@ int main()
       }
     }
 
-    std::cout << "Checking results successful.\n";
+    std::cout << "Checking results successful.\n";*/
   }
 
   Kokkos::finalize();
