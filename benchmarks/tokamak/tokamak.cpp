@@ -170,9 +170,9 @@ Triangles<DeviceType> parse_stl(typename DeviceType::execution_space const &exec
       throw std::runtime_error("Cannot open file");
     std::string line;
     std::istringstream in;
-    float coordinates[2];
-    Triangle<2> triangle;
     Mapping mapping;
+    Triangle<2> triangle;
+    std::string dummy;
     while (std::getline(stl_file >> std::ws, line))
     {
       if (line.find("outer loop") == std::string::npos)
@@ -180,20 +180,29 @@ Triangles<DeviceType> parse_stl(typename DeviceType::execution_space const &exec
      
       std::getline(stl_file >> std::ws, line);
       in.str(line);
-      in >> triangle.a[0] >> triangle.a[1];
+      in >> dummy >> triangle.a[0] >> triangle.a[1];
       
       std::getline(stl_file >> std::ws, line);
       in.str(line);
-      in >> coordinates[0] >> coordinates[1];
-      triangle.b = {{coordinates[0], coordinates[1]}};
+      in >> dummy >> triangle.b[0] >> triangle.b[1];
       
       std::getline(stl_file >> std::ws, line);
       in.str(line);
-      in >> coordinates[0] >> coordinates[1];
-      triangle.c = {{coordinates[0], coordinates[1]}};
-    
-      triangles_host.push_back(triangle);
+      in >> dummy >> triangle.c[0] >> triangle.c[1];
+  
       mapping.compute(triangle);
+ 
+      if (triangles_host.size() == 0) {
+        std::cout << triangle.a[0] << ' ' << triangle.a[1] << '\n'
+                  << triangle.b[0] << ' ' << triangle.b[1] << '\n'
+                  << triangle.c[0] << ' ' << triangle.c[1] << '\n';
+        std::cout << mapping.alpha[0] << ' ' << mapping.alpha[1] << '\n'
+                  << mapping.beta[0]  << ' ' << mapping.beta[1] << '\n'
+                  << mapping.p0[0]    << ' ' << mapping.p0[1] << '\n';
+      }
+ 
+      triangles_host.push_back(triangle);
+      mappings_host.push_back(mapping);
     } 
 
     std::cout << "Read " << triangles_host.size() << " Triangles\n";
