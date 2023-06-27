@@ -180,8 +180,7 @@ Triangles<DeviceType> parse_stl(typename DeviceType::execution_space const &exec
      
       std::getline(stl_file >> std::ws, line);
       in.str(line);
-      in >> coordinates[0] >> coordinates[1];
-      triangle.a = {{coordinates[0], coordinates[1]}};
+      in >> triangle.a[0] >> triangle.a[1];
       
       std::getline(stl_file >> std::ws, line);
       in.str(line);
