@@ -28,7 +28,7 @@ jobs:
       shell: bash
       working-directory: ${GITHUB_WORKSPACE}/../kokkos
       run: |
-        cat C:\ProgramData\chocolatey\logs\chocolatey.log
+        cat C:/ProgramData/chocolatey/logs/chocolatey.log
         mkdir build
         cd build
         cmake -D CMAKE_INSTALL_PREFIX=${KOKKOS_INSTALL_DIR} \
