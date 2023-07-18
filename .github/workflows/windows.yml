@@ -39,12 +39,13 @@ jobs:
     - name: Configure ArborX
       shell: bash
       run: |
+        ls C:/ProgramData/chocolatey/lib/boost-msvc-14.3
         mkdir build
         cd build
         cmake --debug-find \
           -D Boost_DEBUG=ON \ 
           -D CMAKE_BUILD_TYPE=Debug \
-          -D CMAKE_PREFIX_PATH="${KOKKOS_INSTALL_DIR};C:\ProgramData\chocolatey\lib\boost-msvc-14.3" \
+          -D CMAKE_PREFIX_PATH="${KOKKOS_INSTALL_DIR};C:/ProgramData/chocolatey/lib/boost-msvc-14.3" \
           -D ARBORX_ENABLE_MPI=OFF \
           -D ARBORX_ENABLE_TESTS=ON \
           -D ARBORX_ENABLE_EXAMPLES=ON \
