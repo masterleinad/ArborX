@@ -18,7 +18,7 @@ jobs:
     - name: Install dependencies via vcpkg
       uses: johnwason/vcpkg-action@v5
       with:
-        pkgs: boost-unit-test-framework boost-program-options benchmark
+        pkgs: boost-test boost-program-options benchmark
         triplet: x64-windows-release
         token: ${{ github.token }}
     - uses: actions/checkout@v3
