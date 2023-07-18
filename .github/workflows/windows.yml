@@ -41,7 +41,7 @@ jobs:
     - name: Configure ArborX
       shell: bash
       run: |
-        ls ..
+        ls ${GITHUB_WORKSPACE}
         mkdir build
         cd build
         echo "build"
@@ -49,7 +49,7 @@ jobs:
         cmake --debug-find \
           -D CMAKE_BUILD_TYPE=Debug \
           -D CMAKE_PREFIX_PATH="${KOKKOS_INSTALL_DIR}" \
-          -D CMAKE_TOOLCHAIN_FILE=../../vcpkg/scripts/buildsystems/vcpkg.cmake \
+          -D CMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/vcpkg/scripts/buildsystems/vcpkg.cmake \
           -D VCPKG_TARGET_TRIPLET=x64-windows-release \
           -D VCPKG_MANIFEST_MODE=OFF \
           -D ARBORX_ENABLE_MPI=OFF \
