@@ -31,6 +31,7 @@ jobs:
       shell: bash
       working-directory: ${GITHUB_WORKSPACE}/../kokkos
       run: |
+        find D:\ -name "vcpkg.cmake"
         mkdir build
         cd build
         cmake -D CMAKE_INSTALL_PREFIX=${KOKKOS_INSTALL_DIR} \
