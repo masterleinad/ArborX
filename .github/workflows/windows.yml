@@ -18,8 +18,9 @@ jobs:
     - name: Install dependencies via vcpkg
       uses: johnwason/vcpkg-action@v5
       with:
-        pkgs: boost benchmark
+        pkgs: boost-unit-test-framework boost-program-options benchmark
         triplet: x64-windows-release
+        token: ${{ github.token }}
     - uses: actions/checkout@v3
       with:
         repository: kokkos/kokkos
