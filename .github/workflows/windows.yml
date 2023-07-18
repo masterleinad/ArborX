@@ -36,14 +36,12 @@ jobs:
               ..
         cmake --build . --target install -- -m
     - uses: actions/checkout@v3
-    - name: Setup Debug Session
-      uses: csexton/debugger-action@master
     - name: Configure ArborX
       shell: bash
       run: |
         mkdir build
         cd build
-        cmake \
+        cmake --debug-find \
           -D Boost_DEBUG=ON \ 
           -D CMAKE_BUILD_TYPE=Debug \
           -D CMAKE_PREFIX_PATH="${KOKKOS_INSTALL_DIR};C:\ProgramData\chocolatey\lib\boost-msvc-14.3" \
