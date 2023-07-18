@@ -16,10 +16,10 @@ jobs:
 
     steps:
     - name: Install dependencies via vcpkg
-      uses: lukka/run-vcpkg@v11.1
+      uses: johnwason/vcpkg-action@v5
       with:
-        vcpkgArguments: 'boost benchamrk'
-        vcpkgDirectory: '${{ github.workspace }}/vcpkg'
+        pkgs: boost benchmark
+        triplet: x64-windows-release
     - uses: actions/checkout@v3
       with:
         repository: kokkos/kokkos
