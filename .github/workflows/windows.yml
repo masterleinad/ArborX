@@ -15,6 +15,7 @@ jobs:
       KOKKOS_INSTALL_DIR: C:\kokkos-install
 
     steps:
+    - uses: actions/checkout@v3
     - name: Install dependencies via vcpkg
       uses: johnwason/vcpkg-action@v5
       id: vcpkg
@@ -31,15 +32,14 @@ jobs:
       shell: bash
       working-directory: ${GITHUB_WORKSPACE}/../kokkos
       run: |
+        find D:/ -name "vcpkg.cmake"
         mkdir build
         cd build
         cmake -D CMAKE_INSTALL_PREFIX=${KOKKOS_INSTALL_DIR} \
               -D Kokkos_ENABLE_THREADS=ON \
               ..
         cmake --build . --target install -- -m
-    - uses: actions/checkout@v3
     - name: Configure ArborX
-      shell: bash
       run: |
         find D:/ -name "vcpkg.cmake" 
         echo "XXX: ${VCPKG_ROOT}"
