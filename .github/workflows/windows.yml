@@ -15,14 +15,11 @@ jobs:
       KOKKOS_INSTALL_DIR: C:\kokkos-install
 
     steps:
-    - name: Install boost
-      shell: bash
-      run:
-        choco install boost-msvc-14.3
-    - name: Install boost vcpkg
-      shell: bash
-      run:
-        vcpkg.exe install boost
+    - name: Install dependencies via vcpkg
+      uses: lukka/run-vcpkg@v11.1
+      with:
+        vcpkgArguments: 'boost benchamrk'
+        vcpkgDirectory: '${{ github.workspace }}/vcpkg'
     - uses: actions/checkout@v3
       with:
         repository: kokkos/kokkos
@@ -43,12 +40,12 @@ jobs:
     - name: Configure ArborX
       shell: bash
       run: |
-        ls C:/ProgramData/chocolatey/lib/boost-msvc-14.3
         mkdir build
         cd build
         cmake --debug-find \
           -D CMAKE_BUILD_TYPE=Debug \
           -D CMAKE_PREFIX_PATH="${KOKKOS_INSTALL_DIR}" \
+          -D CMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake" \
           -D ARBORX_ENABLE_MPI=OFF \
           -D ARBORX_ENABLE_TESTS=ON \
           -D ARBORX_ENABLE_EXAMPLES=ON \
