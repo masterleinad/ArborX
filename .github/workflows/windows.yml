@@ -42,7 +42,7 @@ jobs:
     - name: Configure ArborX
       shell: bash
       run: |
-        cat D:\a\ArborX\ArborX\vcpkg\scripts\buildsystems\vcpkg.cmake
+        cat D:/a/ArborX/ArborX/vcpkg/scripts/buildsystems/vcpkg.cmake
         ls ${GITHUB_WORKSPACE}
         mkdir build
         cd build
