@@ -31,7 +31,6 @@ jobs:
       shell: bash
       working-directory: ${GITHUB_WORKSPACE}/../kokkos
       run: |
-        find D:/ -name "vcpkg.cmake"
         mkdir build
         cd build
         cmake -D CMAKE_INSTALL_PREFIX=${KOKKOS_INSTALL_DIR} \
@@ -42,7 +41,10 @@ jobs:
     - name: Configure ArborX
       shell: bash
       run: |
-        cat D:/a/ArborX/ArborX/vcpkg/scripts/buildsystems/vcpkg.cmake
+        find D:/ -name "vcpkg.cmake" 
+        echo "XXX: ${VCPKG_ROOT}"
+        export VCPKG_ROOT_NEW=$(find D:/ -name "vcpkg.cmake")
+        echo "XXX1: ${VCPKG_ROOT}"
         ls ${GITHUB_WORKSPACE}
         mkdir build
         cd build
@@ -51,7 +53,7 @@ jobs:
         cmake --debug-find \
           -D CMAKE_BUILD_TYPE=Debug \
           -D CMAKE_PREFIX_PATH="${KOKKOS_INSTALL_DIR}" \
-          -D CMAKE_TOOLCHAIN_FILE="D:\a\ArborX\ArborX\vcpkg\scripts\buildsystems\vcpkg.cmake" \
+          -D CMAKE_TOOLCHAIN_FILE="${VCPKG_ROOT}\scripts\buildsystems\vcpkg.cmake" \
           -D VCPKG_TARGET_TRIPLET=x64-windows-release \
           -D VCPKG_MANIFEST_MODE=OFF \
           -D ARBORX_ENABLE_MPI=OFF \
