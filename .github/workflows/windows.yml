@@ -19,6 +19,10 @@ jobs:
       shell: bash
       run:
         choco install boost-msvc-14.3
+    - name: Install boost vcpkg
+      shell: bash
+      run:
+        vcpkg.exe install boost
     - uses: actions/checkout@v3
       with:
         repository: kokkos/kokkos
@@ -43,9 +47,8 @@ jobs:
         mkdir build
         cd build
         cmake --debug-find \
-          -D Boost_DEBUG=ON \ 
           -D CMAKE_BUILD_TYPE=Debug \
-          -D CMAKE_PREFIX_PATH="${KOKKOS_INSTALL_DIR};C:/ProgramData/chocolatey/lib/boost-msvc-14.3" \
+          -D CMAKE_PREFIX_PATH="${KOKKOS_INSTALL_DIR}" \
           -D ARBORX_ENABLE_MPI=OFF \
           -D ARBORX_ENABLE_TESTS=ON \
           -D ARBORX_ENABLE_EXAMPLES=ON \
