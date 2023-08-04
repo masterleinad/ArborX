@@ -296,7 +296,7 @@ int main()
 
     std::cout << "Creating BVH tree.\n";
     ArborX::BasicBoundingVolumeHierarchy<
-        MemorySpace, ArborX::ExperimentalHyperGeometry::Box<2>> const
+        MemorySpace, ArborX::Details::PairIndexVolume<ArborX::ExperimentalHyperGeometry::Box<2>>> const
         tree(execution_space, triangles);
     std::cout << "BVH tree set up.\n";
 
@@ -318,9 +318,7 @@ int main()
       ArborX::Point &coeffs;
     };
 
-    ArborX::Details::TreeTraversal<
-        ArborX::BasicBoundingVolumeHierarchy<
-            MemorySpace, ArborX::ExperimentalHyperGeometry::Box<2>>,
+    ArborX::Details::TreeTraversal<decltype(tree),
         Dummy, TriangleIntersectionCallback<DeviceType>,
         ArborX::Details::SpatialPredicateTag,
         decltype(ArborX::attach(
