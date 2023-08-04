@@ -90,8 +90,9 @@ void ArborXBenchmark::run(int nprimitives, int nqueries, int nrepeats)
     [[maybe_unused]] unsigned int out_count;
     {
       Kokkos::Timer timer;
-      ArborX::BasicBoundingVolumeHierarchy<MemorySpace, Box> bvh{space,
-                                                                 primitives};
+      ArborX::BasicBoundingVolumeHierarchy<
+          MemorySpace, ArborX::Details::PairIndexVolume<Box>>
+          bvh{space, primitives};
 
       Kokkos::View<int *, ExecutionSpace> indices("indices_ref", 0);
       Kokkos::View<int *, ExecutionSpace> offset("offset_ref", 0);

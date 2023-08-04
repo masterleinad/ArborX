@@ -27,7 +27,7 @@ stages:
             -DCMAKE_CXX_COMPILER=g++
             -DBENCHMARK_ENABLE_TESTING=OFF .. &&
       make &&
-      rm -rf /ccsopen/proj/csc333/benchmark.install &&
+      (rm -rf /ccsopen/proj/csc333/benchmark.install || true) &&
       make install
   tags:
     - nobatch
@@ -36,7 +36,7 @@ BuildKokkos:
   extends: .LoadModules
   stage: buildDependencies
   script:
-    - git clone --depth=1 --branch 3.7.01 https://github.com/kokkos/kokkos.git &&
+    - git clone --depth=1 --branch 4.0.00 https://github.com/kokkos/kokkos.git &&
       cd kokkos &&
       mkdir build &&
       cd build &&
@@ -51,7 +51,7 @@ BuildKokkos:
             -DKokkos_ARCH_POWER9=ON
             -DKokkos_ARCH_VOLTA70=ON .. &&
       make &&
-      rm -rf /ccsopen/proj/csc333/kokkos.install &&
+      (rm -rf /ccsopen/proj/csc333/kokkos.install || true )&&
       make install
   tags:
     - nobatch

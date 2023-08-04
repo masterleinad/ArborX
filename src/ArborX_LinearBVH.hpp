@@ -39,7 +39,12 @@ namespace Details
 struct HappyTreeFriends;
 } // namespace Details
 
-template <typename MemorySpace, typename BoundingVolume = Box>
+template <
+    typename MemorySpace, typename Value,
+    typename IndexableGetter = Details::DefaultIndexableGetter,
+    typename BoundingVolume =
+        ExperimentalHyperGeometry::Box<GeometryTraits::dimension_v<std::decay_t<
+            decltype(std::declval<IndexableGetter>()(std::declval<Value>()))>>>>
 class BasicBoundingVolumeHierarchy
 {
 public:
@@ -47,7 +52,7 @@ public:
   static_assert(Kokkos::is_memory_space<MemorySpace>::value);
   using size_type = typename MemorySpace::size_type;
   using bounding_volume_type = BoundingVolume;
-  using value_type = Details::PairIndexVolume<bounding_volume_type>;
+  using value_type = Value;
 
   BasicBoundingVolumeHierarchy() = default; // build an empty tree
 
@@ -86,39 +91,74 @@ public:
 private:
   friend struct Details::HappyTreeFriends;
 
+  using indexable_type = std::decay_t<decltype(std::declval<IndexableGetter>()(
+      std::declval<Value>()))>;
   using leaf_node_type = Details::LeafNode<value_type>;
   using internal_node_type = Details::InternalNode<bounding_volume_type>;
-
-  KOKKOS_FUNCTION
-  bounding_volume_type const *getRootBoundingVolumePtr() const
-  {
-    int const n = size();
-    // Need address of the root node's bounding box to copy it back on the host,
-    // but can't access node elements from the constructor since the data is on
-    // the device.
-    assert((n == 1 || Details::HappyTreeFriends::getRoot(*this) == n) &&
-           "workaround below assumes root is stored as first element");
-    return (n > 1 ? &_internal_nodes.data()->bounding_volume
-                  : &_leaf_nodes.data()->value.bounding_volume);
-  }
 
   size_type _size{0};
   bounding_volume_type _bounds;
   Kokkos::View<leaf_node_type *, MemorySpace> _leaf_nodes;
   Kokkos::View<internal_node_type *, MemorySpace> _internal_nodes;
-  Details::DefaultIndexableGetter _indexable_getter;
+  IndexableGetter _indexable_getter;
 };
 
 template <typename MemorySpace>
-using BoundingVolumeHierarchy = BasicBoundingVolumeHierarchy<MemorySpace>;
+class BoundingVolumeHierarchy
+    : public BasicBoundingVolumeHierarchy<MemorySpace,
+                                          Details::PairIndexVolume<Box>,
+                                          Details::DefaultIndexableGetter, Box>
+{
+  using base_type =
+      BasicBoundingVolumeHierarchy<MemorySpace, Details::PairIndexVolume<Box>,
+                                   Details::DefaultIndexableGetter, Box>;
+
+public:
+  using legacy_tree = void;
+
+  BoundingVolumeHierarchy() = default; // build an empty tree
+
+  template <typename ExecutionSpace, typename Primitives,
+            typename SpaceFillingCurve = Experimental::Morton64>
+  BoundingVolumeHierarchy(ExecutionSpace const &space,
+                          Primitives const &primitives,
+                          SpaceFillingCurve const &curve = SpaceFillingCurve())
+      : base_type(space, primitives, curve)
+  {}
+
+  template <typename ExecutionSpace, typename Predicates, typename Callback>
+  void query(ExecutionSpace const &space, Predicates const &predicates,
+             Callback const &callback,
+             Experimental::TraversalPolicy const &policy =
+                 Experimental::TraversalPolicy()) const
+  {
+    base_type::query(space, predicates,
+                     Details::LegacyCallbackWrapper<
+                         Callback, typename base_type::value_type>{callback},
+                     policy);
+  }
+
+  template <typename ExecutionSpace, typename Predicates,
+            typename CallbackOrView, typename View, typename... Args>
+  std::enable_if_t<Kokkos::is_view<std::decay_t<View>>{}>
+  query(ExecutionSpace const &space, Predicates const &predicates,
+        CallbackOrView &&callback_or_view, View &&view, Args &&...args) const
+  {
+    ArborX::query(*this, space, predicates,
+                  std::forward<CallbackOrView>(callback_or_view),
+                  std::forward<View>(view), std::forward<Args>(args)...);
+  }
+};
 
 template <typename MemorySpace>
 using BVH = BoundingVolumeHierarchy<MemorySpace>;
 
-template <typename MemorySpace, typename BoundingVolume>
+template <typename MemorySpace, typename Value, typename IndexableGetter,
+          typename BoundingVolume>
 template <typename ExecutionSpace, typename Primitives,
           typename SpaceFillingCurve>
-BasicBoundingVolumeHierarchy<MemorySpace, BoundingVolume>::
+BasicBoundingVolumeHierarchy<MemorySpace, Value, IndexableGetter,
+                             BoundingVolume>::
     BasicBoundingVolumeHierarchy(ExecutionSpace const &space,
                                  Primitives const &primitives,
                                  SpaceFillingCurve const &curve)
@@ -148,6 +188,14 @@ BasicBoundingVolumeHierarchy<MemorySpace, BoundingVolume>::
     return;
   }
 
+  if (size() == 1)
+  {
+    Details::TreeConstruction::initializeSingleLeafTree(
+        space, Details::LegacyValues<Primitives, indexable_type>{primitives},
+        _indexable_getter, _leaf_nodes, _bounds);
+    return;
+  }
+
   Kokkos::Profiling::pushRegion(
       "ArborX::BVH::BVH::calculate_scene_bounding_box");
 
@@ -157,22 +205,6 @@ BasicBoundingVolumeHierarchy<MemorySpace, BoundingVolume>::
       space, Details::Indexables<Primitives>{primitives}, bbox);
 
   Kokkos::Profiling::popRegion();
-
-  if (size() == 1)
-  {
-    Details::TreeConstruction::initializeSingleLeafNode(
-        space,
-        Details::LegacyValues<Primitives, bounding_volume_type>{primitives},
-        _leaf_nodes);
-    Kokkos::deep_copy(
-        space,
-        Kokkos::View<BoundingVolume, Kokkos::HostSpace,
-                     Kokkos::MemoryUnmanaged>(&_bounds),
-        Kokkos::View<BoundingVolume const, MemorySpace,
-                     Kokkos::MemoryUnmanaged>(getRootBoundingVolumePtr()));
-    return;
-  }
-
   Kokkos::Profiling::pushRegion("ArborX::BVH::BVH::compute_linear_ordering");
 
   // Map indexables from multidimensional domain to one-dimensional interval
@@ -200,27 +232,22 @@ BasicBoundingVolumeHierarchy<MemorySpace, BoundingVolume>::
 
   // Generate bounding volume hierarchy
   Details::TreeConstruction::generateHierarchy(
-      space,
-      Details::LegacyValues<Primitives, bounding_volume_type>{primitives},
+      space, Details::LegacyValues<Primitives, indexable_type>{primitives},
       _indexable_getter, permutation_indices, linear_ordering_indices,
-      _leaf_nodes, _internal_nodes);
-
-  Kokkos::deep_copy(
-      space,
-      Kokkos::View<BoundingVolume, Kokkos::HostSpace, Kokkos::MemoryUnmanaged>(
-          &_bounds),
-      Kokkos::View<BoundingVolume const, MemorySpace, Kokkos::MemoryUnmanaged>(
-          getRootBoundingVolumePtr()));
+      _leaf_nodes, _internal_nodes, _bounds);
 
   Kokkos::Profiling::popRegion();
 }
 
-template <typename MemorySpace, typename BoundingVolume>
+template <typename MemorySpace, typename Value, typename IndexableGetter,
+          typename BoundingVolume>
 template <typename ExecutionSpace, typename Predicates, typename Callback>
-void BasicBoundingVolumeHierarchy<MemorySpace, BoundingVolume>::query(
-    ExecutionSpace const &space, Predicates const &predicates,
-    Callback const &legacy_callback,
-    Experimental::TraversalPolicy const &policy) const
+void BasicBoundingVolumeHierarchy<
+    MemorySpace, Value, IndexableGetter,
+    BoundingVolume>::query(ExecutionSpace const &space,
+                           Predicates const &predicates,
+                           Callback const &callback,
+                           Experimental::TraversalPolicy const &policy) const
 {
   static_assert(
       KokkosExt::is_accessible_from<MemorySpace, ExecutionSpace>::value);
@@ -229,9 +256,7 @@ void BasicBoundingVolumeHierarchy<MemorySpace, BoundingVolume>::query(
   static_assert(KokkosExt::is_accessible_from<typename Access::memory_space,
                                               ExecutionSpace>::value,
                 "Predicates must be accessible from the execution space");
-  Details::check_valid_callback(legacy_callback, predicates);
-  Details::LegacyCallbackWrapper<Callback, value_type> callback{
-      legacy_callback};
+  Details::check_valid_callback<value_type>(callback, predicates);
 
   using Tag = typename Details::AccessTraitsHelper<Access>::tag;
   std::string profiling_prefix = "ArborX::BVH::query::";
