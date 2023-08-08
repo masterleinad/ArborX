@@ -45,7 +45,7 @@ struct Mapping
 
   // x = a + alpha * (b - a) + beta * (c - a)
   //   = (1-beta-alpha) * a + alpha * b + beta * c
-  Mapping(ArborX::ExperimentalHyperGeometry::Triangle<2> const &triangle)
+  KOKKOS_FUNCTION Mapping(ArborX::ExperimentalHyperGeometry::Triangle<2> const &triangle)
   {
     auto const &a = triangle.a;
     auto const &b = triangle.b;
@@ -63,7 +63,7 @@ struct Mapping
     p0 = a;
   }
 
-  ArborX::Point get_coeff(ArborX::ExperimentalHyperGeometry::Point<2> p) const
+  KOKKOS_FUNCTION ArborX::Point get_coeff(ArborX::ExperimentalHyperGeometry::Point<2> p) const
   {
     float alpha_coeff = alpha[0] * (p[0] - p0[0]) + alpha[1] * (p[1] - p0[1]);
     float beta_coeff = beta[0] * (p[0] - p0[0]) + beta[1] * (p[1] - p0[1]);
@@ -72,7 +72,7 @@ struct Mapping
 
 #ifndef NDEBUG
   // Recover the triangle from the mapping. Only used for debugging.
-  ArborX::ExperimentalHyperGeometry::Triangle<2> get_triangle() const
+  KOKKOS_FUNCTION ArborX::ExperimentalHyperGeometry::Triangle<2> get_triangle() const
   {
     float const inv_det = 1. / (alpha[0] * beta[1] - alpha[1] * beta[0]);
     ArborX::ExperimentalHyperGeometry::Point<2> a = p0;
@@ -89,8 +89,10 @@ struct Mapping
 template <typename DeviceType>
 class Points
 {
-public:
-  Points(typename DeviceType::execution_space const &execution_space)
+	  public:
+  Points(typename DeviceType::execution_space const &execution_space) {initialize(execution_space);}
+  
+  void initialize(typename DeviceType::execution_space const &execution_space)
   {
     points_ = Kokkos::View<ArborX::ExperimentalHyperGeometry::Point<2> *,
                            typename DeviceType::memory_space>(
@@ -100,7 +102,7 @@ public:
         Kokkos::MDRangePolicy<Kokkos::Rank<2>,
                               typename DeviceType::execution_space>(
             execution_space, {0, 0}, {nx, ny}),
-        KOKKOS_LAMBDA(int i, int j) {
+        KOKKOS_CLASS_LAMBDA(int i, int j) {
           auto index = [](int i, int j) { return i + j * nx; };
 
           points_[2 * index(i, j)] = {(i + .25f) * hx, (j + .25f) * hy};
@@ -121,11 +123,15 @@ private:
 template <typename DeviceType>
 class Triangles
 {
-public:
+  public:
+  Triangles(typename DeviceType::execution_space const &execution_space) {
+   initialize(execution_space);
+  }
+
   // Create non-intersecting triangles on a 2D cartesian grid
   // used for the primitives in the tree construction, and compute and store the
   // mappings used in the queries.
-  Triangles(typename DeviceType::execution_space const &execution_space)
+  void initialize(typename DeviceType::execution_space const &execution_space)
   {
     using ExecutionSpaceType = typename DeviceType::execution_space;
     using MemorySpaceType = typename DeviceType::memory_space;
@@ -139,7 +145,7 @@ public:
     Kokkos::parallel_for(
         Kokkos::MDRangePolicy<Kokkos::Rank<2>, ExecutionSpaceType>(
             execution_space, {0, 0}, {nx, ny}),
-        KOKKOS_LAMBDA(int i, int j) {
+        KOKKOS_CLASS_LAMBDA(int i, int j) {
           ArborX::ExperimentalHyperGeometry::Point<2> bl{i * hx, j * hy};
           ArborX::ExperimentalHyperGeometry::Point<2> br{(i + 1) * hx, j * hy};
           ArborX::ExperimentalHyperGeometry::Point<2> tl{i * hx, (j + 1) * hy};
@@ -158,21 +164,38 @@ public:
 #ifndef NDEBUG
     Kokkos::parallel_for(
         Kokkos::RangePolicy<ExecutionSpaceType>(execution_space, 0, 2 * n),
-        KOKKOS_LAMBDA(int k) {
+        KOKKOS_CLASS_LAMBDA(int k) {
           ArborX::ExperimentalHyperGeometry::Triangle<2> recover_triangle =
               mappings_[k].get_triangle();
 
-          for (unsigned int i = 0; i < 2; ++i)
-            if (Kokkos::abs(triangles_[k].a[i] - recover_triangle.a[i]) > 1.e-3)
-              Kokkos::abort("Mismatch for first point in Triangle");
+	      constexpr float eps = 1.e-3;
 
           for (unsigned int i = 0; i < 2; ++i)
-            if (Kokkos::abs(triangles_[k].b[i] - recover_triangle.b[i]) > 1.e-3)
-              Kokkos::abort("Mismatch for second point in Triangle");
+            if (Kokkos::abs(triangles_[k].a[i] - recover_triangle.a[i]) > eps)
+              Kokkos::abort("Mismatch for first point when recovering triangle");
 
           for (unsigned int i = 0; i < 2; ++i)
-            if (Kokkos::abs(triangles_[k].c[i] - recover_triangle.c[i]) > 1.e-3)
-              Kokkos::abort("Mismatch for third point in Triangle");
+            if (Kokkos::abs(triangles_[k].b[i] - recover_triangle.b[i]) > eps)
+              Kokkos::abort("Mismatch for second point when recovering triangle");
+
+          for (unsigned int i = 0; i < 2; ++i)
+            if (Kokkos::abs(triangles_[k].c[i] - recover_triangle.c[i]) > eps)
+              Kokkos::abort("Mismatch for third point when recoverning triangle");
+
+	                auto const &coeff_a = mappings_[k].get_coeff(triangles_[k].a);
+	  if ((Kokkos::abs(coeff_a[0] - 1.) > eps) || Kokkos::abs(coeff_a[1]) > eps ||
+          Kokkos::abs(coeff_a[2]) > eps)
+            Kokkos::abort("Mismatch for coefficients of first point in triangle");
+      
+	  auto const &coeff_b = mappings_[k].get_coeff(triangles_[k].b);
+      if ((Kokkos::abs(coeff_b[0]) > eps) || Kokkos::abs(coeff_b[1] - 1.) > eps ||
+          Kokkos::abs(coeff_b[2]) > eps)
+	                  Kokkos::abort("Mismatch for coefficients of first point in triangle");
+
+      auto const &coeff_c = mappings_[k].get_coeff(triangles_[k].c);
+      if ((Kokkos::abs(coeff_c[0]) > eps) || Kokkos::abs(coeff_c[1]) > eps ||
+          Kokkos::abs(coeff_c[2] - 1.) > eps)
+	                  Kokkos::abort("Mismatch for coefficients of first point in triangle");
         });
 #endif
   }
@@ -295,29 +318,6 @@ int main()
 
     std::cout << "Create grid with triangles.\n";
     Triangles<DeviceType> triangles(execution_space);
-
-    constexpr float eps = 1.e-3;
-
-    for (int i = 0; i < triangles.size(); ++i)
-    {
-      auto const &mapping = triangles.get_mapping(i);
-      auto const &triangle = triangles.get_triangle(i);
-      auto const &coeff_a = mapping.get_coeff(triangle.a);
-      if ((std::abs(coeff_a[0] - 1.) > eps) || std::abs(coeff_a[1]) > eps ||
-          std::abs(coeff_a[2]) > eps)
-        std::cout << i << " a: " << coeff_a[0] << ' ' << coeff_a[1] << ' '
-                  << coeff_a[2] << std::endl;
-      auto const &coeff_b = mapping.get_coeff(triangle.b);
-      if ((std::abs(coeff_b[0]) > eps) || std::abs(coeff_b[1] - 1.) > eps ||
-          std::abs(coeff_b[2]) > eps)
-        std::cout << i << " b: " << coeff_b[0] << ' ' << coeff_b[1] << ' '
-                  << coeff_b[2] << std::endl;
-      auto const &coeff_c = mapping.get_coeff(triangle.c);
-      if ((std::abs(coeff_c[0]) > eps) || std::abs(coeff_c[1]) > eps ||
-          std::abs(coeff_c[2] - 1.) > eps)
-        std::cout << i << " c: " << coeff_c[0] << ' ' << coeff_c[1] << ' '
-                  << coeff_c[2] << std::endl;
-    }
     std::cout << "Triangles set up.\n";
 
     std::cout << "Creating BVH tree.\n";
@@ -341,31 +341,26 @@ int main()
                                                         coefficients});
     std::cout << "Queries done.\n";
 
+#ifndef NDEBUG
     std::cout << "Starting checking results.\n";
-    auto offsets_host =
-        Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, offsets);
-    auto coeffs_host =
-        Kokkos::create_mirror_view_and_copy(Kokkos::HostSpace{}, coefficients);
-
-    for (int i = 0; i < n; ++i)
+    Kokkos::parallel_for(Kokkos::RangePolicy<ExecutionSpace>(execution_space, 0, n), KOKKOS_LAMBDA(int i)
     {
-      if (offsets_host(i) != i)
-      {
-        std::cout << offsets_host(i) << " should be " << i << std::endl;
-      }
-      auto const &c = coeffs_host(i);
-      auto const &t = triangles.get_triangle(offsets_host(i));
+     constexpr float eps = 1.e-3;
+
+      if (offsets(i) != i)
+        Kokkos::abort("Offsets are wrong");
+      auto const &c = coefficients(i);
+      auto const &t = triangles.get_triangle(offsets(i));
       auto const &p_h = points.get_point(i);
       auto const p = ArborX::ExperimentalHyperGeometry::Point<2>{
           c[0] * t.a[0] + c[1] * t.b[0] + c[2] * t.c[0],
           c[0] * t.a[1] + c[1] * t.b[1] + c[2] * t.c[1]};
-      if ((std::abs(p[0] - p_h[0]) > eps) || std::abs(p[1] - p_h[1]) > eps)
-      {
-        std::cout << "coeffs for point " << i << " are wrong!\n";
-      }
-    }
-
+      if ((Kokkos::abs(p[0] - p_h[0]) > eps) || Kokkos::abs(p[1] - p_h[1]) > eps)
+        Kokkos::abort("Coefficients are wrong");
+    });
     std::cout << "Checking results successful.\n";
+#endif
+    execution_space.fence();
   }
 
   Kokkos::finalize();
