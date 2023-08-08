@@ -27,6 +27,11 @@
 // |x\|x\|x\|
 // __________
 
+const float Lx = 100.0;
+const float Ly = 100.0;
+const int nx = 101;
+const int ny = 101;
+
 struct Mapping
 {
   ArborX::ExperimentalHyperGeometry::Point<2> alpha;
@@ -80,15 +85,11 @@ class Points
 public:
   Points(typename DeviceType::execution_space const &execution_space)
   {
-    float Lx = 100.0;
-    float Ly = 100.0;
-    int nx = 101;
-    int ny = 101;
     int n = nx * ny;
     float hx = Lx / (nx - 1);
     float hy = Ly / (ny - 1);
 
-    auto index = [nx, ny](int i, int j) { return i + j * nx; };
+    auto index = [](int i, int j) { return i + j * nx; };
 
     points_ = Kokkos::View<ArborX::ExperimentalHyperGeometry::Point<2> *,
                            typename DeviceType::memory_space>(
@@ -122,15 +123,11 @@ public:
   // used both for queries and predicates.
   Triangles(typename DeviceType::execution_space const &execution_space)
   {
-    float Lx = 100.0;
-    float Ly = 100.0;
-    int nx = 101;
-    int ny = 101;
     int n = nx * ny;
     float hx = Lx / (nx - 1);
     float hy = Ly / (ny - 1);
 
-    auto index = [nx, ny](int i, int j) { return i + j * nx; };
+    auto index = [](int i, int j) { return i + j * nx; };
 
     triangles_ = Kokkos::View<ArborX::ExperimentalHyperGeometry::Triangle<2> *,
                               typename DeviceType::memory_space>(
@@ -222,24 +219,36 @@ struct ArborX::AccessTraits<Triangles<DeviceType>, ArborX::PrimitivesTag>
 };
 
 template <typename DeviceType>
+struct ArborX::AccessTraits<Points<DeviceType>, ArborX::PredicatesTag>
+{
+  using memory_space = typename DeviceType::memory_space;
+  static KOKKOS_FUNCTION int size(Points<DeviceType> const &points)
+  {
+    return points.size();
+  }
+  static KOKKOS_FUNCTION auto get(Points<DeviceType> const &points, int i)
+  {
+    return ArborX::attach(ArborX::intersects(points.get_point(i)), i);
+  }
+};
+
+template <typename DeviceType>
 class TriangleIntersectionCallback
 {
 public:
-  TriangleIntersectionCallback(Triangles<DeviceType> triangles)
-      : triangles_(triangles)
+  TriangleIntersectionCallback(Triangles<DeviceType> triangles, Kokkos::View<int*, DeviceType> offsets, Kokkos::View<ArborX::Point*, DeviceType> coefficients)
+      : triangles_(triangles), offsets_(offsets), coefficients_(coefficients)
   {}
 
   template <typename Query>
-  KOKKOS_FUNCTION void operator()(
+  KOKKOS_FUNCTION auto operator()(
       Query const &query,
       ArborX::Details::PairIndexVolume<
           ArborX::ExperimentalHyperGeometry::Box<2>> const &predicate) const
   {
     ArborX::ExperimentalHyperGeometry::Point<2> const &point =
         getGeometry(getPredicate(query));
-    auto const &attachment = ArborX::getData(query);
-
-    auto const &triangle = triangles_.get_triangle(predicate.index);
+    auto query_index = ArborX::getData(query);
 
     auto const coeffs =
         triangles_.get_mapping(predicate.index).get_coeff(point);
@@ -247,13 +256,17 @@ public:
 
     if (intersects)
     {
-      attachment.triangle_index = predicate.index;
-      attachment.coeffs = coeffs;
+      offsets_(query_index) = predicate.index;
+      coefficients_(query_index) = coeffs;
+      return ArborX::CallbackTreeTraversalControl::early_exit;
     }
+    return ArborX::CallbackTreeTraversalControl::normal_continuation;
   }
 
 private:
   Triangles<DeviceType> triangles_;
+  Kokkos::View<int *, DeviceType> offsets_;
+  Kokkos::View<ArborX::Point *, DeviceType> coefficients_;
 };
 
 // Now that we have encapsulated the objects and queries to be used within the
@@ -310,35 +323,7 @@ int main()
     Kokkos::View<int *, MemorySpace> offsets("offsets", n);
     Kokkos::View<ArborX::Point *, MemorySpace> coefficients("coefficients", n);
 
-    struct Dummy
-    {};
-
-    struct Attachment
-    {
-      int &triangle_index;
-      ArborX::Point &coeffs;
-    };
-
-    ArborX::Details::TreeTraversal<
-        decltype(tree), Dummy, TriangleIntersectionCallback<DeviceType>,
-        ArborX::Details::SpatialPredicateTag,
-        decltype(ArborX::attach(
-            ArborX::intersects(ArborX::ExperimentalHyperGeometry::Point<2>{}),
-            std::declval<Attachment>()))>
-        tree_traversal(tree,
-                       TriangleIntersectionCallback<DeviceType>{triangles});
-
-    std::cout << "n: " << n << std::endl;
-
-    Kokkos::parallel_for(
-        "ArborX::TreeTraversal::spatial",
-        Kokkos::RangePolicy<ExecutionSpace>(execution_space, 0, n),
-        KOKKOS_LAMBDA(int i) {
-          tree_traversal.search(
-              ArborX::attach(ArborX::intersects(points.get_point(i)),
-                             Attachment{offsets(i), coefficients(i)}));
-        });
-
+    tree.query(execution_space, points, TriangleIntersectionCallback<DeviceType>{triangles, offsets, coefficients});
     std::cout << "Queries done.\n";
 
     std::cout << "Starting checking results.\n";
