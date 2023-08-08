@@ -27,10 +27,15 @@
 // |x\|x\|x\|
 // __________
 
-const float Lx = 100.0;
-const float Ly = 100.0;
-const int nx = 101;
-const int ny = 101;
+constexpr float Lx = 100.0;
+constexpr float Ly = 100.0;
+constexpr int nx = 101;
+constexpr int ny = 101;
+constexpr int n = nx * ny;
+constexpr float hx = Lx / (nx - 1);
+constexpr float hy = Ly / (ny - 1);
+
+#define DEBUG
 
 struct Mapping
 {
@@ -38,18 +43,9 @@ struct Mapping
   ArborX::ExperimentalHyperGeometry::Point<2> beta;
   ArborX::ExperimentalHyperGeometry::Point<2> p0;
 
-  ArborX::Point get_coeff(ArborX::ExperimentalHyperGeometry::Point<2> p) const
-  {
-    float alpha_coeff = alpha[0] * (p[0] - p0[0]) + alpha[1] * (p[1] - p0[1]);
-    float beta_coeff = beta[0] * (p[0] - p0[0]) + beta[1] * (p[1] - p0[1]);
-    return {1 - alpha_coeff - beta_coeff, alpha_coeff, beta_coeff};
-  }
-
   // x = a + alpha * (b - a) + beta * (c - a)
   //   = (1-beta-alpha) * a + alpha * b + beta * c
-  //
-  // FIXME Only works for 2D reliably
-  void compute(ArborX::ExperimentalHyperGeometry::Triangle<2> const &triangle)
+  Mapping(ArborX::ExperimentalHyperGeometry::Triangle<2> const &triangle)
   {
     auto const &a = triangle.a;
     auto const &b = triangle.b;
@@ -67,6 +63,14 @@ struct Mapping
     p0 = a;
   }
 
+  ArborX::Point get_coeff(ArborX::ExperimentalHyperGeometry::Point<2> p) const
+  { 
+    float alpha_coeff = alpha[0] * (p[0] - p0[0]) + alpha[1] * (p[1] - p0[1]);
+    float beta_coeff = beta[0] * (p[0] - p0[0]) + beta[1] * (p[1] - p0[1]);
+    return {1 - alpha_coeff - beta_coeff, alpha_coeff, beta_coeff};
+  }
+
+#ifdef DEBUG
   ArborX::ExperimentalHyperGeometry::Triangle<2> get_triangle() const
   {
     float const inv_det = 1. / (alpha[0] * beta[1] - alpha[1] * beta[0]);
@@ -77,6 +81,7 @@ struct Mapping
         {p0[0] - inv_det * alpha[1], p0[1] + inv_det * alpha[0]}};
     return {a, b, c};
   }
+#endif
 };
 
 template <typename DeviceType>
@@ -85,24 +90,17 @@ class Points
 public:
   Points(typename DeviceType::execution_space const &execution_space)
   {
-    int n = nx * ny;
-    float hx = Lx / (nx - 1);
-    float hy = Ly / (ny - 1);
-
-    auto index = [](int i, int j) { return i + j * nx; };
-
     points_ = Kokkos::View<ArborX::ExperimentalHyperGeometry::Point<2> *,
                            typename DeviceType::memory_space>(
         Kokkos::view_alloc(Kokkos::WithoutInitializing, "points"), 2 * n);
-    auto points_host = Kokkos::create_mirror_view(points_);
 
-    for (int i = 0; i < nx; ++i)
-      for (int j = 0; j < ny; ++j)
-      {
-        points_host[2 * index(i, j)] = {(i + .25f) * hx, (j + .25f) * hy};
-        points_host[2 * index(i, j) + 1] = {(i + .75f) * hx, (j + .75f) * hy};
-      }
-    Kokkos::deep_copy(execution_space, points_, points_host);
+    Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2>, typename DeviceType::execution_space>(execution_space, {0,0},{nx, ny}), KOKKOS_LAMBDA(int i, int j) {
+
+    auto index = [](int i, int j) { return i + j * nx; };
+
+        points_[2 * index(i, j)] = {(i + .25f) * hx, (j + .25f) * hy};
+        points_[2 * index(i, j) + 1] = {(i + .75f) * hx, (j + .75f) * hy};
+      });
   }
 
   KOKKOS_FUNCTION auto const &get_point(int i) const { return points_(i); }
@@ -123,54 +121,49 @@ public:
   // used both for queries and predicates.
   Triangles(typename DeviceType::execution_space const &execution_space)
   {
-    int n = nx * ny;
-    float hx = Lx / (nx - 1);
-    float hy = Ly / (ny - 1);
-
-    auto index = [](int i, int j) { return i + j * nx; };
+    using ExecutionSpaceType = typename DeviceType::execution_space;
+    using MemorySpaceType = typename DeviceType::memory_space;
 
     triangles_ = Kokkos::View<ArborX::ExperimentalHyperGeometry::Triangle<2> *,
-                              typename DeviceType::memory_space>(
+                              MemorySpaceType>(
         Kokkos::view_alloc(Kokkos::WithoutInitializing, "triangles"), 2 * n);
-    auto triangles_host = Kokkos::create_mirror_view(triangles_);
-
-    mappings_ = Kokkos::View<Mapping *, typename DeviceType::memory_space>(
+    mappings_ = Kokkos::View<Mapping *, MemorySpaceType>(
         Kokkos::view_alloc(Kokkos::WithoutInitializing, "mappings"), 2 * n);
-    auto mappings_host = Kokkos::create_mirror_view(mappings_);
 
-    for (int i = 0; i < nx; ++i)
-      for (int j = 0; j < ny; ++j)
-      {
+    Kokkos::parallel_for(Kokkos::MDRangePolicy<Kokkos::Rank<2>, ExecutionSpaceType>(execution_space, {0,0},{nx, ny}), KOKKOS_LAMBDA(int i, int j) { 
         ArborX::ExperimentalHyperGeometry::Point<2> bl{i * hx, j * hy};
         ArborX::ExperimentalHyperGeometry::Point<2> br{(i + 1) * hx, j * hy};
         ArborX::ExperimentalHyperGeometry::Point<2> tl{i * hx, (j + 1) * hy};
         ArborX::ExperimentalHyperGeometry::Point<2> tr{(i + 1) * hx,
                                                        (j + 1) * hy};
 
-        triangles_host[2 * index(i, j)] = {tl, bl, br};
-        triangles_host[2 * index(i, j) + 1] = {tl, br, tr};
-      }
+        auto index = [](int i, int j) { return i + j * nx; };
 
-    for (int k = 0; k < 2 * n; ++k)
+        triangles_[2 * index(i, j)] = {tl, bl, br};
+        mappings_[2*index(i,j)] = Mapping(triangles_[2*index(i,j)]);
+        triangles_[2 * index(i, j) + 1] = {tl, br, tr};
+        mappings_[2*index(i,j)+1] = Mapping(triangles_[2*index(i,j)+1]);
+      });
+
+#ifdef DEBUG
+    Kokkos::parallel_for(Kokkos::RangePolicy<ExecutionSpaceType>(execution_space, 0, 2 * n), KOKKOS_LAMBDA(int k)
     {
-      mappings_host[k].compute(triangles_host[k]);
-
       ArborX::ExperimentalHyperGeometry::Triangle<2> recover_triangle =
-          mappings_host[k].get_triangle();
+          mappings_[k].get_triangle();
 
       for (unsigned int i = 0; i < 2; ++i)
-        if (std::abs(triangles_host[k].a[i] - recover_triangle.a[i]) > 1.e-3)
-          abort();
+        if (Kokkos::abs(triangles_[k].a[i] - recover_triangle.a[i]) > 1.e-3)
+          Kokkos::abort("Mismatch for first point in Triangle");
 
       for (unsigned int i = 0; i < 2; ++i)
-        if (std::abs(triangles_host[k].b[i] - recover_triangle.b[i]) > 1.e-3)
-          abort();
+        if (Kokkos::abs(triangles_[k].b[i] - recover_triangle.b[i]) > 1.e-3)
+          Kokkos::abort("Mismatch for second point in Triangle");
 
       for (unsigned int i = 0; i < 2; ++i)
-        if (std::abs(triangles_host[k].c[i] - recover_triangle.c[i]) > 1.e-3)
-          abort();
-    }
-    Kokkos::deep_copy(execution_space, triangles_, triangles_host);
+        if (Kokkos::abs(triangles_[k].c[i] - recover_triangle.c[i]) > 1.e-3)
+          Kokkos::abort("Mismatch for third point in Triangle");
+    });
+#endif
   }
 
   // Return the number of triangles.
