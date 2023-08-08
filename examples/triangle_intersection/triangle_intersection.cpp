@@ -35,8 +35,8 @@ constexpr int n = nx * ny;
 constexpr float hx = Lx / (nx - 1);
 constexpr float hy = Ly / (ny - 1);
 
-#define DEBUG
-
+// The Mapping class stores the mapping from a unit triangle to a given triangle
+// allowing for computing the barycentric coordinates for a given point.
 struct Mapping
 {
   ArborX::ExperimentalHyperGeometry::Point<2> alpha;
@@ -70,7 +70,8 @@ struct Mapping
     return {1 - alpha_coeff - beta_coeff, alpha_coeff, beta_coeff};
   }
 
-#ifdef DEBUG
+#ifndef NDEBUG
+  // Recover the triangle from the mapping. Only used for debugging.
   ArborX::ExperimentalHyperGeometry::Triangle<2> get_triangle() const
   {
     float const inv_det = 1. / (alpha[0] * beta[1] - alpha[1] * beta[0]);
@@ -84,6 +85,8 @@ struct Mapping
 #endif
 };
 
+
+// Store the points that represent the queries.
 template <typename DeviceType>
 class Points
 {
@@ -118,7 +121,7 @@ class Triangles
 {
 public:
   // Create non-intersecting triangles on a 2D cartesian grid
-  // used both for queries and predicates.
+  // used for the primitives in the tree construction, and compute and store the mappings used in the queries.
   Triangles(typename DeviceType::execution_space const &execution_space)
   {
     using ExecutionSpaceType = typename DeviceType::execution_space;
@@ -145,7 +148,7 @@ public:
         mappings_[2*index(i,j)+1] = Mapping(triangles_[2*index(i,j)+1]);
       });
 
-#ifdef DEBUG
+#ifndef NDEBUG
     Kokkos::parallel_for(Kokkos::RangePolicy<ExecutionSpaceType>(execution_space, 0, 2 * n), KOKKOS_LAMBDA(int k)
     {
       ArborX::ExperimentalHyperGeometry::Triangle<2> recover_triangle =
@@ -166,10 +169,8 @@ public:
 #endif
   }
 
-  // Return the number of triangles.
   KOKKOS_FUNCTION int size() const { return triangles_.size(); }
 
-  // Return the triangle with index i.
   KOKKOS_FUNCTION ArborX::ExperimentalHyperGeometry::Triangle<2> const &
   get_triangle(int i) const
   {
@@ -196,11 +197,13 @@ template <typename DeviceType>
 struct ArborX::AccessTraits<Triangles<DeviceType>, ArborX::PrimitivesTag>
 {
   using memory_space = typename DeviceType::memory_space;
+  
   static KOKKOS_FUNCTION int size(Triangles<DeviceType> const &triangles)
   {
     return triangles.size();
   }
-  static KOKKOS_FUNCTION auto get(Triangles<DeviceType> const &triangles, int i)
+  
+static KOKKOS_FUNCTION auto get(Triangles<DeviceType> const &triangles, int i)
   {
     auto const &triangle = triangles.get_triangle(i);
     ArborX::ExperimentalHyperGeometry::Box<2> box{};
@@ -233,23 +236,26 @@ public:
       : triangles_(triangles), offsets_(offsets), coefficients_(coefficients)
   {}
 
-  template <typename Query>
+  // The search tree consists entirely of boxes, although the primitives are triangles. 
+  // Thus, a detected collision doesn't mean that the point is actuallt inside the wrapped triangle and we have to check that here.
+  // This also gives us the opportunity to store the barycentric coordinates in case there is an intersection.
+  // Since the triangles don't overlap in this example, there is at most one triangle that contains a given point and we can abort the search early when we found a match.   
+  template <typename Query, typename Primitive>
   KOKKOS_FUNCTION auto operator()(
       Query const &query,
-      ArborX::Details::PairIndexVolume<
-          ArborX::ExperimentalHyperGeometry::Box<2>> const &predicate) const
+      Primitive const& primitive) const
   {
     ArborX::ExperimentalHyperGeometry::Point<2> const &point =
         getGeometry(getPredicate(query));
     auto query_index = ArborX::getData(query);
 
     auto const coeffs =
-        triangles_.get_mapping(predicate.index).get_coeff(point);
+        triangles_.get_mapping(primitive.index).get_coeff(point);
     bool intersects = coeffs[0] >= 0 && coeffs[1] >= 0 && coeffs[2] >= 0;
 
     if (intersects)
     {
-      offsets_(query_index) = predicate.index;
+      offsets_(query_index) = primitive.index;
       coefficients_(query_index) = coeffs;
       return ArborX::CallbackTreeTraversalControl::early_exit;
     }
