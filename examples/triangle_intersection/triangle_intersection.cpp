@@ -38,47 +38,6 @@ constexpr float hy = Ly / (ny - 1);
 using Point = ArborX::ExperimentalHyperGeometry::Point<2>;
 using Triangle = ArborX::ExperimentalHyperGeometry::Triangle<2>;
 
-// The Mapping class stores the mapping from a unit triangle to a given triangle
-// allowing for computing the barycentric coordinates for a given point.
-struct Mapping
-{
-  float alpha[2];
-  float beta[2];
-  Point p0;
-
-  // x = a + alpha * (b - a) + beta * (c - a)
-  //   = (1-beta-alpha) * a + alpha * b + beta * c
-  KOKKOS_FUNCTION
-  Mapping(Triangle const &triangle)
-  {
-    auto const &a = triangle.a;
-    auto const &b = triangle.b;
-    auto const &c = triangle.c;
-
-    Point u = {b[0] - a[0], b[1] - a[1]};
-    Point v = {c[0] - a[0], c[1] - a[1]};
-
-    float const det = v[1] * u[0] - v[0] * u[1];
-    if (det == 0)
-      Kokkos::abort("Degenerate triangles are not supported!");
-    float const inv_det = 1.f / det;
-
-    alpha[0] = v[1] * inv_det;
-    alpha[1] = -v[0] * inv_det;
-    beta[0] = -u[1] * inv_det;
-    beta[1] = u[0] * inv_det;
-    p0 = a;
-  }
-
-  KOKKOS_FUNCTION Kokkos::Array<float, 3>
-  get_barycentric_coordinates(Point p) const
-  {
-    float alpha_coeff = alpha[0] * (p[0] - p0[0]) + alpha[1] * (p[1] - p0[1]);
-    float beta_coeff = beta[0] * (p[0] - p0[0]) + beta[1] * (p[1] - p0[1]);
-    return {1 - alpha_coeff - beta_coeff, alpha_coeff, beta_coeff};
-  }
-};
-
 // Store the points that represent the queries.
 template <typename MemorySpace>
 class Points
@@ -128,18 +87,13 @@ public:
   }
 
   // Create non-intersecting triangles on a 2D cartesian grid
-  // used for the primitives in the tree construction, and compute and store the
-  // mappings used in the queries.
+  // used for the primitives in the tree construction
   template <typename ExecutionSpace>
   void initialize(ExecutionSpace const &execution_space)
   {
     _triangles = Kokkos::View<Triangle *, MemorySpace>(
         Kokkos::view_alloc(execution_space, Kokkos::WithoutInitializing,
                            "Example::triangles"),
-        2 * n);
-    _mappings = Kokkos::View<Mapping *, MemorySpace>(
-        Kokkos::view_alloc(execution_space, Kokkos::WithoutInitializing,
-                           "Example::mappings"),
         2 * n);
 
     Kokkos::parallel_for(
@@ -154,10 +108,7 @@ public:
           auto index = [](int i, int j) { return i + j * nx; };
 
           _triangles[2 * index(i, j)] = {tl, bl, br};
-          _mappings[2 * index(i, j)] = Mapping(_triangles[2 * index(i, j)]);
           _triangles[2 * index(i, j) + 1] = {tl, br, tr};
-          _mappings[2 * index(i, j) + 1] =
-              Mapping(_triangles[2 * index(i, j) + 1]);
         });
   }
 
@@ -168,14 +119,8 @@ public:
     return _triangles(i);
   }
 
-  KOKKOS_FUNCTION Mapping const &get_mapping(int i) const
-  {
-    return _mappings(i);
-  }
-
 private:
   Kokkos::View<Triangle *, MemorySpace> _triangles;
-  Kokkos::View<Mapping *, MemorySpace> _mappings;
 };
 
 // For creating the bounding volume hierarchy given a Triangles object, we
@@ -238,20 +183,39 @@ public:
   // there is an intersection. Since the triangles don't overlap in this
   // example, there is at most one triangle that contains a given point and we
   // can abort the search early when we found a match.
-  template <typename Query, typename Primitive>
-  KOKKOS_FUNCTION auto operator()(Query const &query,
-                                  Primitive const &primitive) const
+  template <typename Query, typename Value>
+  KOKKOS_FUNCTION auto operator()(Query const &query, Value const &value) const
   {
-    Point const &point = getGeometry(getPredicate(query));
     auto query_index = ArborX::getData(query);
+    auto triangle_index = value.index;
 
-    auto const coeffs = _triangles.get_mapping(primitive.index)
-                            .get_barycentric_coordinates(point);
+    Point const &p = ArborX::getGeometry(getPredicate(query));
+    Triangle const &triangle = _triangles(triangle_index);
+    auto const &a = triangle.a;
+    auto const &b = triangle.b;
+    auto const &c = triangle.c;
+
+    float u[2] = {b[0] - a[0], b[1] - a[1]};
+    float v[2] = {c[0] - a[0], c[1] - a[1]};
+    float const det = v[1] * u[0] - v[0] * u[1];
+    if (det == 0)
+      Kokkos::abort("Degenerate triangles are not supported!");
+    float const inv_det = 1.f / det;
+
+    float alpha[2] = {v[1] * inv_det, -v[0] * inv_det};
+    float beta[2] = {-u[1] * inv_det, u[0] * inv_det};
+
+    float alpha_coeff = alpha[0] * (p[0] - a[0]) + alpha[1] * (p[1] - a[1]);
+    float beta_coeff = beta[0] * (p[0] - a[0]) + beta[1] * (p[1] - a[1]);
+
+    Kokkos::Array<float, 3> coeffs = {1 - alpha_coeff - beta_coeff, alpha_coeff,
+                                      beta_coeff};
+
     bool intersects = coeffs[0] >= 0 && coeffs[1] >= 0 && coeffs[2] >= 0;
 
     if (intersects)
     {
-      _offsets(query_index) = primitive.index;
+      _offsets(query_index) = triangle_index;
       _coefficients(query_index) = coeffs;
       return ArborX::CallbackTreeTraversalControl::early_exit;
     }
@@ -297,10 +261,8 @@ int main()
                                                        coefficients});
   execution_space.fence();
 
-// FIXME_SYCL doesn't support printf
-#if !defined(NDEBUG) && !defined(KOKKOS_ENABLE_SYCL)
   // Check the results
-  bool fail = false;
+  bool success = true;
   Kokkos::parallel_reduce(
       Kokkos::RangePolicy<ExecutionSpace>(execution_space, 0, n),
       KOKKOS_LAMBDA(int i, bool &update) {
@@ -309,22 +271,24 @@ int main()
         if (offsets(i) != i)
         {
           printf("Offsets are wrong for query %d.\n", i);
-          update = true;
+          update = false;
         }
         auto const &c = coefficients(i);
         auto const &t = triangles(offsets(i));
-        auto const &p_h = points(i);
-        auto const p = Point{c[0] * t.a[0] + c[1] * t.b[0] + c[2] * t.c[0],
-                             c[0] * t.a[1] + c[1] * t.b[1] + c[2] * t.c[1]};
-        if ((Kokkos::abs(p[0] - p_h[0]) > eps) ||
-            Kokkos::abs(p[1] - p_h[1]) > eps)
+        auto const &p_ref = points(i);
+        Point p{c[0] * t.a[0] + c[1] * t.b[0] + c[2] * t.c[0],
+                c[0] * t.a[1] + c[1] * t.b[1] + c[2] * t.c[1]};
+        if ((Kokkos::abs(p[0] - p_ref[0]) > eps) ||
+            Kokkos::abs(p[1] - p_ref[1]) > eps)
         {
+#if !defined(KOKKOS_ENABLE_SYCL)
+          // FIXME_SYCL doesn't support printf
           printf("Coefficients are wrong for query %d.\n", i);
-          update = true;
+#endif
+          update = false;
         }
       },
-      Kokkos::LOr<bool, Kokkos::HostSpace>(fail));
-  std::cout << fail << std::endl;
-  return fail;
-#endif
+      Kokkos::LAnd<bool, Kokkos::HostSpace>(success));
+  std::cout << "Check " << (success ? "succeeded" : "failed") << std::endl;
+  return !success;
 }
