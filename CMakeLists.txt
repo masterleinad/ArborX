@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
 project(ArborX CXX)
 
+if (WIN32)
+  set(CMAKE_OBJECT_PATH_MAX 160)
+endif ()
+
 find_package(Kokkos 4.0 REQUIRED CONFIG)
 message(STATUS "Found Kokkos: ${Kokkos_DIR} (version \"${Kokkos_VERSION}\")")
 if(Kokkos_ENABLE_CUDA AND Kokkos_VERSION VERSION_LESS 4.1)
